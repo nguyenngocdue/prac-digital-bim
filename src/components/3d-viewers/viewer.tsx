@@ -1,18 +1,37 @@
 "use client";
 import { Canvas } from "@react-three/fiber";
-import { GizmoHelper, GizmoViewcube, GizmoViewport, Grid, OrbitControls, PivotControls, Stats } from "@react-three/drei";
-import { useEffect, useState } from "react";
+import { GizmoHelper, GizmoViewcube, GizmoViewport, Grid, OrbitControls, PivotControls, Select, Stats, useSelect } from "@react-three/drei";
+import { useEffect, useState, useRef } from "react";
 import { useBoxContext } from "../../app/contexts/box-context";
 import { AxesWithLabels } from "./standards/axes-with-labels";
 import * as THREE from "three";
 import { RaycastCatcher } from "@/lib/raycast-catcher";
 
-const PlaceholderBox = ({ color, position }: { color: string, position?: [number, number, number] }) => {
+// (removed duplicate import)
+const PlaceholderBox = ({ color, position, onSelectEffect }: { color: string, position?: [number, number, number], onSelectEffect?: (selected: boolean) => void }) => {
+  const selected = !!useSelect();
+  const wasSelected = useRef(false);
+  useEffect(() => {
+    if (selected && !wasSelected.current) {
+      onSelectEffect?.(true);
+    } else if (!selected && wasSelected.current) {
+      onSelectEffect?.(false);
+    }
+    wasSelected.current = selected;
+  }, [selected, onSelectEffect]);
   return (
-    <mesh position={position}>
-      <boxGeometry args={[1.5, 1.5, 1.5]} />
-      <meshStandardMaterial color={color} />
-    </mesh>
+    <group position={position}>
+      <mesh>
+        <boxGeometry args={[1.5, 1.5, 1.5]} />
+        <meshStandardMaterial color={color} />
+      </mesh>
+      {selected && (
+        <mesh>
+          <boxGeometry args={[1.6, 1.6, 1.6]} />
+          <meshBasicMaterial color="#ff9800" wireframe />
+        </mesh>
+      )}
+    </group>
   );
 }
 
@@ -39,10 +58,6 @@ const Viewer = () => {
   }, [creationMode, setCreationMode]);
 
 
-
-
-  // ...existing code...
-
   // Import RaycastCatcher from its new file
   return (
     <div className="w-full h-full bg-background/50">
@@ -50,13 +65,23 @@ const Viewer = () => {
         <RaycastCatcher accent={accent} />
         <ambientLight intensity={0.6} />
         <directionalLight position={[5, 5, 5]} intensity={1} />
-        <PivotControls>
           <PlaceholderBox color={accent || "#06b6d4"} />
-        </PivotControls>
-        {/* Render all placed boxes */}
-        {boxes.map((box, i) => (
-          <PlaceholderBox key={i} color={box.color || accent} position={box.position} />
-        ))}
+        <Select box multiple>
+          {boxes.map((box, i) => (
+            <PlaceholderBox
+              key={i}
+              color={box.color || accent}
+              position={box.position}
+              onSelectEffect={(selected) => {
+                if (selected) {
+                  // Effect only when this box is selected
+                  // You can put any effect here, e.g. show info, update UI
+                  console.log("Box selected at", box.position);
+                }
+              }}
+            />
+          ))}
+        </Select>
 
         <OrbitControls />
         <AxesWithLabels size={4} fontSize={0.3} labelOffset={4.2} billboard />
