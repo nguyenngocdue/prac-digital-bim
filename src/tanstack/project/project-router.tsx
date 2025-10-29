@@ -7,12 +7,6 @@ import ProjectDetail from "./project-detail";
 
 const rootRoute = createRootRoute({ component: () => null });
 
-const projectRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/project",
-  component: () => null,
-});
-
 const projectDetailRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/project/:id",
@@ -31,7 +25,7 @@ const ProjectRouter = () => {
   React.useEffect(() => {
     const r = createRouter({
       history: createBrowserHistory(),
-      routeTree: rootRoute.addChildren([projectIndexRoute, projectDetailRoute, projectRoute]),
+      routeTree: rootRoute.addChildren([projectIndexRoute, projectDetailRoute]),
     } as any);
     setRouter(r);
   }, []);

@@ -1,5 +1,5 @@
 "use client";
-import React from "react";
+import React, { useEffect } from "react";
 import { createBrowserHistory } from "@tanstack/history";
 import {
   createRouter,
@@ -9,7 +9,7 @@ import {
   Outlet,
 } from "@tanstack/react-router";
 import PanelsLayout from "@/components/panels-layout";
-import ProjectClientPage from "./ProjectClientPage";
+import ProjectIndex from "./project/project-index";
 
 const rootRoute = createRootRoute({
   component: () => <Outlet />,
@@ -24,14 +24,15 @@ const homeRoute = createRoute({
 const projectRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/project",
-  component: ProjectClientPage,
+  // Render the project index (list + create) at /project
+  component: ProjectIndex,
 });
 
 const AppRouter = () => {
   // create the router only on the client to avoid SSR errors (history uses window)
   const [router, setRouter] = React.useState<any>(null);
 
-  React.useEffect(() => {
+  useEffect(() => {
     const r = createRouter({
       history: createBrowserHistory(),
       // create a routeTree from the root and its children

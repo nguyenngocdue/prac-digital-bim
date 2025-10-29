@@ -1,5 +1,6 @@
-import ProjectRouterClient from "@/tanstack/project/project-router-client";
+import ProjectIndex from '@/tanstack/project/project-index';
 
 export default function ProjectPage() {
-  return <ProjectRouterClient />;
+  // Render the project index (client) directly so the list + create UI appears
+  return <ProjectIndex />;
 }

@@ -1,7 +1,7 @@
 "use client";
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { useNavigate } from "@tanstack/react-router";
+import { useRouter } from "next/navigation";
 
 type Project = {
   id: string;
@@ -12,7 +12,7 @@ type Project = {
 const STORAGE_KEY = "projects_v1";
 
 const ProjectIndex = () => {
-  const navigate: any = useNavigate();
+  const router = useRouter();
   const [projects, setProjects] = React.useState<Project[]>([]);
   const [name, setName] = React.useState("");
 
@@ -37,12 +37,12 @@ const ProjectIndex = () => {
     const p: Project = { id, name: name || `Project ${id.slice(0, 6)}`, createdAt: new Date().toISOString() };
     persist([p, ...projects]);
     setName("");
-    // navigate to the new project detail
-    navigate(`/project/${id}`);
+    // navigate to the new project detail via query param under /app
+    router.push(`/app/project?id=${id}`);
   };
 
   const openProject = (id: string) => {
-    navigate(`/project/${id}`);
+    router.push(`/app/project?id=${id}`);
   };
 
   return (
