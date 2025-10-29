@@ -1,8 +1,9 @@
 "use client";
 import { Canvas } from "@react-three/fiber";
-import { Grid, OrbitControls, Stats } from "@react-three/drei";
-import { useEffect, useState } from "react";
+import { GizmoHelper, GizmoViewcube, GizmoViewport, Grid, OrbitControls, Stats } from "@react-three/drei";
+import { useEffect, useRef, useState } from "react";
 import { AxesWithLabels } from "./standards/axes-with-labels";
+import * as THREE from "three";
 
 const PlaceholderBox = ({ color }: { color: string }) => {
   return (
@@ -30,7 +31,6 @@ const Viewer = () => {
         <directionalLight position={[5, 5, 5]} intensity={1} />
         <PlaceholderBox color={accent || "#06b6d4"} />
         <OrbitControls />
-        {/* <axesHelper args={[5]} /> */}
         <AxesWithLabels size={4} fontSize={0.3} labelOffset={4.2} billboard />
         <Grid
           infiniteGrid
@@ -42,6 +42,25 @@ const Viewer = () => {
           cellThickness={0.3}
         />
         <Stats />
+        <GizmoHelper
+          alignment="top-right" // widget alignment within scene
+          margin={[90, 90]} // widget margins (X, Y)
+          onUpdate={() => {
+            // to force re-render when needed
+          }}
+          onTarget={() => {
+            // Return a default target vector, e.g., the origin
+            return new THREE.Vector3(0, 0, 0);
+          }}
+          renderPriority={1} // make sure the gizmo is rendered on top of other elements
+        >
+          <GizmoViewcube
+            color="#cfd8dc"
+            strokeColor="#1a1a1a"
+            textColor="#141523"
+            hoverColor="#90a4ae"
+          />
+        </GizmoHelper>
       </Canvas>
     </div>
   );
