@@ -16,29 +16,37 @@ const rootRoute = createRootRoute({
 });
 
 const homeRoute = createRoute({
-  getParent: () => rootRoute,
+  getParentRoute: () => rootRoute,
   path: "/",
   component: () => <PanelsLayout />,
 });
 
 const projectRoute = createRoute({
-  getParent: () => rootRoute,
-  path: "/project/:id",
+  getParentRoute: () => rootRoute,
+  path: "/project",
   component: ProjectClientPage,
 });
 
-const router = createRouter({
-  history: createBrowserHistory(),
-  routes: [rootRoute, homeRoute, projectRoute],
-});
-
 const AppRouter = () => {
-  return (
-    <RouterProvider router={router}>
-      {/* Router renders the matched route's component via the root Outlet */}
-      <Outlet />
-    </RouterProvider>
-  );
+  // create the router only on the client to avoid SSR errors (history uses window)
+  const [router, setRouter] = React.useState<any>(null);
+
+  React.useEffect(() => {
+    const r = createRouter({
+      history: createBrowserHistory(),
+      // create a routeTree from the root and its children
+      routeTree: rootRoute.addChildren([homeRoute, projectRoute]),
+    } as any);
+    // NOTE: we need to reference projectRoute variable; avoid shadowing
+    // but TS/ES imports here are fine — recreate router and set it
+    setRouter(r);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // RouterProvider renders Matches internally; pass router as any to avoid strict types here
+  const RP: any = RouterProvider;
+  if (!router) return null;
+  return <RP router={router as any} />;
 };
 
 export default AppRouter;

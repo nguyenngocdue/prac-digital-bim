@@ -24,7 +24,45 @@ const RootLayout = ({
   children: React.ReactNode;
 }>) => {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
+      {process.env.NODE_ENV === "development" && (
+        <head>
+          {/*
+            DevTools extension can crash when it encounters an empty renderer
+            version string. Inject a tiny development-only guard early to
+            normalize any renderer.version to a safe semver string so the
+            extension's semver parser won't throw. This preserves DevTools
+            functionality while avoiding console noise during development.
+          */}
+          <script
+            dangerouslySetInnerHTML={{
+              __html: `(() => {
+                try {
+                  if (typeof window === 'undefined') return;
+                  const hook = window.__REACT_DEVTOOLS_GLOBAL_HOOK__;
+                  if (!hook) return;
+                  // Wrap the inject function so renderer objects get a safe version
+                  const originalInject = hook.inject;
+                  if (originalInject && !originalInject.__wrapped_for_version_guard__) {
+                    hook.inject = function(renderer) {
+                      try {
+                        if (renderer && (renderer.version === '' || renderer.version == null)) {
+                          // assign a safe default semver so semver.parse won't throw
+                          renderer.version = '0.0.0';
+                        }
+                      } catch (e) {
+                        // swallow any errors here; we don't want to break the app
+                      }
+                      return originalInject.apply(this, arguments);
+                    };
+                    hook.inject.__wrapped_for_version_guard__ = true;
+                  }
+                } catch (e) {}
+              })();`,
+            }}
+          />
+        </head>
+      )}
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >

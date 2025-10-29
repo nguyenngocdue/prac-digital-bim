@@ -1,9 +1,10 @@
 "use client";
 import { Button } from "@/components/ui/button";
-import { useRouter } from "next/navigation";
+import { useNavigate } from "@tanstack/react-router";
 
 const LeftPanel = () => {
-  const router = useRouter();
+  // useNavigate is provided by the TanStack Router mounted at the app root
+  const navigate: any = useNavigate();
 
   const openRandomProject = () => {
     let id = "";
@@ -15,7 +16,8 @@ const LeftPanel = () => {
       id = Math.random().toString(36).slice(2, 10);
     }
 
-    router.push(`/project?id=${id}`);
+  // navigate to the project detail route
+  navigate(`/project/${id}`);
   };
 
   return (
