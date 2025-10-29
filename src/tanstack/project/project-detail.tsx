@@ -2,7 +2,7 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { useRouter, useSearchParams } from "next/navigation";
-import View3dPanelsLayout from "@/components/3d-viewers/view3d-panels-layout";
+import View3dPanelsLayout from "@/components/3d-viewers";
 
 type Props = {
   id?: string | null;

@@ -23,7 +23,7 @@ const Viewer = () => {
   }, []);
 
   return (
-    <div className="w-full h-full bg-card">
+    <div className="w-full h-full bg-background/50">
       <Canvas camera={{ position: [3, 2, 3], fov: 50 }}>
         <ambientLight intensity={0.6} />
         <directionalLight position={[5, 5, 5]} intensity={1} />

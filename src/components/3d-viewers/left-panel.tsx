@@ -21,7 +21,7 @@ const LeftPanel = () => {
   };
 
   return (
-    <div className="h-full p-4 bg-card text-foreground">
+    <div className="h-full p-4 bg-background/50 text-foreground">
       <h2 className="mb-2 text-sm font-medium">Left Panel</h2>
       <div className="text-sm text-muted-foreground mb-4">Tools, layers, or scene graph go here.</div>
       <div className="mt-4">

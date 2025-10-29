@@ -8,8 +8,8 @@ import {
   createRoute,
   Outlet,
 } from "@tanstack/react-router";
-import PanelsLayout from "@/components/panels-layout";
 import ProjectIndex from "./project/project-index";
+import View3dPanelsLayout from "@/components/3d-viewers";
 
 const rootRoute = createRootRoute({
   component: () => <Outlet />,
@@ -18,7 +18,7 @@ const rootRoute = createRootRoute({
 const homeRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/",
-  component: () => <PanelsLayout />,
+  component: () => <View3dPanelsLayout />,
 });
 
 const projectRoute = createRoute({
