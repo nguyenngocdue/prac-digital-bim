@@ -2,6 +2,7 @@
 import { Canvas } from "@react-three/fiber";
 import { Grid, OrbitControls, Stats } from "@react-three/drei";
 import { useEffect, useState } from "react";
+import { AxesWithLabels } from "./standards/axes-with-labels";
 
 const PlaceholderBox = ({ color }: { color: string }) => {
   return (
@@ -29,7 +30,8 @@ const Viewer = () => {
         <directionalLight position={[5, 5, 5]} intensity={1} />
         <PlaceholderBox color={accent || "#06b6d4"} />
         <OrbitControls />
-        <axesHelper args={[5]} />
+        {/* <axesHelper args={[5]} /> */}
+        <AxesWithLabels size={4} fontSize={0.3} labelOffset={4.2} billboard />
         <Grid
           infiniteGrid
           sectionColor="#444"

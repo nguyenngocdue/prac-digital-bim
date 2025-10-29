@@ -1,5 +1,5 @@
 "use client";
-import Viewer from "../viewer";
+import Viewer from "./viewer";
 
 const MiddlePanel = () => {
   return (
