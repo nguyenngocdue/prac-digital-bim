@@ -1,6 +1,6 @@
 "use client";
 import { Canvas } from "@react-three/fiber";
-import { OrbitControls } from "@react-three/drei";
+import { Grid, OrbitControls, Stats } from "@react-three/drei";
 import { useEffect, useState } from "react";
 
 const PlaceholderBox = ({ color }: { color: string }) => {
@@ -24,11 +24,22 @@ const Viewer = () => {
 
   return (
     <div className="w-full h-full bg-background/50">
-      <Canvas camera={{ position: [3, 2, 3], fov: 50 }}>
+      <Canvas camera={{ position: [5, 5, 5], fov: 50 }}>
         <ambientLight intensity={0.6} />
         <directionalLight position={[5, 5, 5]} intensity={1} />
         <PlaceholderBox color={accent || "#06b6d4"} />
         <OrbitControls />
+        <axesHelper args={[5]} />
+        <Grid
+          infiniteGrid
+          sectionColor="#444"
+          cellColor="#666"
+          fadeDistance={40}
+          fadeStrength={1}
+          sectionThickness={1.2}
+          cellThickness={0.4}
+        />
+        <Stats />
       </Canvas>
     </div>
   );
