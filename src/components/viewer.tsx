@@ -34,10 +34,10 @@ const Viewer = () => {
           infiniteGrid
           sectionColor="#444"
           cellColor="#666"
-          fadeDistance={40}
+          fadeDistance={60}
           fadeStrength={1}
-          sectionThickness={1.2}
-          cellThickness={0.4}
+          sectionThickness={0.5}
+          cellThickness={0.3}
         />
         <Stats />
       </Canvas>
