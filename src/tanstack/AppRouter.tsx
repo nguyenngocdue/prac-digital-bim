@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect } from "react";
+import React from "react";
 import { createBrowserHistory } from "@tanstack/history";
 import {
   createRouter,
@@ -30,19 +30,13 @@ const projectRoute = createRoute({
 
 const AppRouter = () => {
   // create the router only on the client to avoid SSR errors (history uses window)
-  const [router, setRouter] = React.useState<any>(null);
-
-  useEffect(() => {
-    const r = createRouter({
+  const [router] = React.useState<any>(() =>
+    createRouter({
       history: createBrowserHistory(),
       // create a routeTree from the root and its children
       routeTree: rootRoute.addChildren([homeRoute, projectRoute]),
-    } as any);
-    // NOTE: we need to reference projectRoute variable; avoid shadowing
-    // but TS/ES imports here are fine — recreate router and set it
-    setRouter(r);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    } as any)
+  );
 
   // RouterProvider renders Matches internally; pass router as any to avoid strict types here
   const RP: any = RouterProvider;

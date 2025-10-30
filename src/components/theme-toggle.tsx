@@ -7,15 +7,20 @@ const ThemeToggle = () => {
   const [theme, setTheme] = useState<"light" | "dark">("light");
 
   useEffect(() => {
-    // initialize from localStorage or system preference
-    const stored = typeof window !== "undefined" ? localStorage.getItem("theme") : null;
-    if (stored === "dark" || stored === "light") {
-      setTheme(stored);
-      document.documentElement.classList.toggle("dark", stored === "dark");
-    } else if (typeof window !== "undefined") {
+    if (typeof window === "undefined") return;
+    try {
+      const stored = localStorage.getItem("theme");
+      if (stored === "dark" || stored === "light") {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setTheme(stored);
+        document.documentElement.classList.toggle("dark", stored === "dark");
+        return;
+      }
       const prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
       setTheme(prefersDark ? "dark" : "light");
       document.documentElement.classList.toggle("dark", prefersDark);
+    } catch {
+      // ignore
     }
   }, []);
 

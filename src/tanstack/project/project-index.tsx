@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 
@@ -16,21 +16,24 @@ const ProjectIndex = () => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [name, setName] = useState("");
 
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) setProjects(JSON.parse(raw));
-    } catch (e) {
-      // ignore
-    }
-  }, []);
-
   const persist = (items: Project[]) => {
     setProjects(items);
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
     } catch {}
   };
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setProjects(JSON.parse(raw));
+      }
+    } catch (e) {
+      // ignore
+    }
+  }, []);
 
   const createProject = () => {
     const id = typeof crypto !== "undefined" && (crypto as any).randomUUID ? (crypto as any).randomUUID() : Math.random().toString(36).slice(2, 10);

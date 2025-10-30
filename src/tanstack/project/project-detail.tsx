@@ -1,5 +1,4 @@
 "use client";
-import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import View3dPanelsLayout from "@/components/3d-viewers";
 
@@ -9,17 +8,13 @@ type Props = {
 
 const ProjectDetail = ({ id }: Props) => {
   const searchParams = useSearchParams();
-  const [projectId, setProjectId] = useState<string | null>(id ?? null);
-
-  useEffect(() => {
-    if (projectId) return;
+  const projectId = (() => {
     try {
-      const fromQuery = searchParams?.get("id");
-      setProjectId(fromQuery);
+      return id ?? (searchParams ? searchParams.get("id") : null);
     } catch {
-      setProjectId(null);
+      return id ?? null;
     }
-  }, [projectId, searchParams]);
+  })();
 
 
   if (!projectId) {
@@ -29,7 +24,7 @@ const ProjectDetail = ({ id }: Props) => {
   }
 
   return (
-    <View3dPanelsLayout />
+      <View3dPanelsLayout />
   );
 };
 
