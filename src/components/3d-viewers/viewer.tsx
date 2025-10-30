@@ -106,7 +106,7 @@ const Viewer = () => {
           renderPriority={1} // make sure the gizmo is rendered on top of other elements
         >
           <GizmoViewcube
-            color="#cfd8dc"
+            color="#9eacb8"
             strokeColor="#1a1a1a"
             textColor="#141523"
             hoverColor="#90a4ae"
