@@ -59,11 +59,11 @@ const Viewer = () => {
 
   return (
     <div className="w-full h-full bg-background/50">
-    <Canvas camera={{ position: [5, 5, 5], fov: 50 }}>
+      <Canvas camera={{ position: [5, 5, 5], fov: 50 }}>
         <RaycastCatcher accent={accent} />
         <ambientLight intensity={0.6} />
         <directionalLight position={[5, 5, 5]} intensity={1} />
-          <PlaceholderBox color={accent || "#06b6d4"} />
+        <PlaceholderBox color={accent || "#06b6d4"} />
         <Select box multiple>
           {boxes.map((box, i) => (
             <PlaceholderBox
