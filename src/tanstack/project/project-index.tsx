@@ -1,5 +1,5 @@
 "use client";
-import React from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 
@@ -13,10 +13,10 @@ const STORAGE_KEY = "projects_v1";
 
 const ProjectIndex = () => {
   const router = useRouter();
-  const [projects, setProjects] = React.useState<Project[]>([]);
-  const [name, setName] = React.useState("");
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [name, setName] = useState("");
 
-  React.useEffect(() => {
+  useEffect(() => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (raw) setProjects(JSON.parse(raw));
@@ -38,11 +38,11 @@ const ProjectIndex = () => {
     persist([p, ...projects]);
     setName("");
     // navigate to the new project detail via query param under /app
-    router.push(`/app/project?id=${id}`);
+    router.push(`project/viewer?id=${id}`);
   };
 
   const openProject = (id: string) => {
-    router.push(`/app/project?id=${id}`);
+    router.push(`project/viewer?id=${id}`);
   };
 
   return (

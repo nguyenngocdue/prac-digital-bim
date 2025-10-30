@@ -38,6 +38,8 @@ const PlaceholderBox = ({ color, position, onSelectEffect }: { color: string, po
 const Viewer = () => {
   const [accent, setAccent] = useState<string>("#06b6d4");
   const { boxes, setBoxes, creationMode, setCreationMode } = useBoxContext();
+  const [contextLost, setContextLost] = useState(false);
+  const canvasElRef = useRef<HTMLCanvasElement | null>(null);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -59,9 +61,47 @@ const Viewer = () => {
 
 
   // Import RaycastCatcher from its new file
+  // Attach handlers to the canvas to detect WebGL context loss and restoration.
+  const handleCanvasCreated = (state: any) => {
+    try {
+      const canvas: HTMLCanvasElement = state.gl.domElement as HTMLCanvasElement;
+      canvasElRef.current = canvas;
+      const onLost = (e: Event) => {
+        // Prevent default to allow manual restoration attempts in some browsers
+        try { (e as any).preventDefault?.(); } catch {}
+        console.error("WebGL context lost.");
+        setContextLost(true);
+      };
+      const onRestore = () => {
+        console.log("WebGL context restored.");
+        setContextLost(false);
+      };
+      canvas.addEventListener("webglcontextlost", onLost, false);
+      canvas.addEventListener("webglcontextrestored", onRestore, false);
+      // store handlers so they can be removed on unmount
+      (canvas as any).__onLost = onLost;
+      (canvas as any).__onRestore = onRestore;
+    } catch (err) {
+      // ignore
+    }
+  };
+
+  // cleanup canvas listeners on unmount
+  useEffect(() => {
+    return () => {
+      const canvas = canvasElRef.current;
+      if (canvas) {
+        const onLost = (canvas as any).__onLost;
+        const onRestore = (canvas as any).__onRestore;
+        if (onLost) canvas.removeEventListener("webglcontextlost", onLost);
+        if (onRestore) canvas.removeEventListener("webglcontextrestored", onRestore);
+      }
+    };
+  }, []);
+
   return (
     <div className="w-full h-full bg-background/50">
-    <Canvas camera={{ position: [5, 5, 5], fov: 50 }}>
+    <Canvas onCreated={handleCanvasCreated} camera={{ position: [5, 5, 5], fov: 50 }}>
         <RaycastCatcher accent={accent} />
         <ambientLight intensity={0.6} />
         <directionalLight position={[5, 5, 5]} intensity={1} />
@@ -115,6 +155,16 @@ const Viewer = () => {
           />
         </GizmoHelper>
       </Canvas>
+      {contextLost && (
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <div className="bg-black/70 text-white p-4 rounded pointer-events-auto">
+            <div className="mb-2">WebGL context lost. Please reload the page.</div>
+            <div className="flex gap-2 justify-end">
+              <button className="px-3 py-1 bg-white text-black rounded" onClick={() => window.location.reload()}>Reload</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

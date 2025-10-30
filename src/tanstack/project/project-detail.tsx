@@ -1,7 +1,6 @@
 "use client";
-import React from "react";
-import { Button } from "@/components/ui/button";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import View3dPanelsLayout from "@/components/3d-viewers";
 
 type Props = {
@@ -9,11 +8,10 @@ type Props = {
 };
 
 const ProjectDetail = ({ id }: Props) => {
-  const router = useRouter();
   const searchParams = useSearchParams();
-  const [projectId, setProjectId] = React.useState<string | null>(id ?? null);
+  const [projectId, setProjectId] = useState<string | null>(id ?? null);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (projectId) return;
     try {
       const fromQuery = searchParams?.get("id");
@@ -22,6 +20,7 @@ const ProjectDetail = ({ id }: Props) => {
       setProjectId(null);
     }
   }, [projectId, searchParams]);
+
 
   if (!projectId) {
     return (

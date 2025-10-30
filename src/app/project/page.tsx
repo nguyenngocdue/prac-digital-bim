@@ -1,6 +1,11 @@
+"use client";
 import ProjectIndex from '@/tanstack/project/project-index';
+import { Suspense } from 'react';
 
 export default function ProjectPage() {
-  // Render the project index (client) directly so the list + create UI appears
-  return <ProjectIndex />;
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <ProjectIndex />
+    </Suspense>
+  );
 }
