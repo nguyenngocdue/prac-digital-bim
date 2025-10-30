@@ -1,5 +1,5 @@
 "use client";
-import React from "react";
+import { useEffect, useState } from "react";
 import { createBrowserHistory } from "@tanstack/history";
 import { createRouter, createRootRoute, createRoute, RouterProvider } from "@tanstack/react-router";
 import ProjectIndex from "./project-index";
@@ -20,9 +20,9 @@ const projectIndexRoute = createRoute({
 });
 
 const ProjectRouter = () => {
-  const [router, setRouter] = React.useState<any>(null);
+  const [router, setRouter] = useState<any>(null);
 
-  React.useEffect(() => {
+  useEffect(() => {
     const r = createRouter({
       history: createBrowserHistory(),
       routeTree: rootRoute.addChildren([projectIndexRoute, projectDetailRoute]),

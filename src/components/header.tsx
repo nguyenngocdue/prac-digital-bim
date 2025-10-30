@@ -11,8 +11,7 @@ export default function Header() {
             Prac Digital BIM — Web3D
           </Link>
           <nav className="hidden md:flex gap-3 text-sm text-zinc-600 dark:text-zinc-300">
-            <Link href="/app" className="hover:underline">Projects</Link>
-            <Link href="/app" className="hover:underline">Viewer</Link>
+            <Link href="/project" className="hover:underline">Projects</Link>
           </nav>
         </div>
 

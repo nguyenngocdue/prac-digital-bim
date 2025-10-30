@@ -4,7 +4,7 @@ import { useBoxContext } from "../app/contexts/box-context";
 import { useThree } from "@react-three/fiber";
 
 export function RaycastCatcher({ accent }: { accent: string }) {
-  const { boxes, setBoxes, creationMode } = useBoxContext();
+  const { setBoxes, creationMode } = useBoxContext();
   const { camera, scene, gl } = useThree();
   return (
     <mesh
@@ -22,7 +22,7 @@ export function RaycastCatcher({ accent }: { accent: string }) {
         raycaster.setFromCamera(mouse, camera);
         // Intersect with all meshes in the scene
         const intersects = raycaster.intersectObjects(scene.children, true);
-        if (intersects.length > 0) {
+        if (intersects.length > 0 && intersects[0]?.point) {
           const point = intersects[0].point;
           setBoxes((prev) => [...prev, { position: [point.x, point.y + 0.75, point.z], color: accent }]);
         }
