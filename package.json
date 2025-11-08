@@ -17,6 +17,7 @@
     "@tanstack/react-router": "^1.133.32",
     "@tanstack/react-router-devtools": "^1.133.32",
     "@types/three": "^0.180.0",
+    "cesium": "^1.135.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^0.548.0",

@@ -4,7 +4,11 @@ import { useEffect, useState, useRef } from "react";
 import { useBoxContext } from "../../app/contexts/box-context";
 import Scene from "./scene";
 
-const Viewer = () => {
+interface ViewerProps {
+  useCesium?: boolean;
+}
+
+const Viewer = ({ useCesium = true }: ViewerProps) => {
   const [accent, setAccent] = useState<string>("#06b6d4");
   const [mounted, setMounted] = useState(false);
   const { boxes, creationMode, setCreationMode, projectId } = useBoxContext();
@@ -57,17 +61,21 @@ const Viewer = () => {
 
   return (
     <div className="w-full h-full bg-background/50">
-      <Canvas 
-        key={canvasKey}
-        camera={{ position: [5, 5, 5], fov: 50 }}
-        gl={{ 
-          preserveDrawingBuffer: true,
-          antialias: true,
-          powerPreference: "high-performance"
-        }}
-      >
-        <Scene boxes={boxes} accent={accent} />
-      </Canvas>
+      {useCesium ? (
+        <Scene boxes={boxes} accent={accent} useCesium={true} />
+      ) : (
+        <Canvas 
+          key={canvasKey}
+          camera={{ position: [5, 5, 5], fov: 50 }}
+          gl={{ 
+            preserveDrawingBuffer: true,
+            antialias: true,
+            powerPreference: "high-performance"
+          }}
+        >
+          <Scene boxes={boxes} accent={accent} useCesium={false} />
+        </Canvas>
+      )}
     </div>
   );
 }

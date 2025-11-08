@@ -1,20 +1,29 @@
 "use client";
 import { memo } from "react";
-import { GizmoHelper, GizmoViewcube, Grid, OrbitControls, Select } from "@react-three/drei";
-import { AxesWithLabels } from "./standards/axes-with-labels";
-import { RaycastCatcher } from "@/lib/raycast-catcher";
-import * as THREE from "three";
-import { Stats } from "@react-three/drei";
-import { PlaceholderBox } from "./standards/placeholder-box";
+import { CesiumViewer } from "./cesium/cesium-viewer";
 
 type Box = { position: [number, number, number], color?: string };
 
 interface SceneProps {
   boxes: Box[];
   accent: string;
+  useCesium?: boolean;
 }
 
-const Scene = memo(({ boxes, accent }: SceneProps) => {
+const Scene = memo(({ boxes, accent, useCesium = false }: SceneProps) => {
+  // If Cesium mode is enabled, render Cesium viewer
+  if (useCesium) {
+    return <CesiumViewer className="w-full h-full" />;
+  }
+
+  // Otherwise render the Three.js scene (keeping original code for backwards compatibility)
+  // Import Three.js components dynamically when needed
+  const { GizmoHelper, GizmoViewcube, Grid, OrbitControls, Select, Stats } = require("@react-three/drei");
+  const { AxesWithLabels } = require("./standards/axes-with-labels");
+  const { RaycastCatcher } = require("@/lib/raycast-catcher");
+  const THREE = require("three");
+  const { PlaceholderBox } = require("./standards/placeholder-box");
+
   return (
     <>
       <RaycastCatcher accent={accent} />
