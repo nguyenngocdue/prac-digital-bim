@@ -3,12 +3,15 @@ import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import LeftPanel from "./left-panel";
 import MiddlePanel from "./middle-panel";
 import RightPanel from "./right-panel";
-import { BoxProvider } from "../../app/contexts/box-context";
+import { BoxProvider } from "../../../app/contexts/box-context";
 
+type Props = {
+  projectId?: string;
+};
 
-const View3dPanelsLayout = () => {
+const View3dPanelsLayout = ({ projectId }: Props) => {
   return (
-    <BoxProvider>
+    <BoxProvider projectId={projectId}>
       <div className="w-full h-full min-h-0 border bg-background/50 overflow-hidden shadow-sm">
         <PanelGroup direction="horizontal" className="h-full">
           <Panel defaultSize={20} minSize={10}>

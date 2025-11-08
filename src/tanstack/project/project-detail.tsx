@@ -1,6 +1,6 @@
 "use client";
 import { useSearchParams } from "next/navigation";
-import View3dPanelsLayout from "@/components/3d-viewers";
+import View3dPanelsLayout from "@/components/3d-viewers/layouts";
 
 type Props = {
   id?: string | null;
@@ -24,7 +24,7 @@ const ProjectDetail = ({ id }: Props) => {
   }
 
   return (
-      <View3dPanelsLayout />
+      <View3dPanelsLayout projectId={projectId} />
   );
 };
 

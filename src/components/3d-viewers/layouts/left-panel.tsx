@@ -1,6 +1,6 @@
 "use client";
 import { Button } from "@/components/ui/button";
-import { useBoxContext } from "../../app/contexts/box-context";
+import { useBoxContext } from "../../../app/contexts/box-context";
 import { useNavigate } from "@tanstack/react-router";
 
 const LeftPanel = () => {

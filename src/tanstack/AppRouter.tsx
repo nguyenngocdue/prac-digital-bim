@@ -9,7 +9,7 @@ import {
   Outlet,
 } from "@tanstack/react-router";
 import ProjectIndex from "./project/project-index";
-import View3dPanelsLayout from "@/components/3d-viewers";
+import View3dPanelsLayout from "@/components/3d-viewers/layouts";
 
 const rootRoute = createRootRoute({
   component: () => <Outlet />,

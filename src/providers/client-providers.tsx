@@ -2,7 +2,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { AppProvider } from "@/stores/context";
 import { AppStore } from "@/stores/app-store";
-import { effect } from "@preact/signals-react";
 import SuspensePage from "@/components/suspense/suspense-page";
 
 type Props = {
@@ -29,23 +28,14 @@ export default function ClientProviders({ children }: Props) {
   }, [appStore]);
 
   useEffect(() => {
-    // call app initialization (may set appReady.value = true when done)
-    // fire-and-forget
-    void appStore.init();
-  }, [appStore]);
-
-  useEffect(() => {
-    // subscribe to the appReady signal using preact effect
-    const un = effect(() => {
-      setReady(Boolean(appStore.appReady?.value));
-    });
-    return () => {
-      try {
-        un();
-      } catch (e) {
-        // ignore
-      }
+    // Initialize app and wait for it to be ready
+    const initAndWait = async () => {
+      await appStore.init();
+      // After init completes, appReady.value should be true
+      setReady(appStore.appReady.value);
     };
+    
+    void initAndWait();
   }, [appStore]);
 
   // while not ready, show a lightweight fallback
