@@ -1,5 +1,7 @@
 "use client";
-import { memo } from "react";
+import { memo, Suspense } from "react";
+import { useGltfModel } from "./gltf/use-gltf-model";
+import { GltfModel } from "./gltf/gltf-model";
 
 type Box = { position: [number, number, number], color?: string };
 
@@ -7,9 +9,11 @@ interface SceneProps {
   boxes: Box[];
   accent: string;
   onToggleCesium?: (show: boolean) => void;
+  gltfUrl?: string | null;
+  resourceMap?: Map<string, string>;
 }
 
-const Scene = memo(({ boxes, accent }: SceneProps) => {
+const Scene = memo(({ boxes, accent, gltfUrl, resourceMap }: SceneProps) => {
 
   // Import Three.js components
   const { GizmoHelper, GizmoViewcube, Grid, OrbitControls, Select, Stats } = require("@react-three/drei");
@@ -17,6 +21,9 @@ const Scene = memo(({ boxes, accent }: SceneProps) => {
   const { RaycastCatcher } = require("@/lib/raycast-catcher");
   const THREE = require("three");
   const { PlaceholderBox } = require("./standards/placeholder-box");
+  
+  // Load GLTF model if URL is provided
+  const { scene: gltfScene } = useGltfModel({ url: gltfUrl || null, resourceMap });
 
   // Three.js scene
   const threeJsScene = (
@@ -39,6 +46,17 @@ const Scene = memo(({ boxes, accent }: SceneProps) => {
           />
         ))}
       </Select>
+
+      {/* GLTF Model */}
+      {gltfScene && (
+        <Suspense fallback={null}>
+          <GltfModel 
+            scene={gltfScene} 
+            position={[0, 0, 0]}
+            autoRotate={false}
+          />
+        </Suspense>
+      )}
 
       <OrbitControls />
       <AxesWithLabels size={4} fontSize={0.3} labelOffset={4.2} billboard />

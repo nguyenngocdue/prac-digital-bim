@@ -5,6 +5,7 @@ import { useBoxContext } from "../../app/contexts/box-context";
 import Scene from "./scene";
 import { CesiumViewer } from "./cesium/cesium-viewer";
 import { CesiumControls } from "./cesium/cesium-controls";
+import { GltfControls } from "./gltf/gltf-controls";
 
 interface ViewerProps {
   useCesium?: boolean;
@@ -14,6 +15,8 @@ const Viewer = ({  }: ViewerProps) => {
   const [accent, setAccent] = useState<string>("#06b6d4");
   const [mounted, setMounted] = useState(false);
   const [showCesium, setShowCesium] = useState(false);
+  const [gltfUrl, setGltfUrl] = useState<string | null>(null);
+  const [resourceMap, setResourceMap] = useState<Map<string, string>>();
   const { boxes, creationMode, setCreationMode, projectId } = useBoxContext();
   const canvasKey = useRef(`canvas-${projectId || 'default'}`).current;
 
@@ -73,8 +76,15 @@ const Viewer = ({  }: ViewerProps) => {
           powerPreference: "high-performance"
         }}
       >
-        <Scene boxes={boxes} accent={accent} />
+        <Scene boxes={boxes} accent={accent} gltfUrl={gltfUrl} resourceMap={resourceMap} />
       </Canvas>
+      
+      {/* GLTF Import Controls */}
+      <GltfControls onModelLoad={(url, map) => {
+        setGltfUrl(url);
+        setResourceMap(map);
+      }} />
+      
       {showCesium && (
         <div className="absolute inset-0 z-10">
           <CesiumViewer className="w-full h-full" />
