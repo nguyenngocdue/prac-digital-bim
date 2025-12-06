@@ -1,30 +1,25 @@
 "use client";
 import { memo } from "react";
-import { CesiumViewer } from "./cesium/cesium-viewer";
 
 type Box = { position: [number, number, number], color?: string };
 
 interface SceneProps {
   boxes: Box[];
   accent: string;
-  useCesium?: boolean;
+  onToggleCesium?: (show: boolean) => void;
 }
 
-const Scene = memo(({ boxes, accent, useCesium = false }: SceneProps) => {
-  // If Cesium mode is enabled, render Cesium viewer
-  if (useCesium) {
-    return <CesiumViewer className="w-full h-full" />;
-  }
+const Scene = memo(({ boxes, accent }: SceneProps) => {
 
-  // Otherwise render the Three.js scene (keeping original code for backwards compatibility)
-  // Import Three.js components dynamically when needed
+  // Import Three.js components
   const { GizmoHelper, GizmoViewcube, Grid, OrbitControls, Select, Stats } = require("@react-three/drei");
   const { AxesWithLabels } = require("./standards/axes-with-labels");
   const { RaycastCatcher } = require("@/lib/raycast-catcher");
   const THREE = require("three");
   const { PlaceholderBox } = require("./standards/placeholder-box");
 
-  return (
+  // Three.js scene
+  const threeJsScene = (
     <>
       <RaycastCatcher accent={accent} />
       <ambientLight intensity={0.6} />
@@ -73,6 +68,8 @@ const Scene = memo(({ boxes, accent, useCesium = false }: SceneProps) => {
       </GizmoHelper>
     </>
   );
+
+  return threeJsScene;
 });
 
 Scene.displayName = "Scene";

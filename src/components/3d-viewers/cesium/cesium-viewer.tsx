@@ -29,72 +29,77 @@ export const CesiumViewer = ({ className = "" }: CesiumViewerProps) => {
   useEffect(() => {
     if (!cesiumContainer.current) return;
 
+    let viewer: Cesium.Viewer | null = null;
+
     // Async function to initialize viewer with 3D buildings
     const initializeViewer = async () => {
-      // Initialize Cesium Viewer với các controls hữu ích
-      const viewer = new Cesium.Viewer(cesiumContainer.current!, {
-        // Bật các chức năng hữu ích
-        homeButton: true,              // Nút về vị trí ban đầu
-        fullscreenButton: true,        // Nút fullscreen
-        baseLayerPicker: true,         // Chọn loại bản đồ (Satellite, Streets, etc)
-        sceneModePicker: true,         // Chuyển đổi 2D/3D/Columbus
-        navigationHelpButton: true,    // Hướng dẫn điều khiển
-        
-        // Tắt các controls không cần thiết
+      if (!cesiumContainer.current) return;
+
+      // Initialize Cesium Viewer
+      viewer = new Cesium.Viewer(cesiumContainer.current, {
+        homeButton: true,
+        fullscreenButton: true,
+        baseLayerPicker: true,
+        sceneModePicker: true,
+        navigationHelpButton: true,
         animation: false,
         timeline: false,
         geocoder: false,
         infoBox: false,
         selectionIndicator: false,
-        
-        // Hide Cesium logo and credits
         creditContainer: document.createElement('div'),
       });
 
-      // Hide the credit display completely
+      // Hide the credit display
       const creditContainer = viewer.cesiumWidget.creditContainer as HTMLElement;
       if (creditContainer) {
         creditContainer.style.display = 'none';
       }
 
-      // Load terrain asynchronously
-      Cesium.createWorldTerrainAsync().then((terrainProvider) => {
-        viewer.terrainProvider = terrainProvider;
-      });
-
       viewerRef.current = viewer;
 
+      // Load terrain asynchronously
+      try {
+        const terrainProvider = await Cesium.createWorldTerrainAsync();
+        if (viewer && !viewer.isDestroyed()) {
+          viewer.terrainProvider = terrainProvider;
+        }
+      } catch (error) {
+        console.error('Error loading terrain:', error);
+      }
+
       // Enable lighting
-      viewer.scene.globe.enableLighting = true;
+      if (viewer && !viewer.isDestroyed()) {
+        viewer.scene.globe.enableLighting = true;
+      }
 
       // ===== RENDER 3D THEO GOOGLE MAPS =====
-      // Sử dụng Google Photorealistic 3D Tiles - đẹp hơn OSM Buildings
+      // Load 3D buildings
       try {
-        console.log('🔄 Loading Google Photorealistic 3D Tiles...');
+        console.log('Loading Google Photorealistic 3D Tiles...');
         
-        // Sử dụng helper function của Cesium để load Google 3D
         const googleTileset = await Cesium.createGooglePhotorealistic3DTileset();
-        viewer.scene.primitives.add(googleTileset);
+        if (viewer && !viewer.isDestroyed()) {
+          viewer.scene.primitives.add(googleTileset);
+          console.log('Google 3D Tiles added to scene');
+        }
         
-        console.log('✅ Google 3D Tiles added to scene');
-        console.log('📍 Tileset loaded. Zoom vào thành phố lớn để thấy 3D!');
-        
-      } catch (error: any) {
-        console.error('❌ Error loading Google 3D tiles:', error?.message || error);
-        console.log('🔄 Falling back to OSM Buildings...');
+      } catch (error) {
+        console.warn('Could not load Google 3D tiles, falling back to OSM Buildings');
         
         try {
-          // Fallback về OSM Buildings
           const osmBuildingsTileset = await Cesium.createOsmBuildingsAsync();
-          viewer.scene.primitives.add(osmBuildingsTileset);
-          
-          osmBuildingsTileset.style = new Cesium.Cesium3DTileStyle({
-            color: "color('white', 0.9)",
-            show: true,
-          });
-          console.log('✅ OSM Buildings loaded and ready!');
-        } catch (osmError: any) {
-          console.error('❌ Error loading OSM Buildings:', osmError?.message || osmError);
+          if (viewer && !viewer.isDestroyed()) {
+            viewer.scene.primitives.add(osmBuildingsTileset);
+            
+            osmBuildingsTileset.style = new Cesium.Cesium3DTileStyle({
+              color: "color('white', 0.9)",
+              show: true,
+            });
+            console.log('OSM Buildings loaded successfully');
+          }
+        } catch (osmError) {
+          console.error('Error loading OSM Buildings:', osmError);
         }
       }
 
@@ -108,31 +113,23 @@ export const CesiumViewer = ({ className = "" }: CesiumViewerProps) => {
         },
       });
 
-      // Thêm mũi tên định vị tại TP Hồ Chí Minh
+      // Thêm khối box định vị tại TP Hồ Chí Minh
       // Tọa độ: 10.8231° N, 106.6297° E
-      const hcmcPosition = Cesium.Cartesian3.fromDegrees(106.6297, 10.8231, 100); // 100m độ cao
+      const hcmcPosition = Cesium.Cartesian3.fromDegrees(50, 10.8231, 50); // 50m độ cao
       
-      // Tạo entity mũi tên
+      // Tạo entity box
       viewer.entities.add({
         name: 'TP Hồ Chí Minh',
         position: hcmcPosition,
-        // Mũi tên 3D hướng lên trên
-        model: {
-          uri: '/cesium/Assets/Models/arrow.glb', // Nếu có model
-          minimumPixelSize: 64,
-          maximumScale: 20000,
-        },
-        // Hoặc dùng cylinder để tạo mũi tên đơn giản
-        cylinder: {
-          length: 200.0,
-          topRadius: 0.0,
-          bottomRadius: 30.0,
-          material: Cesium.Color.RED.withAlpha(0.8),
+        // Khối box 3D
+        box: {
+          dimensions: new Cesium.Cartesian3(100.0, 100.0, 100.0), // Kích thước 100m x 100m x 100m
+          material: Cesium.Color.RED.withAlpha(0.7),
           outline: true,
           outlineColor: Cesium.Color.WHITE,
           outlineWidth: 2.0,
         },
-        // Label cho mũi tên
+        // Label cho box
         label: {
           text: 'TP Hồ Chí Minh',
           font: '18px sans-serif',
@@ -141,7 +138,7 @@ export const CesiumViewer = ({ className = "" }: CesiumViewerProps) => {
           outlineWidth: 2,
           style: Cesium.LabelStyle.FILL_AND_OUTLINE,
           verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
-          pixelOffset: new Cesium.Cartesian2(0, -250), // Hiển thị label phía trên mũi tên
+          pixelOffset: new Cesium.Cartesian2(0, -80), // Hiển thị label phía trên box
           disableDepthTestDistance: Number.POSITIVE_INFINITY, // Luôn hiển thị
         },
       });
