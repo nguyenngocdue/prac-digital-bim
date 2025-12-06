@@ -2,6 +2,10 @@
 import { memo, Suspense } from "react";
 import { useGltfModel } from "./gltf/use-gltf-model";
 import { GltfModel } from "./gltf/gltf-model";
+import { RoomLabelsLayer } from "./iot/room-labels-layer";
+import { RoomConnections } from "./iot/room-connections";
+import { RoomMarkersLayer } from "./iot/room-markers-layer";
+import { mockRooms } from "@/data/mock-rooms";
 
 type Box = { position: [number, number, number], color?: string };
 
@@ -11,9 +15,10 @@ interface SceneProps {
   onToggleCesium?: (show: boolean) => void;
   gltfUrl?: string | null;
   resourceMap?: Map<string, string>;
+  showRoomLabels?: boolean;
 }
 
-const Scene = memo(({ boxes, accent, gltfUrl, resourceMap }: SceneProps) => {
+const Scene = memo(({ boxes, accent, gltfUrl, resourceMap, showRoomLabels = false }: SceneProps) => {
 
   // Import Three.js components
   const { GizmoHelper, GizmoViewcube, Grid, OrbitControls, Select, Stats } = require("@react-three/drei");
@@ -57,6 +62,15 @@ const Scene = memo(({ boxes, accent, gltfUrl, resourceMap }: SceneProps) => {
           />
         </Suspense>
       )}
+
+      {/* IoT Room Labels */}
+      <RoomLabelsLayer rooms={mockRooms} visible={showRoomLabels} />
+      
+      {/* IoT Connection Lines */}
+      <RoomConnections rooms={mockRooms} visible={showRoomLabels} />
+      
+      {/* IoT Room Markers on Floor */}
+      <RoomMarkersLayer rooms={mockRooms} visible={showRoomLabels} />
 
       <OrbitControls />
       <AxesWithLabels size={4} fontSize={0.3} labelOffset={4.2} billboard />

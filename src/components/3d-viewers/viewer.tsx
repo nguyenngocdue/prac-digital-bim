@@ -6,6 +6,8 @@ import Scene from "./scene";
 import { CesiumViewer } from "./cesium/cesium-viewer";
 import { CesiumControls } from "./cesium/cesium-controls";
 import { GltfControls } from "./gltf/gltf-controls";
+import { IotControls } from "./iot/iot-controls";
+import { IotLegend } from "./iot/iot-legend";
 
 interface ViewerProps {
   useCesium?: boolean;
@@ -15,6 +17,7 @@ const Viewer = ({  }: ViewerProps) => {
   const [accent, setAccent] = useState<string>("#06b6d4");
   const [mounted, setMounted] = useState(false);
   const [showCesium, setShowCesium] = useState(false);
+  const [showRoomLabels, setShowRoomLabels] = useState(true);
   const [gltfUrl, setGltfUrl] = useState<string | null>(null);
   const [resourceMap, setResourceMap] = useState<Map<string, string>>();
   const { boxes, creationMode, setCreationMode, projectId } = useBoxContext();
@@ -76,7 +79,13 @@ const Viewer = ({  }: ViewerProps) => {
           powerPreference: "high-performance"
         }}
       >
-        <Scene boxes={boxes} accent={accent} gltfUrl={gltfUrl} resourceMap={resourceMap} />
+        <Scene 
+          boxes={boxes} 
+          accent={accent} 
+          gltfUrl={gltfUrl} 
+          resourceMap={resourceMap}
+          showRoomLabels={showRoomLabels}
+        />
       </Canvas>
       
       {/* GLTF Import Controls */}
@@ -94,6 +103,15 @@ const Viewer = ({  }: ViewerProps) => {
         showCesium={showCesium}
         onToggle={() => setShowCesium(!showCesium)}
       />
+      
+      {/* IoT Room Labels Controls */}
+      <IotControls
+        showLabels={showRoomLabels}
+        onToggleLabels={() => setShowRoomLabels(!showRoomLabels)}
+      />
+      
+      {/* IoT Legend */}
+      {showRoomLabels && <IotLegend />}
     </div>
   );
 }
