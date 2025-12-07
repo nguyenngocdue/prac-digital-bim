@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { X, Maximize2, Download, Camera as CameraIcon, RefreshCw } from "lucide-react";
 import { CameraData } from "@/types/camera";
 import { getCameraFeed } from "@/data/mock-cameras";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import Hls from "hls.js";
 
 interface CameraViewerPanelProps {
   camera: CameraData | null;
@@ -18,6 +19,8 @@ export const CameraViewerPanel = ({
   className = "" 
 }: CameraViewerPanelProps) => {
   const [refreshKey, setRefreshKey] = useState(0);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const hlsRef = useRef<Hls | null>(null);
   
   // Auto-refresh for image streams every 2 seconds
   useEffect(() => {
@@ -30,6 +33,81 @@ export const CameraViewerPanel = ({
       }, 2000); // Refresh every 2 seconds
       
       return () => clearInterval(interval);
+    }
+  }, [camera]);
+
+  // HLS player setup
+  useEffect(() => {
+    if (!camera || !videoRef.current) return;
+
+    const feed = getCameraFeed(camera.id);
+    
+    // Only setup HLS for non-YouTube, non-image video streams
+    if (!feed.liveUrl || feed.isYouTube || feed.isImageStream) return;
+
+    const video = videoRef.current;
+
+    // Check if the URL is an HLS stream (.m3u8)
+    if (feed.liveUrl.includes('.m3u8')) {
+      if (Hls.isSupported()) {
+        // Use hls.js for browsers that don't natively support HLS
+        const hls = new Hls({
+          enableWorker: true,
+          lowLatencyMode: true,
+          backBufferLength: 90,
+        });
+        
+        hlsRef.current = hls;
+        
+        hls.loadSource(feed.liveUrl);
+        hls.attachMedia(video);
+        
+        hls.on(Hls.Events.MANIFEST_PARSED, () => {
+          console.log('✅ HLS manifest loaded, attempting to play:', camera.name);
+          video.play().catch(err => {
+            console.warn('Auto-play blocked, user interaction needed:', err);
+          });
+        });
+        
+        hls.on(Hls.Events.ERROR, (event, data) => {
+          console.error('❌ HLS Error:', data);
+          if (data.fatal) {
+            switch (data.type) {
+              case Hls.ErrorTypes.NETWORK_ERROR:
+                console.error('Network error, attempting to recover...');
+                hls.startLoad();
+                break;
+              case Hls.ErrorTypes.MEDIA_ERROR:
+                console.error('Media error, attempting to recover...');
+                hls.recoverMediaError();
+                break;
+              default:
+                console.error('Fatal error, destroying HLS instance');
+                hls.destroy();
+                break;
+            }
+          }
+        });
+
+        return () => {
+          if (hlsRef.current) {
+            hlsRef.current.destroy();
+            hlsRef.current = null;
+          }
+        };
+      } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+        // Native HLS support (Safari)
+        video.src = feed.liveUrl;
+        video.addEventListener('loadedmetadata', () => {
+          console.log('✅ Native HLS loaded:', camera.name);
+          video.play().catch(err => {
+            console.warn('Auto-play blocked:', err);
+          });
+        });
+      }
+    } else {
+      // Regular video file (MP4, etc.)
+      video.src = feed.liveUrl;
     }
   }, [camera]);
   
@@ -88,27 +166,17 @@ export const CameraViewerPanel = ({
                   allowFullScreen
                   title={camera.name}
                 />
-              ) : feed.liveUrl && !feed.isImageStream ? (
+              ) : feed.liveUrl && !feed.isImageStream && !feed.isYouTube ? (
+                // HLS/MP4 Video stream with hls.js support
                 <video
+                  ref={videoRef}
                   key={camera.id}
                   autoPlay
                   muted
-                  loop
                   playsInline
                   controls
                   className="w-full h-full object-contain"
-                  src={feed.liveUrl}
-                  onError={(e) => {
-                    console.error('Failed to load video stream:', feed.liveUrl);
-                  }}
-                  onLoadedData={() => {
-                    console.log('✅ Video stream loaded:', camera.name);
-                  }}
-                >
-                  <source src={feed.liveUrl} type="application/x-mpegURL" />
-                  <source src={feed.liveUrl} type="video/mp4" />
-                  Your browser does not support the video tag.
-                </video>
+                />
               ) : feed.liveUrl && feed.isImageStream ? (
                 <img 
                   key={refreshKey} // Force refresh

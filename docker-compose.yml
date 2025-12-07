@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  mediamtx:
+    image: bluenviron/mediamtx:latest
+    container_name: mediamtx-rtsp-server
+    restart: unless-stopped
+    ports:
+      - "8554:8554"   # RTSP server
+      - "8888:8888"   # HLS server
+      - "8889:8889"   # WebRTC server
+      - "8890:8890"   # WebRTC server (UDP)
+      - "1935:1935"   # RTMP server
+    volumes:
+      - ./mediamtx.yml:/mediamtx.yml
+    environment:
+      - MTX_PROTOCOLS=tcp
+    networks:
+      - camera-network
+
+networks:
+  camera-network:
+    driver: bridge

@@ -1,0 +1,61 @@
+# MediaMTX Configuration for RTSP to HLS Streaming
+
+# API settings
+api: yes
+apiAddress: :9997
+
+# Path defaults
+pathDefaults:
+  # Source settings
+  sourceProtocol: automatic
+  sourceOnDemand: yes
+  sourceOnDemandStartTimeout: 10s
+  sourceOnDemandCloseAfter: 10s
+
+  # General settings
+  runOnInit: ""
+  runOnInitRestart: no
+  runOnDemand: ""
+  runOnDemandRestart: no
+  runOnDemandStartTimeout: 10s
+  runOnDemandCloseAfter: 10s
+  runOnReady: ""
+  runOnReadyRestart: no
+  runOnRead: ""
+  runOnReadRestart: no
+  runOnUnread: ""
+
+# RTSP server settings
+rtspAddress: :8554
+protocols: [tcp]
+encryption: "no"
+rtpAddress: :8000
+rtcpAddress: :8001
+
+# HLS server settings (for web browsers)
+hlsAddress: :8888
+hlsAllowOrigin: "*"
+hlsVariant: lowLatency
+hlsSegmentCount: 7
+hlsSegmentDuration: 1s
+hlsPartDuration: 200ms
+hlsSegmentMaxSize: 50M
+
+# WebRTC server settings (optional, for ultra-low latency)
+webrtcAddress: :8889
+webrtcAllowOrigin: "*"
+
+# Camera paths configuration
+paths:
+  # Your IP Camera
+  ipcamera1:
+    source: rtsp://admin:L2E338CA@192.168.1.49:554/cam/realmonitor?channel=1&subtype=0
+    sourceOnDemand: yes
+    sourceOnDemandStartTimeout: 10s
+    sourceOnDemandCloseAfter: 10s
+    
+  # Add more cameras here if needed
+  # ipcamera2:
+  #   source: rtsp://username:password@192.168.1.50:554/stream
+  #   sourceProtocol: rtsp
+  #   sourceOnDemand: yes
