@@ -5,7 +5,9 @@ import { GltfModel } from "./gltf/gltf-model";
 import { RoomLabelsLayer } from "./iot/room-labels-layer";
 import { RoomConnections } from "./iot/room-connections";
 import { RoomMarkersLayer } from "./iot/room-markers-layer";
+import { CameraMarkersLayer } from "./cameras/camera-markers-layer";
 import { mockRooms } from "@/data/mock-rooms";
+import { CameraData } from "@/types/camera";
 
 type Box = { position: [number, number, number], color?: string };
 
@@ -16,9 +18,13 @@ interface SceneProps {
   gltfUrl?: string | null;
   resourceMap?: Map<string, string>;
   showRoomLabels?: boolean;
+  cameras?: CameraData[];
+  showCameras?: boolean;
+  onCameraClick?: (camera: CameraData) => void;
+  selectedCameraId?: string | null;
 }
 
-const Scene = memo(({ boxes, accent, gltfUrl, resourceMap, showRoomLabels = false }: SceneProps) => {
+const Scene = memo(({ boxes, accent, gltfUrl, resourceMap, showRoomLabels = false, cameras = [], showCameras = false, onCameraClick, selectedCameraId }: SceneProps) => {
 
   // Import Three.js components
   const { GizmoHelper, GizmoViewcube, Grid, OrbitControls, Select, Stats } = require("@react-three/drei");
@@ -71,6 +77,14 @@ const Scene = memo(({ boxes, accent, gltfUrl, resourceMap, showRoomLabels = fals
       
       {/* IoT Room Markers on Floor */}
       <RoomMarkersLayer rooms={mockRooms} visible={showRoomLabels} />
+
+      {/* Camera Markers */}
+      <CameraMarkersLayer 
+        cameras={cameras} 
+        visible={showCameras}
+        onCameraClick={onCameraClick}
+        selectedCameraId={selectedCameraId}
+      />
 
       <OrbitControls />
       <AxesWithLabels size={4} fontSize={0.3} labelOffset={4.2} billboard />

@@ -8,6 +8,9 @@ import { CesiumControls } from "./cesium/cesium-controls";
 import { GltfControls } from "./gltf/gltf-controls";
 import { IotControls } from "./iot/iot-controls";
 import { IotLegend } from "./iot/iot-legend";
+import { CameraListPanel, CameraViewerPanel } from "./cameras";
+import { mockCameras } from "@/data/mock-cameras";
+import { CameraData } from "@/types/camera";
 
 interface ViewerProps {
   useCesium?: boolean;
@@ -18,6 +21,8 @@ const Viewer = ({  }: ViewerProps) => {
   const [mounted, setMounted] = useState(false);
   const [showCesium, setShowCesium] = useState(false);
   const [showRoomLabels, setShowRoomLabels] = useState(true);
+  const [showCameras, setShowCameras] = useState(true);
+  const [selectedCamera, setSelectedCamera] = useState<CameraData | null>(null);
   const [gltfUrl, setGltfUrl] = useState<string | null>(null);
   const [resourceMap, setResourceMap] = useState<Map<string, string>>();
   const { boxes, creationMode, setCreationMode, projectId } = useBoxContext();
@@ -85,6 +90,10 @@ const Viewer = ({  }: ViewerProps) => {
           gltfUrl={gltfUrl} 
           resourceMap={resourceMap}
           showRoomLabels={showRoomLabels}
+          cameras={mockCameras}
+          showCameras={showCameras}
+          onCameraClick={(camera) => setSelectedCamera(camera)}
+          selectedCameraId={selectedCamera?.id || null}
         />
       </Canvas>
       
@@ -112,6 +121,21 @@ const Viewer = ({  }: ViewerProps) => {
       
       {/* IoT Legend */}
       {showRoomLabels && <IotLegend />}
+      
+      {/* Camera List Panel */}
+      <CameraListPanel
+        cameras={mockCameras}
+        selectedCameraId={selectedCamera?.id || null}
+        onCameraSelect={(camera) => setSelectedCamera(camera)}
+        showCameras={showCameras}
+        onToggleCameras={() => setShowCameras(!showCameras)}
+      />
+      
+      {/* Camera Viewer Panel */}
+      <CameraViewerPanel
+        camera={selectedCamera}
+        onClose={() => setSelectedCamera(null)}
+      />
     </div>
   );
 }
