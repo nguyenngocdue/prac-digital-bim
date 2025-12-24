@@ -8,6 +8,13 @@ import type { CategoryGroup, NodeDefinition } from "@/types/workflow";
 // Input Nodes
 const INPUT_NODES: NodeDefinition[] = [
   {
+    id: "ifc-file",
+    label: "IFC File",
+    category: "Input",
+    icon: "📄",
+    description: "Load IFC file",
+  },
+  {
     id: "parameter",
     label: "Parameter",
     category: "Input",
@@ -97,22 +104,18 @@ const DATA_NODES: NodeDefinition[] = [
     badge: "WIP",
     description: "Define element relationships",
   },
-];
-
-// Analysis Nodes
-const ANALYSIS_NODES: NodeDefinition[] = [
   {
     id: "analysis",
     label: "Analysis",
-    category: "Analysis",
-    icon: "📈",
+    category: "Data",
+    icon: "📊",
     badge: "New",
     description: "Analyze data",
   },
   {
     id: "data-transform",
     label: "Data Transform",
-    category: "Analysis",
+    category: "Data",
     icon: "🔄",
     badge: "New",
     description: "Transform data structures",
@@ -120,29 +123,44 @@ const ANALYSIS_NODES: NodeDefinition[] = [
   {
     id: "ai-chat",
     label: "AI Chat",
-    category: "Analysis",
+    category: "Data",
     icon: "🤖",
     badge: "New",
     description: "AI-powered assistance",
+  },
+  {
+    id: "materials",
+    label: "Materials",
+    category: "Data",
+    icon: "🎨",
+    badge: "New",
+    description: "Material definitions",
   },
 ];
 
 // Output Nodes
 const OUTPUT_NODES: NodeDefinition[] = [
   {
-    id: "materials",
-    label: "Materials",
+    id: "3d-viewer",
+    label: "3D Viewer",
     category: "Output",
-    icon: "🎨",
-    badge: "New",
-    description: "Material definitions",
+    icon: "👁️",
+    description: "Visualize in 3D",
   },
   {
     id: "export-data",
     label: "Export Data",
     category: "Output",
     icon: "💾",
+    badge: "New",
     description: "Export results",
+  },
+  {
+    id: "watch-values",
+    label: "Watch Values",
+    category: "Output",
+    icon: "⏱️",
+    description: "Monitor values",
   },
 ];
 
@@ -165,11 +183,6 @@ export const NODE_CATEGORIES: CategoryGroup[] = [
     name: "Data",
     icon: "💾",
     nodes: DATA_NODES,
-  },
-  {
-    name: "Analysis",
-    icon: "📊",
-    nodes: ANALYSIS_NODES,
   },
   {
     name: "Output",
