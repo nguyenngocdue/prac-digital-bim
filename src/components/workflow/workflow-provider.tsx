@@ -11,6 +11,7 @@ type WorkflowContextType = {
   onEdgesChange: (changes: EdgeChange[]) => void;
   onConnect: (connection: Connection) => void;
   addNode: (type: string, position: { x: number; y: number }, data?: any) => void;
+  updateNodeData: (nodeId: string, data: any) => void;
   deleteNode: (id: string) => void;
   selectedNode: Node | null;
   setSelectedNode: (node: Node | null) => void;
@@ -66,6 +67,16 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
     setNodes((nds) => [...nds, newNode]);
   }, []);
 
+  const updateNodeData = useCallback((nodeId: string, newData: any) => {
+    setNodes((nds) =>
+      nds.map((node) =>
+        node.id === nodeId
+          ? { ...node, data: { ...node.data, ...newData } }
+          : node
+      )
+    );
+  }, []);
+
   const deleteNode = useCallback((id: string) => {
     setNodes((nds) => nds.filter((node) => node.id !== id));
     setEdges((eds) => eds.filter((edge) => edge.source !== id && edge.target !== id));
@@ -80,6 +91,7 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
         onEdgesChange,
         onConnect,
         addNode,
+        updateNodeData,
         deleteNode,
         selectedNode,
         setSelectedNode,
