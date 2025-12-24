@@ -10,7 +10,7 @@ type WorkflowContextType = {
   onNodesChange: (changes: NodeChange[]) => void;
   onEdgesChange: (changes: EdgeChange[]) => void;
   onConnect: (connection: Connection) => void;
-  addNode: (type: string, position: { x: number; y: number }) => void;
+  addNode: (type: string, position: { x: number; y: number }, data?: any) => void;
   deleteNode: (id: string) => void;
   selectedNode: Node | null;
   setSelectedNode: (node: Node | null) => void;
@@ -55,13 +55,13 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
     []
   );
 
-  const addNode = useCallback((type: string, position: { x: number; y: number }) => {
+  const addNode = useCallback((type: string, position: { x: number; y: number }, data?: any) => {
     const id = `${type}-${Date.now()}`;
     const newNode: Node = {
       id,
       type,
       position,
-      data: { label: type },
+      data: data || { label: type },
     };
     setNodes((nds) => [...nds, newNode]);
   }, []);

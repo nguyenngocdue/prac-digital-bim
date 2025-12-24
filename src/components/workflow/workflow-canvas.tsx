@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import {
   ReactFlow,
   Background,
@@ -8,23 +8,33 @@ import {
   MiniMap,
   BackgroundVariant,
   Panel,
+  type ReactFlowInstance,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { useWorkflow } from "./workflow-provider";
+import { IFCFileNode } from "./nodes/ifc-file-node";
+import { PythonNode } from "./nodes/python-node";
 import { Viewer3DPanel } from "./panels/viewer-3d-panel";
 import { AIChatPanel } from "./panels/ai-chat-panel";
 import { X } from "lucide-react";
 
 const nodeTypes = {
+  ifcFile: IFCFileNode,
+  python: PythonNode,
 };
 
 export function WorkflowCanvas() {
+  const reactFlowWrapper = useRef<HTMLDivElement>(null);
+  const [reactFlowInstance, setReactFlowInstance] = 
+    useState<ReactFlowInstance | null>(null);
+
   const {
     nodes,
     edges,
     onNodesChange,
     onEdgesChange,
     onConnect,
+    addNode,
     setSelectedNode,
     showViewer,
     setShowViewer,
@@ -39,9 +49,61 @@ export function WorkflowCanvas() {
     [setSelectedNode]
   );
 
+  // Xử lý khi kéo node từ sidebar vào canvas
+  const onDragOver = useCallback((event: React.DragEvent) => {
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "move";
+  }, []);
+
+  // Xử lý khi thả node vào canvas
+  const onDrop = useCallback(
+    (event: React.DragEvent) => {
+      event.preventDefault();
+
+      const type = event.dataTransfer.getData("application/reactflow");
+      if (!type || !reactFlowWrapper.current || !reactFlowInstance) return;
+
+      const reactFlowBounds = reactFlowWrapper.current.getBoundingClientRect();
+      
+      // Tính toán vị trí thả trong canvas
+      const position = reactFlowInstance.screenToFlowPosition({
+        x: event.clientX - reactFlowBounds.left,
+        y: event.clientY - reactFlowBounds.top,
+      });
+
+      // Tạo data mặc định cho từng loại node
+      let nodeData: any = { label: type };
+      
+      if (type === "ifc-file") {
+        nodeData = {
+          label: "building.ifc",
+          schema: "IFC2X3",
+          elements: 108,
+          filePath: "/path/to/building.ifc",
+        };
+      } else if (type === "python") {
+        nodeData = {
+          label: "Python Script",
+          status: "idle",
+        };
+      }
+
+      // Thêm node mới vào canvas
+      addNode(type, position, nodeData);
+    },
+    [addNode, reactFlowInstance]
+  );
+
+  const onInit = useCallback((instance: ReactFlowInstance) => {
+    setReactFlowInstance(instance);
+  }, []);
+
   return (
-    <div className="relative flex-1">
+    <div className="relative flex-1" ref={reactFlowWrapper}>
       <ReactFlow
+        onInit={onInit}
+        onDrop={onDrop}
+        onDragOver={onDragOver}
         nodes={nodes}
         edges={edges}
         onNodesChange={onNodesChange}
