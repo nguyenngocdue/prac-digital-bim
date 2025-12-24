@@ -1,0 +1,64 @@
+"use client";
+
+import { Play, Save, Upload, Download, Settings, Eye, EyeOff, MessageSquare } from "lucide-react";
+import { useWorkflow } from "./workflow-provider";
+
+export function WorkflowToolbar() {
+  const { showViewer, setShowViewer, showChat, setShowChat } = useWorkflow();
+
+  return (
+    <div className="flex items-center justify-between border-b border-zinc-800 bg-zinc-900/80 px-4 py-2 backdrop-blur-sm">
+      {/* Left Section */}
+      <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 text-sm font-semibold text-cyan-400">
+          <span className="text-lg">⚡</span>
+          <span>Workflow</span>
+        </div>
+      </div>
+
+      {/* Center Section */}
+      <div className="flex items-center gap-2">
+        <button className="flex items-center gap-2 rounded bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-emerald-500">
+          <Play className="h-3 w-3" />
+          <span>Run</span>
+        </button>
+        <button className="rounded border border-zinc-700 bg-zinc-800 px-3 py-1.5 text-xs font-medium text-zinc-300 transition-colors hover:bg-zinc-700">
+          <Save className="h-3 w-3" />
+        </button>
+        <button className="rounded border border-zinc-700 bg-zinc-800 px-3 py-1.5 text-xs font-medium text-zinc-300 transition-colors hover:bg-zinc-700">
+          <Upload className="h-3 w-3" />
+        </button>
+        <button className="rounded border border-zinc-700 bg-zinc-800 px-3 py-1.5 text-xs font-medium text-zinc-300 transition-colors hover:bg-zinc-700">
+          <Download className="h-3 w-3" />
+        </button>
+      </div>
+
+      {/* Right Section */}
+      <div className="flex items-center gap-2">
+        <button
+          onClick={() => setShowViewer(!showViewer)}
+          className={`rounded border px-3 py-1.5 text-xs font-medium transition-colors ${
+            showViewer
+              ? "border-cyan-500/50 bg-cyan-500/20 text-cyan-400"
+              : "border-zinc-700 bg-zinc-800 text-zinc-400 hover:bg-zinc-700"
+          }`}
+        >
+          {showViewer ? <Eye className="h-3 w-3" /> : <EyeOff className="h-3 w-3" />}
+        </button>
+        <button
+          onClick={() => setShowChat(!showChat)}
+          className={`rounded border px-3 py-1.5 text-xs font-medium transition-colors ${
+            showChat
+              ? "border-emerald-500/50 bg-emerald-500/20 text-emerald-400"
+              : "border-zinc-700 bg-zinc-800 text-zinc-400 hover:bg-zinc-700"
+          }`}
+        >
+          <MessageSquare className="h-3 w-3" />
+        </button>
+        <button className="rounded border border-zinc-700 bg-zinc-800 px-3 py-1.5 text-xs font-medium text-zinc-400 transition-colors hover:bg-zinc-700">
+          <Settings className="h-3 w-3" />
+        </button>
+      </div>
+    </div>
+  );
+}
