@@ -65,11 +65,11 @@ const RootLayout = ({
           />
         </head>
       )}
-        <body className={`${geistSans.variable} ${geistMono.variable} antialiased h-screen flex flex-col`}>
+        <body className={`${geistSans.variable} ${geistMono.variable} antialiased h-screen flex flex-col bg-zinc-950`}>
             <ClientProviders>
               <Header />
               <NavigationTabs />
-              <main className="mx-auto w-full h-full overflow-auto">{children}</main>
+              <main className="flex-1 overflow-hidden">{children}</main>
               {/* <Footer /> */}
             </ClientProviders>
         </body>
