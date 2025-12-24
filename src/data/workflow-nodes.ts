@@ -8,13 +8,6 @@ import type { CategoryGroup, NodeDefinition } from "@/types/workflow";
 // Input Nodes
 const INPUT_NODES: NodeDefinition[] = [
   {
-    id: "ifc-file",
-    label: "IFC File",
-    category: "Input",
-    icon: "📄",
-    description: "Load IFC file",
-  },
-  {
     id: "parameter",
     label: "Parameter",
     category: "Input",

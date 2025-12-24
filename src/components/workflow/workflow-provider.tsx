@@ -23,16 +23,6 @@ type WorkflowContextType = {
 const WorkflowContext = createContext<WorkflowContextType | undefined>(undefined);
 
 const initialNodes: Node[] = [
-  {
-    id: "1",
-    type: "ifcFile",
-    position: { x: 250, y: 150 },
-    data: { 
-      label: "small.ifc",
-      schema: "IFC2X3",
-      elements: 108,
-    },
-  },
 ];
 
 const initialEdges: Edge[] = [];
