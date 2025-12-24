@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Header from "../components/header";
+import NavigationTabs from "../components/navigation-tabs";
 import ClientProviders from "@/providers/client-providers";
 
 const geistSans = Geist({
@@ -67,7 +68,8 @@ const RootLayout = ({
         <body className={`${geistSans.variable} ${geistMono.variable} antialiased h-screen flex flex-col`}>
             <ClientProviders>
               <Header />
-              <main className="mx-auto w-full h-full">{children}</main>
+              <NavigationTabs />
+              <main className="mx-auto w-full h-full overflow-auto">{children}</main>
               {/* <Footer /> */}
             </ClientProviders>
         </body>

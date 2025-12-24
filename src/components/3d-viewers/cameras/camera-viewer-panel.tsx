@@ -1,11 +1,31 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { X, Maximize2, Download, Camera as CameraIcon, RefreshCw } from "lucide-react";
+import { 
+  X, 
+  Maximize2, 
+  Download, 
+  Camera as CameraIcon, 
+  RefreshCw, 
+  Move, 
+  Video, 
+  Info, 
+  Workflow as WorkflowIcon,
+  Box as BoxIcon,
+  Calculator
+} from "lucide-react";
 import { CameraData } from "@/types/camera";
 import { getCameraFeed } from "@/data/mock-cameras";
 import { useState, useEffect, useRef } from "react";
 import Hls from "hls.js";
+import Draggable from "react-draggable";
+import { ResizableBox } from "react-resizable";
+import "react-resizable/css/styles.css";
+import { LiveViewTab } from "./tabs/live-view-tab";
+import { InfoTab } from "./tabs/info-tab";
+import { WorkflowTab } from "./tabs/workflow-tab";
+import { ThreeDViewTab } from "./tabs/3d-view-tab";
+import { ComputationsTab } from "./tabs/computations-tab";
 
 interface CameraViewerPanelProps {
   camera: CameraData | null;
@@ -13,14 +33,20 @@ interface CameraViewerPanelProps {
   className?: string;
 }
 
+type TabType = 'live' | '3d' | 'info' | 'workflow' | 'computations';
+
 export const CameraViewerPanel = ({ 
   camera, 
   onClose,
   className = "" 
 }: CameraViewerPanelProps) => {
+  const [activeTab, setActiveTab] = useState<TabType>('live');
   const [refreshKey, setRefreshKey] = useState(0);
+  const [size, setSize] = useState({ width: 700, height: 500 });
+  const [position, setPosition] = useState({ x: 24, y: -120 });
   const videoRef = useRef<HTMLVideoElement>(null);
   const hlsRef = useRef<Hls | null>(null);
+  const nodeRef = useRef<HTMLDivElement>(null);
   
   // Auto-refresh for image streams every 2 seconds
   useEffect(() => {
@@ -69,7 +95,7 @@ export const CameraViewerPanel = ({
           });
         });
         
-        hls.on(Hls.Events.ERROR, (event, data) => {
+        hls.on(Hls.Events.ERROR, (_event, data) => {
           console.error('❌ HLS Error:', data);
           if (data.fatal) {
             switch (data.type) {
@@ -128,163 +154,183 @@ export const CameraViewerPanel = ({
   };
 
   return (
-    <div className={`absolute bottom-24 left-6 z-50 ${className}`}>
-      <div className="bg-background/95 backdrop-blur-sm rounded-lg shadow-2xl border w-[400px]">
-        {/* Header */}
-        <div className="flex items-center justify-between p-3 border-b">
-          <div className="flex items-center gap-2">
-            <CameraIcon className="h-4 w-4 text-muted-foreground" />
-            <h3 className="font-semibold text-sm">{camera.name}</h3>
-            <div className="flex items-center gap-1">
-              <div className={`w-2 h-2 rounded-full ${statusColors[camera.status]}`} />
-              <span className="text-xs text-muted-foreground">
-                {statusText[camera.status]}
-              </span>
-            </div>
-          </div>
-          <Button 
-            variant="ghost" 
-            size="icon"
-            className="h-7 w-7"
-            onClick={onClose}
-          >
-            <X className="h-4 w-4" />
-          </Button>
-        </div>
-
-        {/* Video Feed */}
-        <div className="relative aspect-video bg-black">
-          {camera.status === 'online' ? (
-            <>
-              {/* YouTube iframe stream */}
-              {feed.liveUrl && feed.isYouTube ? (
-                <iframe
-                  key={camera.id}
-                  src={feed.liveUrl}
-                  className="w-full h-full"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                  title={camera.name}
-                />
-              ) : feed.liveUrl && !feed.isImageStream && !feed.isYouTube ? (
-                // HLS/MP4 Video stream with hls.js support
-                <video
-                  ref={videoRef}
-                  key={camera.id}
-                  autoPlay
-                  muted
-                  playsInline
-                  controls
-                  className="w-full h-full object-contain"
-                />
-              ) : feed.liveUrl && feed.isImageStream ? (
-                <img 
-                  key={refreshKey} // Force refresh
-                  src={feed.liveUrl}
-                  alt={camera.name}
-                  className="w-full h-full object-contain bg-gray-900"
-                  onError={(e) => {
-                    console.error('Failed to load camera image:', feed.liveUrl);
-                    const img = e.target as HTMLImageElement;
-                    if (!img.dataset.retried) {
-                      img.dataset.retried = 'true';
-                      // Show fallback image
-                      img.src = `https://picsum.photos/seed/${camera.id}/400/300`;
-                    }
-                  }}
-                  onLoad={() => {
-                    console.log('✅ Camera loaded:', camera.name);
-                  }}
-                />
-              ) : null}
-              
-              {/* Live Indicator */}
-              <div className="absolute top-2 left-2 flex items-center gap-2 bg-red-600 text-white px-2 py-1 rounded text-xs font-semibold">
-                <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
-                LIVE
-              </div>
-              
-              {/* Refresh indicator for image streams */}
-              {feed.isImageStream && (
-                <div className="absolute top-2 right-2 px-2 py-1 bg-black/60 text-white text-xs rounded flex items-center gap-1 z-10">
-                  <RefreshCw className="h-3 w-3 animate-spin" />
-                  Auto-refresh
-                </div>
-              )}
-              
-              {/* Camera info overlay */}
-              <div className="absolute bottom-2 left-2 right-2 bg-black/60 backdrop-blur-sm text-white text-xs p-2 rounded z-10">
-                <div className="flex justify-between items-center">
-                  <span>{camera.name}</span>
-                  <span>{new Date().toLocaleTimeString()}</span>
+    <Draggable
+      nodeRef={nodeRef}
+      handle=".drag-handle"
+      position={position}
+      onStop={(_e, data) => setPosition({ x: data.x, y: data.y })}
+      bounds="parent"
+    >
+      <div ref={nodeRef} className={`absolute bottom-24 left-6 z-9999 ${className}`} style={{ width: size.width }}>
+        <ResizableBox
+          width={size.width}
+          height={size.height}
+          minConstraints={[400, 350]}
+          maxConstraints={[1200, 800]}
+          onResize={(_e, data) => setSize({ width: data.size.width, height: data.size.height })}
+          resizeHandles={['se', 'sw', 'ne', 'nw', 'e', 'w', 's', 'n']}
+          className="bg-background/95 backdrop-blur-sm rounded-lg shadow-2xl border overflow-hidden flex flex-col"
+        >
+          {/* Header with tabs */}
+          <div className="flex flex-col border-b">
+            {/* Title bar */}
+            <div className="drag-handle flex items-center justify-between p-3 cursor-move hover:bg-accent/50 transition-colors">
+              <div className="flex items-center gap-2">
+                <Move className="h-4 w-4 text-muted-foreground" />
+                <CameraIcon className="h-4 w-4 text-muted-foreground" />
+                <h3 className="font-semibold text-sm">{camera.name}</h3>
+                <div className="flex items-center gap-1">
+                  <div className={`w-2 h-2 rounded-full ${statusColors[camera.status]}`} />
+                  <span className="text-xs text-muted-foreground">
+                    {statusText[camera.status]}
+                  </span>
                 </div>
               </div>
-            </>
-          ) : camera.status === 'offline' ? (
-            <div className="w-full h-full flex items-center justify-center text-white">
-              <div className="text-center">
-                <CameraIcon className="h-12 w-12 mx-auto mb-2 text-gray-500" />
-                <p className="text-sm">Camera Offline</p>
-              </div>
-            </div>
-          ) : (
-            <div className="w-full h-full flex items-center justify-center text-white">
-              <div className="text-center">
-                <CameraIcon className="h-12 w-12 mx-auto mb-2 text-red-500" />
-                <p className="text-sm text-red-400">Connection Error</p>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Controls */}
-        <div className="flex items-center justify-between p-3 border-t">
-          <div className="flex gap-1">
-            {feed.liveUrl && (
               <Button 
-                variant="outline" 
-                size="sm" 
-                className="h-8"
-                onClick={() => window.open(feed.liveUrl, '_blank')}
+                variant="ghost" 
+                size="icon"
+                className="h-7 w-7"
+                onClick={onClose}
               >
-                <Maximize2 className="h-3 w-3 mr-1" />
-                <span className="text-xs">Open Direct</span>
+                <X className="h-4 w-4" />
               </Button>
-            )}
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="h-8"
-              onClick={() => setRefreshKey(prev => prev + 1)}
-            >
-              <RefreshCw className="h-3 w-3 mr-1" />
-              <span className="text-xs">Refresh</span>
-            </Button>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="h-8"
-              onClick={() => {
-                alert('Screenshot feature - will capture current frame');
-              }}
-            >
-              <Download className="h-3 w-3 mr-1" />
-              <span className="text-xs">Snapshot</span>
-            </Button>
+            </div>
+
+            {/* Tabs */}
+            <div className="flex items-center px-3 gap-1 bg-muted/30">
+              <button
+                onClick={() => setActiveTab('live')}
+                className={`flex items-center gap-1.5 px-3 py-2 text-xs font-medium transition-colors rounded-t ${
+                  activeTab === 'live' 
+                    ? 'bg-background text-foreground border-t border-x' 
+                    : 'text-muted-foreground hover:text-foreground hover:bg-background/50'
+                }`}
+              >
+                <Video className="h-3.5 w-3.5" />
+                Live
+              </button>
+              <button
+                onClick={() => setActiveTab('3d')}
+                className={`flex items-center gap-1.5 px-3 py-2 text-xs font-medium transition-colors rounded-t ${
+                  activeTab === '3d' 
+                    ? 'bg-background text-foreground border-t border-x' 
+                    : 'text-muted-foreground hover:text-foreground hover:bg-background/50'
+                }`}
+              >
+                <BoxIcon className="h-3.5 w-3.5" />
+                3D
+              </button>
+              <button
+                onClick={() => setActiveTab('workflow')}
+                className={`flex items-center gap-1.5 px-3 py-2 text-xs font-medium transition-colors rounded-t ${
+                  activeTab === 'workflow' 
+                    ? 'bg-background text-foreground border-t border-x' 
+                    : 'text-muted-foreground hover:text-foreground hover:bg-background/50'
+                }`}
+              >
+                <WorkflowIcon className="h-3.5 w-3.5" />
+                Workflow
+              </button>
+              <button
+                onClick={() => setActiveTab('computations')}
+                className={`flex items-center gap-1.5 px-3 py-2 text-xs font-medium transition-colors rounded-t ${
+                  activeTab === 'computations' 
+                    ? 'bg-background text-foreground border-t border-x' 
+                    : 'text-muted-foreground hover:text-foreground hover:bg-background/50'
+                }`}
+              >
+                <Calculator className="h-3.5 w-3.5" />
+                Computations
+              </button>
+              <button
+                onClick={() => setActiveTab('info')}
+                className={`flex items-center gap-1.5 px-3 py-2 text-xs font-medium transition-colors rounded-t ${
+                  activeTab === 'info' 
+                    ? 'bg-background text-foreground border-t border-x' 
+                    : 'text-muted-foreground hover:text-foreground hover:bg-background/50'
+                }`}
+              >
+                <Info className="h-3.5 w-3.5" />
+                Info
+              </button>
+            </div>
           </div>
-          
-          <div className="flex flex-col items-end">
-            {camera.type && (
-              <span className="text-xs text-muted-foreground capitalize">
-                {camera.type}
+
+          {/* Tab Content */}
+          <div className="flex-1 overflow-hidden" style={{ height: size.height - 120 }}>
+            {activeTab === 'live' && (
+              <LiveViewTab 
+                camera={camera} 
+                videoRef={videoRef} 
+                refreshKey={refreshKey}
+              />
+            )}
+            {activeTab === '3d' && (
+              <ThreeDViewTab camera={camera} />
+            )}
+            {activeTab === 'info' && (
+              <InfoTab camera={camera} />
+            )}
+            {activeTab === 'workflow' && (
+              <WorkflowTab 
+                cameraId={camera.id} 
+                cameraName={camera.name}
+              />
+            )}
+            {activeTab === 'computations' && (
+              <ComputationsTab camera={camera} />
+            )}
+          </div>
+
+          {/* Footer Controls */}
+          <div className="flex items-center justify-between p-3 border-t bg-muted/30">
+            <div className="flex gap-1">
+              {activeTab === 'live' && feed.liveUrl && (
+                <>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="h-8"
+                    onClick={() => window.open(feed.liveUrl, '_blank')}
+                  >
+                    <Maximize2 className="h-3 w-3 mr-1" />
+                    <span className="text-xs">Open</span>
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="h-8"
+                    onClick={() => setRefreshKey(prev => prev + 1)}
+                  >
+                    <RefreshCw className="h-3 w-3 mr-1" />
+                    <span className="text-xs">Refresh</span>
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="h-8"
+                    onClick={() => alert('Screenshot feature')}
+                  >
+                    <Download className="h-3 w-3 mr-1" />
+                    <span className="text-xs">Snapshot</span>
+                  </Button>
+                </>
+              )}
+            </div>
+            
+            <div className="flex flex-col items-end">
+              {camera.type && (
+                <span className="text-xs text-muted-foreground capitalize">
+                  {camera.type}
+                </span>
+              )}
+              <span className="text-[10px] text-green-500">
+                ● {feed.isImageStream ? 'Traffic Cam' : feed.isYouTube ? 'YouTube Live' : 'Live Stream'}
               </span>
-            )}
-            <span className="text-[10px] text-green-500">
-              ● {feed.isImageStream ? 'Traffic Cam' : 'Live Stream'}
-            </span>
+            </div>
           </div>
-        </div>
+        </ResizableBox>
       </div>
-    </div>
+    </Draggable>
   );
 };
