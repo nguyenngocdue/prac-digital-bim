@@ -16,7 +16,7 @@ type IFCFileNodeProps = {
 export const IFCFileNode = memo(({ data, selected }: IFCFileNodeProps) => {
   return (
     <div
-      className={`relative min-w-[280px] rounded-lg border-2 bg-white shadow-md transition-all ${
+      className={`relative min-w-[280px] rounded-lg border-2 bg-amber-300 shadow-md transition-all ${
         selected
           ? "border-zinc-900 shadow-lg"
           : "border-zinc-300 hover:border-zinc-400 hover:shadow-lg"
