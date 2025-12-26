@@ -27,6 +27,8 @@ import {
   Database,
   FolderOutput,
   Globe,
+  Webhook,
+  Upload,
 } from "lucide-react";
 import type { CategoryGroup, NodeDefinition } from "@/types/workflow";
 
@@ -38,6 +40,14 @@ const INPUT_NODES: NodeDefinition[] = [
     category: "Input",
     icon: FileText,
     description: "Load IFC file",
+  },
+  {
+    id: "file-upload",
+    label: "File Upload",
+    category: "Input",
+    icon: Upload,
+    badge: "New",
+    description: "Upload GLTF, Revit, IFC files",
   },
   {
     id: "parameter",
@@ -53,6 +63,14 @@ const INPUT_NODES: NodeDefinition[] = [
     icon: Globe,
     badge: "New",
     description: "Make HTTP requests",
+  },
+  {
+    id: "webhook",
+    label: "Webhook",
+    category: "Input",
+    icon: Webhook,
+    badge: "New",
+    description: "Receive HTTP webhooks",
   },
 ];
 
@@ -93,6 +111,14 @@ const GEOMETRY_NODES: NodeDefinition[] = [
 
 // Data Nodes
 const DATA_NODES: NodeDefinition[] = [
+  {
+    id: "get-parameter",
+    label: "Get Parameter",
+    category: "Data",
+    icon: Settings,
+    badge: "New",
+    description: "Extract parameter values from BIM elements",
+  },
   {
     id: "filter-elements",
     label: "Filter Elements",

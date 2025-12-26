@@ -1,6 +1,6 @@
 "use client";
 
-import { Play, Square, Save, Upload, Download, Settings, Eye, EyeOff, MessageSquare, RotateCcw, Loader2 } from "lucide-react";
+import { Play, Square, Save, Upload, Download, Settings, Eye, EyeOff, MessageSquare, RotateCcw, Loader2, Workflow } from "lucide-react";
 import { useWorkflow } from "./workflow-provider";
 
 export function WorkflowToolbar() {
@@ -27,7 +27,7 @@ export function WorkflowToolbar() {
       {/* Left Section */}
       <div className="flex items-center gap-2">
         <div className="flex items-center gap-2 text-sm font-semibold text-cyan-400">
-          <span className="text-lg">⚡</span>
+          <Workflow className="h-4 w-4" />
           <span>Workflow</span>
         </div>
         {/* Execution Status */}
