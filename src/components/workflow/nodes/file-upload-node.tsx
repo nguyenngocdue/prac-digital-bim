@@ -4,7 +4,6 @@ import { Handle, Position } from "@xyflow/react";
 import { Upload, Check, X } from "lucide-react";
 import { memo, useState } from "react";
 import { NodeCloseButton } from "./node-close-button";
-import { NodeExecutionBadge } from "./node-execution-badge";
 import { useWorkflow } from "../workflow-provider";
 
 /**
@@ -20,6 +19,7 @@ type FileUploadNodeProps = {
     fileName?: string;
     fileSize?: number;
     fileType?: FileType;
+    fileUrl?: string;
     allowedTypes?: FileType[];
   };
   selected?: boolean;
@@ -27,23 +27,6 @@ type FileUploadNodeProps = {
 
 export const FileUploadNode = memo(({ id, data, selected }: FileUploadNodeProps) => {
   const { getNodeStatus, executionState, updateNodeData } = useWorkflow();
-  // Cast to known shapes to avoid "unknown" types from workflow state
-  const executionStatus = getNodeStatus(id) as keyof typeof statusColors;
-  const nodeState = executionState.nodeStates[id] as any;
-  const [isDragging, setIsDragging] = useState(false);
-
-  const allowedTypes = data.allowedTypes || ["gltf", "glb", "rvt", "rfa", "ifc"];
-  const acceptString = allowedTypes.map(type => {
-    switch(type) {
-      case "gltf": return ".gltf";
-      case "glb": return ".glb";
-      case "rvt": return ".rvt";
-      case "rfa": return ".rfa";
-      case "ifc": return ".ifc";
-      default: return "";
-    }
-  }).join(",");
-
   const statusColors = {
     idle: "border-blue-500/50 from-blue-950/40 to-blue-950/20",
     pending: "border-yellow-500/50 from-yellow-950/40 to-yellow-950/20",
@@ -61,6 +44,23 @@ export const FileUploadNode = memo(({ id, data, selected }: FileUploadNodeProps)
     ifc: "text-cyan-400",
   };
 
+  // Cast to known shapes to avoid "unknown" types from workflow state
+  const executionStatus = getNodeStatus(id) as keyof typeof statusColors;
+  const nodeState = executionState.nodeStates[id] as any;
+  const [isDragging, setIsDragging] = useState(false);
+
+  const allowedTypes = data.allowedTypes || ["gltf", "glb", "rvt", "rfa", "ifc"];
+  const acceptString = allowedTypes.map(type => {
+    switch(type) {
+      case "gltf": return ".gltf";
+      case "glb": return ".glb";
+      case "rvt": return ".rvt";
+      case "rfa": return ".rfa";
+      case "ifc": return ".ifc";
+      default: return "";
+    }
+  }).join(",");
+
 
   const formatFileSize = (bytes?: number) => {
     if (!bytes) return "N/A";
@@ -69,15 +69,33 @@ export const FileUploadNode = memo(({ id, data, selected }: FileUploadNodeProps)
     return (bytes / (1024 * 1024)).toFixed(2) + " MB";
   };
 
+  const cleanupObjectUrl = () => {
+    if (data.fileUrl?.startsWith("blob:")) {
+      URL.revokeObjectURL(data.fileUrl);
+    }
+  };
+
+  const handleFileSelected = (file: File) => {
+    const fileExt = file.name.split(".").pop()?.toLowerCase() as FileType | undefined;
+    if (!fileExt || !allowedTypes.includes(fileExt)) {
+      return;
+    }
+
+    cleanupObjectUrl();
+
+    const fileUrl = URL.createObjectURL(file);
+    updateNodeData(id, {
+      fileName: file.name,
+      fileSize: file.size,
+      fileType: fileExt,
+      fileUrl,
+    });
+  };
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const fileExt = file.name.split('.').pop()?.toLowerCase() as FileType;
-      updateNodeData(id, {
-        fileName: file.name,
-        fileSize: file.size,
-        fileType: fileExt,
-      });
+      handleFileSelected(file);
     }
   };
 
@@ -100,22 +118,17 @@ export const FileUploadNode = memo(({ id, data, selected }: FileUploadNodeProps)
 
     const file = e.dataTransfer.files?.[0];
     if (file) {
-      const fileExt = file.name.split('.').pop()?.toLowerCase() as FileType;
-      if (allowedTypes.includes(fileExt)) {
-        updateNodeData(id, {
-          fileName: file.name,
-          fileSize: file.size,
-          fileType: fileExt,
-        });
-      }
+      handleFileSelected(file);
     }
   };
 
   const handleRemoveFile = () => {
+    cleanupObjectUrl();
     updateNodeData(id, {
       fileName: undefined,
       fileSize: undefined,
       fileType: undefined,
+      fileUrl: undefined,
     });
   };
 

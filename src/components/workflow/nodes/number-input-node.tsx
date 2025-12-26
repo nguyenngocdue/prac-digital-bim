@@ -4,7 +4,6 @@ import { Handle, Position } from "@xyflow/react";
 import { Hash, RotateCcw, Percent, Minus } from "lucide-react";
 import { memo } from "react";
 import { NodeCloseButton } from "./node-close-button";
-import { NodeExecutionBadge } from "./node-execution-badge";
 import { useWorkflow } from "../workflow-provider";
 
 /**
@@ -25,9 +24,8 @@ type NumberInputNodeProps = {
 };
 
 export const NumberInputNode = memo(({ id, data, selected }: NumberInputNodeProps) => {
-  const { getNodeStatus, executionState, updateNodeData } = useWorkflow();
+  const { getNodeStatus, updateNodeData } = useWorkflow();
   const executionStatus = getNodeStatus(id);
-  const nodeState = executionState.nodeStates[id];
 
   const statusColors = {
     idle: "border-emerald-500/50 from-emerald-950/40 to-emerald-950/20",

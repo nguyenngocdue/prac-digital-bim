@@ -4,7 +4,6 @@ import { Handle, Position } from "@xyflow/react";
 import { Code2, Play } from "lucide-react";
 import { memo } from "react";
 import { NodeCloseButton } from "./node-close-button";
-import { NodeExecutionBadge } from "./node-execution-badge";
 import { useWorkflow } from "../workflow-provider";
 
 /**

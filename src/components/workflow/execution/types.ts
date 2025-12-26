@@ -30,6 +30,7 @@ export type NodeExecutionContext = {
   node: Node;
   inputs: Record<string, unknown>; // Input từ các node trước
   updateProgress?: (progress: number) => void;
+  updateNodeData?: (nodeId: string, data: any) => void;
 };
 
 export type NodeExecutor = (

@@ -102,9 +102,15 @@ export class WorkflowExecutor {
   private executors: Map<string, NodeExecutor> = new Map();
   private state: WorkflowExecutionState;
   private onEvent?: (event: ExecutionEvent) => void;
+  private onUpdateNodeData?: (nodeId: string, data: any) => void;
 
   constructor() {
     this.state = this.createInitialState();
+  }
+
+  // Set update node data callback
+  setUpdateNodeDataCallback(callback: (nodeId: string, data: any) => void): void {
+    this.onUpdateNodeData = callback;
   }
 
   // Đăng ký executor cho từng loại node
@@ -164,9 +170,9 @@ export class WorkflowExecutor {
 
     try {
       if (parallel) {
-        await this.executeParallel(graph, nodesToExecute, outputs, stopOnError);
+        await this.executeParallel(graph, nodesToExecute, outputs, stopOnError, edges);
       } else {
-        await this.executeSequential(graph, nodesToExecute, outputs, stopOnError);
+        await this.executeSequential(graph, nodesToExecute, outputs, stopOnError, edges);
       }
 
       this.state.status = "success";
@@ -191,10 +197,11 @@ export class WorkflowExecutor {
     graph: ExecutionGraph,
     nodeIds: string[],
     outputs: Record<string, unknown>,
-    stopOnError: boolean
+    stopOnError: boolean,
+    edges: Edge[]
   ): Promise<void> {
     for (const nodeId of nodeIds) {
-      const success = await this.executeNode(graph, nodeId, outputs);
+      const success = await this.executeNode(graph, nodeId, outputs, edges);
       if (!success && stopOnError) {
         throw new Error(`Node ${nodeId} failed`);
       }
@@ -206,7 +213,8 @@ export class WorkflowExecutor {
     graph: ExecutionGraph,
     nodeIds: string[],
     outputs: Record<string, unknown>,
-    stopOnError: boolean
+    stopOnError: boolean,
+    edges: Edge[]
   ): Promise<void> {
     const completed = new Set<string>();
     const pending = new Set(nodeIds);
@@ -231,7 +239,7 @@ export class WorkflowExecutor {
 
       // Chạy song song các nodes ready
       const results = await Promise.allSettled(
-        ready.map((nodeId) => this.executeNode(graph, nodeId, outputs))
+        ready.map((nodeId) => this.executeNode(graph, nodeId, outputs, edges))
       );
 
       // Xử lý kết quả
@@ -256,7 +264,8 @@ export class WorkflowExecutor {
   private async executeNode(
     graph: ExecutionGraph,
     nodeId: string,
-    outputs: Record<string, unknown>
+    outputs: Record<string, unknown>,
+    edges: Edge[]
   ): Promise<boolean> {
     const execNode = graph.nodes[nodeId];
     if (!execNode) {
@@ -285,16 +294,27 @@ export class WorkflowExecutor {
       return true;
     }
 
-    // Collect inputs từ dependencies
-    const inputs: Record<string, unknown> = {};
-    for (const depId of execNode.dependencies) {
-      inputs[depId] = outputs[depId];
+    // Collect inputs từ edges (theo handle ID)
+    const inputs: Record<string, any> = {};
+    const incomingEdges = edges.filter(e => e.target === nodeId);
+    
+    for (const edge of incomingEdges) {
+      const sourceOutput = outputs[edge.source];
+      const targetHandle = edge.targetHandle || 'input';
+      
+      // Map output to input handle
+      if (sourceOutput) {
+        inputs[targetHandle] = sourceOutput;
+      }
     }
 
     // Create context
     const context: NodeExecutionContext = {
       node,
       inputs,
+      updateNodeData: (nodeId: string, data: any) => {
+        this.onUpdateNodeData?.(nodeId, data);
+      },
     };
 
     try {

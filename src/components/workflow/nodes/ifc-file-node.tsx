@@ -3,7 +3,6 @@
 import { Handle, Position } from "@xyflow/react";
 import { memo } from "react";
 import { NodeCloseButton } from "./node-close-button";
-import { NodeExecutionBadge } from "./node-execution-badge";
 import { useWorkflow } from "../workflow-provider";
 
 type IFCFileNodeProps = {
@@ -40,11 +39,6 @@ export const IFCFileNode = memo(({ id, data, selected }: IFCFileNodeProps) => {
       } ${statusStyles[executionStatus]}`}
     >
       <NodeCloseButton nodeId={id} variant="subtle" />
-      {/* <NodeExecutionBadge 
-        status={executionStatus} 
-        duration={nodeState?.duration} 
-      /> */}
-      
       {/* Input Handle - Điểm kết nối ở trên */}
       <Handle
         type="target"

@@ -45,6 +45,16 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
   const [showViewer, setShowViewer] = useState(true);
   const [showChat, setShowChat] = useState(true);
 
+  const updateNodeData = useCallback((nodeId: string, newData: any) => {
+    setNodes((nds) =>
+      nds.map((node) =>
+        node.id === nodeId
+          ? { ...node, data: { ...node.data, ...newData } }
+          : node
+      )
+    );
+  }, []);
+
   // Workflow Execution
   const {
     executionState,
@@ -54,7 +64,7 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
     stopExecution,
     resetExecution,
     getNodeStatus,
-  } = useWorkflowExecution(nodes, edges);
+  } = useWorkflowExecution(nodes, edges, updateNodeData);
 
   const onNodesChange = useCallback(
     (changes: NodeChange[]) => {
@@ -86,16 +96,6 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
       data: data || { label: type },
     };
     setNodes((nds) => [...nds, newNode]);
-  }, []);
-
-  const updateNodeData = useCallback((nodeId: string, newData: any) => {
-    setNodes((nds) =>
-      nds.map((node) =>
-        node.id === nodeId
-          ? { ...node, data: { ...node.data, ...newData } }
-          : node
-      )
-    );
   }, []);
 
   const deleteNode = useCallback((id: string) => {

@@ -17,7 +17,11 @@ import type {
 // Register executors once
 let executorsRegistered = false;
 
-export function useWorkflowExecution(nodes: Node[], edges: Edge[]) {
+export function useWorkflowExecution(
+  nodes: Node[], 
+  edges: Edge[], 
+  updateNodeData: (nodeId: string, data: any) => void
+) {
   const [executionState, setExecutionState] = useState<WorkflowExecutionState>({
     status: "idle",
     nodeStates: {},
@@ -31,6 +35,17 @@ export function useWorkflowExecution(nodes: Node[], edges: Edge[]) {
       executorsRegistered = true;
     }
   }, []);
+
+  // Handle node data updates during execution
+  const handleNodeDataUpdate = useCallback((nodeId: string, data: any) => {
+    console.log("[Execution] Update node data:", nodeId, data);
+    updateNodeData(nodeId, data);
+  }, [updateNodeData]);
+
+  // Set update callback
+  useEffect(() => {
+    workflowExecutor.setUpdateNodeDataCallback(handleNodeDataUpdate);
+  }, [handleNodeDataUpdate]);
 
   // Handle execution events
   const handleEvent = useCallback((event: ExecutionEvent) => {

@@ -4,7 +4,6 @@ import { Handle, Position } from "@xyflow/react";
 import { Settings, Plus, X } from "lucide-react";
 import { memo, useState } from "react";
 import { NodeCloseButton } from "./node-close-button";
-import { NodeExecutionBadge } from "./node-execution-badge";
 import { useWorkflow } from "../workflow-provider";
 
 /**
@@ -30,9 +29,8 @@ type GetParameterNodeProps = {
 };
 
 export const GetParameterNode = memo(({ id, data, selected }: GetParameterNodeProps) => {
-  const { getNodeStatus, executionState, updateNodeData } = useWorkflow();
+  const { getNodeStatus, updateNodeData } = useWorkflow();
   const executionStatus = getNodeStatus(id);
-  const nodeState = executionState.nodeStates[id];
   const [newParamName, setNewParamName] = useState("");
   const [isAddingParam, setIsAddingParam] = useState(false);
 

@@ -24,6 +24,7 @@ import { SetParameterNode } from "./nodes/set-parameter-node";
 import { StringInputNode } from "./nodes/string-input-node";
 import { NumberInputNode } from "./nodes/number-input-node";
 import { IfElseNode } from "./nodes/if-else-node";
+import { GltfViewerNode } from "./nodes/gltf-viewer-node";
 import { IFCUploadDialog } from "./dialogs/ifc-upload-dialog";
 import { useNodeFileUpload } from "@/hooks/use-node-file-upload";
 
@@ -40,6 +41,7 @@ const nodeTypes = {
   "string-input": StringInputNode,
   "number-input": NumberInputNode,
   "if-else": IfElseNode,
+  "gltf-viewer": GltfViewerNode,
 };
 
 export function WorkflowCanvas() {

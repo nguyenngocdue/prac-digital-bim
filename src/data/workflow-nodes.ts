@@ -32,6 +32,7 @@ import {
   Type,
   Hash,
   GitBranch,
+  Box,
 } from "lucide-react";
 import type { CategoryGroup, NodeDefinition } from "@/types/workflow";
 
@@ -244,6 +245,14 @@ const OUTPUT_NODES: NodeDefinition[] = [
     category: "Output",
     icon: Eye,
     description: "Visualize in 3D",
+  },
+  {
+    id: "gltf-viewer",
+    label: "GLTF Viewer",
+    category: "Output",
+    icon: Box,
+    badge: "New",
+    description: "Render GLTF/GLB models with Three.js",
   },
   {
     id: "export-data",

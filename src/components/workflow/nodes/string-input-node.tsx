@@ -4,7 +4,6 @@ import { Handle, Position } from "@xyflow/react";
 import { Type, Copy, Check } from "lucide-react";
 import { memo, useState } from "react";
 import { NodeCloseButton } from "./node-close-button";
-import { NodeExecutionBadge } from "./node-execution-badge";
 import { useWorkflow } from "../workflow-provider";
 
 /**
@@ -23,9 +22,8 @@ type StringInputNodeProps = {
 };
 
 export const StringInputNode = memo(({ id, data, selected }: StringInputNodeProps) => {
-  const { getNodeStatus, executionState, updateNodeData } = useWorkflow();
+  const { getNodeStatus, updateNodeData } = useWorkflow();
   const executionStatus = getNodeStatus(id);
-  const nodeState = executionState.nodeStates[id];
   const [copied, setCopied] = useState(false);
 
   const statusColors = {

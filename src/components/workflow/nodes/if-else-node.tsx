@@ -4,7 +4,6 @@ import { Handle, Position } from "@xyflow/react";
 import { GitBranch, Check, X } from "lucide-react";
 import { memo } from "react";
 import { NodeCloseButton } from "./node-close-button";
-import { NodeExecutionBadge } from "./node-execution-badge";
 import { useWorkflow } from "../workflow-provider";
 
 /**
@@ -29,9 +28,8 @@ type IfElseNodeProps = {
 };
 
 export const IfElseNode = memo(({ id, data, selected }: IfElseNodeProps) => {
-  const { getNodeStatus, executionState, updateNodeData } = useWorkflow();
+  const { getNodeStatus, updateNodeData } = useWorkflow();
   const executionStatus = getNodeStatus(id);
-  const nodeState = executionState.nodeStates[id];
 
   const statusColors = {
     idle: "border-violet-500/50 from-violet-950/40 to-violet-950/20",
