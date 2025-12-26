@@ -4,6 +4,8 @@ import { Handle, Position } from "@xyflow/react";
 import { Code2, Play } from "lucide-react";
 import { memo } from "react";
 import { NodeCloseButton } from "./node-close-button";
+import { NodeExecutionBadge } from "./node-execution-badge";
+import { useWorkflow } from "../workflow-provider";
 
 /**
  * Python Node - Node để chạy Python code
@@ -16,30 +18,41 @@ type PythonNodeProps = {
   data: {
     label?: string;
     code?: string;
-    status?: "idle" | "running" | "success" | "error";
   };
   selected?: boolean;
 };
 
 export const PythonNode = memo(({ id, data, selected }: PythonNodeProps) => {
+  const { getNodeStatus, executionState, executeFromNode } = useWorkflow();
+  const executionStatus = getNodeStatus(id);
+  const nodeState = executionState.nodeStates[id];
+
   const statusColors = {
     idle: "border-orange-500/50 from-orange-950/40 to-orange-950/20",
-    running: "border-yellow-500/50 from-yellow-950/40 to-yellow-950/20 animate-pulse",
+    pending: "border-yellow-500/50 from-yellow-950/40 to-yellow-950/20",
+    running: "border-blue-500/50 from-blue-950/40 to-blue-950/20 animate-pulse",
     success: "border-green-500/50 from-green-950/40 to-green-950/20",
     error: "border-red-500/50 from-red-950/40 to-red-950/20",
+    skipped: "border-zinc-500/50 from-zinc-950/40 to-zinc-950/20",
   };
 
-  const status = data.status || "idle";
+  const handleRunNode = async () => {
+    await executeFromNode(id);
+  };
 
   return (
     <div
       className={`group relative min-w-[260px] rounded-lg border bg-gradient-to-b shadow-lg backdrop-blur-sm transition-all ${
         selected
           ? "border-orange-400 shadow-orange-500/50 ring-2 ring-orange-400/30"
-          : statusColors[status]
+          : statusColors[executionStatus]
       }`}
     >
       <NodeCloseButton nodeId={id} variant="orange" />
+      <NodeExecutionBadge 
+        status={executionStatus} 
+        duration={nodeState?.duration} 
+      />
 
       {/* Input Handle */}
       <Handle
@@ -55,17 +68,6 @@ export const PythonNode = memo(({ id, data, selected }: PythonNodeProps) => {
         <div className="flex items-center gap-2">
           <Code2 className="h-4 w-4 text-orange-400" />
           <span className="text-xs font-semibold text-orange-400">Python</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          {status === "running" && (
-            <div className="h-2 w-2 rounded-full bg-yellow-400 animate-pulse" />
-          )}
-          {status === "success" && (
-            <div className="h-2 w-2 rounded-full bg-green-400" />
-          )}
-          {status === "error" && (
-            <div className="h-2 w-2 rounded-full bg-red-400" />
-          )}
         </div>
       </div>
 
@@ -94,10 +96,21 @@ export const PythonNode = memo(({ id, data, selected }: PythonNodeProps) => {
         )}
 
         {/* Run button */}
-        <button className="mt-2 w-full rounded bg-orange-600/20 px-3 py-1.5 text-[11px] font-medium text-orange-400 transition-colors hover:bg-orange-600/30 active:bg-orange-600/40 flex items-center justify-center gap-1.5">
+        <button 
+          onClick={handleRunNode}
+          disabled={executionStatus === "running" || executionStatus === "pending"}
+          className="mt-2 w-full rounded bg-orange-600/20 px-3 py-1.5 text-[11px] font-medium text-orange-400 transition-colors hover:bg-orange-600/30 active:bg-orange-600/40 flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
           <Play className="h-3 w-3" />
-          Run Script
+          {executionStatus === "running" ? "Running..." : "Run Script"}
         </button>
+
+        {/* Error message */}
+        {executionStatus === "error" && nodeState?.error && (
+          <div className="mt-2 text-xs text-red-400 bg-red-500/10 p-2 rounded border border-red-500/30">
+            {nodeState.error}
+          </div>
+        )}
       </div>
 
       {/* Output Handle */}

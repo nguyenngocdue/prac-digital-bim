@@ -1,20 +1,9 @@
 "use client";
 
-import { useState } from "react";
 import { NODE_CATEGORIES } from "@/data/workflow-nodes";
 import type { NodeDefinition } from "@/types/workflow";
 
 export function WorkflowSidebar() {
-  const [expandedCategories, setExpandedCategories] = useState<string[]>(["Input", "Geometry", "Data", "Output"]);
-
-  const toggleCategory = (category: string) => {
-    setExpandedCategories((prev) =>
-      prev.includes(category)
-        ? prev.filter((c) => c !== category)
-        : [...prev, category]
-    );
-  };
-
   const onDragStart = (event: React.DragEvent, nodeType: string) => {
     event.dataTransfer.setData("application/reactflow", nodeType);
     event.dataTransfer.effectAllowed = "move";
@@ -35,22 +24,23 @@ export function WorkflowSidebar() {
       {/* Categories */}
       <div className="overflow-y-auto p-3" style={{ height: "calc(100vh - 12rem)" }}>
         {NODE_CATEGORIES.map((category) => {
-          const isExpanded = expandedCategories.includes(category.name);
+          const CategoryIcon = category.icon;
           return (
             <div key={category.name} className="mb-3">
               {/* Category Header */}
-              <h3 className="mb-2 px-2 text-xs font-semibold uppercase tracking-wider text-blue-400">
-                {category.name}
-              </h3>
+              <div className="mb-2 flex items-center gap-2 px-2">
+                {CategoryIcon && <CategoryIcon className="h-3.5 w-3.5 text-blue-400" />}
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-blue-400">
+                  {category.name}
+                </h3>
+              </div>
 
-              {/* Nodes */}
-              {isExpanded && (
-                <div className="space-y-1">
-                  {category.nodes.map((node) => (
-                    <NodeItem key={node.id} node={node} onDragStart={onDragStart} />
-                  ))}
-                </div>
-              )}
+              {/* Nodes - Always expanded */}
+              <div className="space-y-1">
+                {category.nodes.map((node) => (
+                  <NodeItem key={node.id} node={node} onDragStart={onDragStart} />
+                ))}
+              </div>
             </div>
           );
         })}
@@ -66,6 +56,8 @@ function NodeItem({
   node: NodeDefinition;
   onDragStart: (event: React.DragEvent, nodeType: string) => void;
 }) {
+  const Icon = node.icon;
+  
   return (
     <div
       draggable
@@ -74,7 +66,7 @@ function NodeItem({
     >
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2.5">
-          <span className="text-base opacity-80">{node.icon}</span>
+          {Icon && <Icon className="h-4 w-4 text-zinc-400 group-hover:text-zinc-300" />}
           <span className="text-sm font-medium text-zinc-300">{node.label}</span>
         </div>
         {node.badge && (

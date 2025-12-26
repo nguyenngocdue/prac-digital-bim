@@ -4,6 +4,7 @@ import { WorkflowCanvas } from "@/components/workflow/workflow-canvas";
 import { WorkflowSidebar } from "@/components/workflow/workflow-sidebar";
 import { WorkflowToolbar } from "@/components/workflow/workflow-toolbar";
 import { WorkflowProvider } from "@/components/workflow/workflow-provider";
+import { NodeSettingsPanel } from "@/components/workflow/node-settings-panel";
 
 export default function WorkflowPage() {
   return (
@@ -19,6 +20,9 @@ export default function WorkflowPage() {
 
           {/* Canvas */}
           <WorkflowCanvas />
+
+          {/* Node Settings Panel */}
+          <NodeSettingsPanel />
         </div>
       </div>
     </WorkflowProvider>

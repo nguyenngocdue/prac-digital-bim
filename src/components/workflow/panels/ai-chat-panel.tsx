@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Send, Sparkles } from "lucide-react";
+import { Send } from "lucide-react";
 
 type Message = {
   id: string;

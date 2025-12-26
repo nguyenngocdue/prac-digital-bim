@@ -2,6 +2,8 @@
  * Workflow Types - Type definitions for the workflow system
  */
 
+import type { LucideIcon } from "lucide-react";
+
 export type NodeBadge = "WIP" | "New" | "Beta" | "Pro";
 
 export type NodeCategory = 
@@ -16,7 +18,7 @@ export type NodeDefinition = {
   id: string;
   label: string;
   category: NodeCategory;
-  icon?: string;
+  icon?: LucideIcon;
   badge?: NodeBadge;
   description?: string;
   color?: string;
@@ -32,6 +34,6 @@ export type WorkflowNodeData = {
 
 export type CategoryGroup = {
   name: NodeCategory;
-  icon?: string;
+  icon?: LucideIcon;
   nodes: NodeDefinition[];
 };

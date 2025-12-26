@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 // Đây là một ví dụ đơn giản - bạn có thể thay thế bằng OpenAI, Anthropic, hoặc AI service khác
 export async function POST(request: Request) {
   try {
-    const { message, history } = await request.json();
+    const { message: _message } = await request.json();
 
     // TODO: Thay thế bằng AI API thực tế (OpenAI, Anthropic, etc.)
     // Ví dụ với OpenAI:

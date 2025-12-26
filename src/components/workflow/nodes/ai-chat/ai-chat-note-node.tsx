@@ -2,12 +2,13 @@
 
 import { Handle, Position, NodeResizer } from "@xyflow/react";
 import { memo, useState, useCallback, KeyboardEvent, useRef } from "react";
-import { Bot, Send, CheckCircle } from "lucide-react";
+import { Bot, Send, Sparkles, MessageSquare } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { NodeCloseButton } from "../node-close-button";
-import { AI_MODELS, HANDLE_STYLE } from "./constants";
+import { NodeExecutionBadge } from "../node-execution-badge";
+import { AI_MODELS } from "./constants";
 import { useChat } from "./hooks";
 import {
   LoadingIndicator,
@@ -15,6 +16,7 @@ import {
   EmptyState,
   ModelSelector,
 } from "./components";
+import { useWorkflow } from "../../workflow-provider";
 import type { AIChatNoteNodeProps } from "./types";
 
 export const AIChatNoteNode = memo(
@@ -24,13 +26,16 @@ export const AIChatNoteNode = memo(
     const [showModelDropdown, setShowModelDropdown] = useState(false);
     const inputRef = useRef<HTMLInputElement>(null);
 
+    const { getNodeStatus, executionState } = useWorkflow();
+    const executionStatus = getNodeStatus(id);
+    const nodeState = executionState.nodeStates[id];
+
     const { messages, isLoading, sendMessage } = useChat(data.messages);
 
     const handleSendMessage = useCallback(() => {
       if (!inputText.trim() || isLoading) return;
       sendMessage(inputText.trim(), selectedModel);
       setInputText("");
-      // Refocus input after sending
       setTimeout(() => inputRef.current?.focus(), 0);
     }, [inputText, isLoading, sendMessage, selectedModel]);
 
@@ -50,62 +55,89 @@ export const AIChatNoteNode = memo(
       setShowModelDropdown(false);
     }, []);
 
+    const statusStyles = {
+      idle: "",
+      pending: "ring-2 ring-yellow-400/50",
+      running: "ring-2 ring-blue-400/50 animate-pulse",
+      success: "ring-2 ring-green-400/50",
+      error: "ring-2 ring-red-400/50",
+      skipped: "opacity-60",
+    };
+
     return (
       <div
         className={cn(
-          "group relative h-full w-full min-w-[340px] min-h-[280px] rounded-lg border shadow-lg transition-all overflow-hidden flex flex-col",
+          "group relative h-full w-full min-w-[360px] min-h-[320px] rounded-xl border-2 shadow-xl transition-all flex flex-col bg-gradient-to-b from-zinc-900 to-zinc-950",
           selected
-            ? "border-emerald-500 shadow-emerald-500/30"
-            : "border-emerald-600/50 hover:border-emerald-500"
+            ? "border-emerald-400 shadow-emerald-500/20"
+            : "border-zinc-700/50 hover:border-emerald-500/50",
+          statusStyles[executionStatus]
         )}
       >
         <NodeResizer
-          minWidth={340}
-          minHeight={280}
+          minWidth={360}
+          minHeight={320}
           isVisible={selected}
-          lineClassName="!border-emerald-500"
-          handleClassName="!w-2 !h-2 !bg-emerald-500 !border-emerald-600"
+          lineClassName="!border-emerald-400"
+          handleClassName="!w-2.5 !h-2.5 !bg-emerald-400 !border-emerald-600 !rounded-full"
         />
 
         <NodeCloseButton nodeId={id} variant="emerald" />
+        <NodeExecutionBadge 
+          status={executionStatus} 
+          duration={nodeState?.duration} 
+        />
 
-        {/* Handles */}
+        {/* Handles - Input (Left) */}
         <Handle
           type="target"
           position={Position.Left}
           id="input"
-          className={HANDLE_STYLE}
-          style={{ left: -6 }}
+          className="!w-4 !h-4 !bg-emerald-400 !border-[3px] !border-emerald-600 hover:!scale-110 transition-transform !rounded-full"
+          style={{ left: -8, top: "50%" }}
         />
+        
+        {/* Handles - Output (Right) */}
         <Handle
           type="source"
           position={Position.Right}
           id="output"
-          className={HANDLE_STYLE}
-          style={{ right: -6 }}
+          className="!w-4 !h-4 !bg-emerald-400 !border-[3px] !border-emerald-600 hover:!scale-110 transition-transform !rounded-full"
+          style={{ right: -8, top: "50%" }}
         />
 
         {/* Header */}
-        <header className="px-4 py-2.5 flex items-center justify-between bg-emerald-500">
-          <div className="flex items-center gap-2">
-            <Bot className="w-4 h-4 text-white" />
-            <span className="text-sm font-semibold text-white">
-              {data.label || "AI Chat"}
-            </span>
+        <header className="px-4 py-3 flex items-center justify-between bg-gradient-to-r from-emerald-600 to-emerald-500 rounded-t-[10px]">
+          <div className="flex items-center gap-2.5">
+            <div className="p-1.5 bg-white/20 rounded-lg">
+              <Bot className="w-4 h-4 text-white" />
+            </div>
+            <div>
+              <span className="text-sm font-bold text-white block">
+                {data.label || "AI Chat"}
+              </span>
+              <span className="text-[10px] text-white/70">Powered by AI</span>
+            </div>
           </div>
-          <div className="flex items-center gap-1.5 text-white/90">
-            <CheckCircle className="w-3.5 h-3.5" />
-            <span className="text-xs">Verified</span>
+          <div className="flex items-center gap-1.5 bg-white/20 px-2 py-1 rounded-full">
+            <Sparkles className="w-3 h-3 text-yellow-300" />
+            <span className="text-[10px] font-medium text-white">Pro</span>
           </div>
         </header>
 
         {/* Chat Area */}
-        <div className="bg-zinc-900 flex-1 flex flex-col overflow-hidden">
+        <div className="flex-1 flex flex-col overflow-hidden">
           {/* Messages */}
           <ScrollArea className="flex-1 px-3 py-3">
-            <div className="space-y-2">
+            <div className="space-y-3">
               {messages.length === 0 ? (
-                <EmptyState />
+                <div className="flex flex-col items-center justify-center py-8 text-zinc-500">
+                  <div className="p-3 bg-zinc-800/50 rounded-full mb-3">
+                    <MessageSquare className="w-6 h-6" />
+                  </div>
+                  <p className="text-xs font-medium">Start a conversation</p>
+                  <p className="text-[10px] text-zinc-600 mt-1">Ask anything to get started</p>
+                </div>
               ) : (
                 messages.map((msg) => <ChatMessage key={msg.id} message={msg} />)
               )}
@@ -113,42 +145,49 @@ export const AIChatNoteNode = memo(
             </div>
           </ScrollArea>
 
-          {/* Input Area */}
+          {/* Model Selector */}
           <div className="px-3 pb-2">
-            <div className="flex items-center gap-2 bg-zinc-800 rounded-lg border border-zinc-700 px-2 py-1.5">
-              <ModelSelector
-                selectedModel={selectedModel}
-                isOpen={showModelDropdown}
-                onToggle={() => setShowModelDropdown((prev) => !prev)}
-                onSelect={handleModelSelect}
-              />
+            <ModelSelector
+              selectedModel={selectedModel}
+              isOpen={showModelDropdown}
+              onToggle={() => setShowModelDropdown((prev) => !prev)}
+              onSelect={handleModelSelect}
+            />
+          </div>
 
+          {/* Input Area */}
+          <div className="px-3 pb-3">
+            <div className="flex items-center gap-2 bg-zinc-800/80 rounded-xl border border-zinc-700/50 px-3 py-2 focus-within:border-emerald-500/50 transition-colors">
               <input
                 ref={inputRef}
                 type="text"
                 value={inputText}
                 onChange={(e) => setInputText(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="Ask a question"
-                className="flex-1 bg-transparent text-xs text-zinc-300 placeholder:text-zinc-600 outline-none nodrag"
+                placeholder="Type your message..."
+                className="flex-1 bg-transparent text-sm text-zinc-200 placeholder:text-zinc-500 outline-none nodrag"
                 disabled={isLoading}
               />
 
               <button
                 onClick={handleSendMessage}
                 disabled={!inputText.trim() || isLoading}
-                className="p-1.5 bg-emerald-500 hover:bg-emerald-600 disabled:bg-zinc-700 disabled:cursor-not-allowed rounded transition-colors"
+                className={cn(
+                  "p-2 rounded-lg transition-all",
+                  inputText.trim() && !isLoading
+                    ? "bg-emerald-500 hover:bg-emerald-400 shadow-lg shadow-emerald-500/25"
+                    : "bg-zinc-700 cursor-not-allowed"
+                )}
               >
-                <Send className="w-3.5 h-3.5 text-white" />
+                <Send className="w-4 h-4 text-white" />
               </button>
             </div>
           </div>
 
           {/* Footer */}
-          <footer className="px-3 pb-2">
-            <p className="text-[10px] text-zinc-600 text-center">
-              We log queries and responses during AI node usage to improve
-              system performance
+          <footer className="px-3 pb-2 border-t border-zinc-800/50 pt-2">
+            <p className="text-[9px] text-zinc-600 text-center">
+              AI responses may not always be accurate. Verify important information.
             </p>
           </footer>
         </div>

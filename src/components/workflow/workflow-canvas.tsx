@@ -7,7 +7,6 @@ import {
   Controls,
   MiniMap,
   BackgroundVariant,
-  Panel,
   type ReactFlowInstance,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
@@ -15,16 +14,15 @@ import { useWorkflow } from "./workflow-provider";
 import { IFCFileNode } from "./nodes/ifc-file-node";
 import { PythonNode } from "./nodes/python-node";
 import { AIChatNoteNode } from "./nodes/ai-chat-note-node";
-import { Viewer3DPanel } from "./panels/viewer-3d-panel";
-import { AIChatPanel } from "./panels/ai-chat-panel";
+import { HttpNode } from "./nodes/http-node";
 import { IFCUploadDialog } from "./dialogs/ifc-upload-dialog";
 import { useNodeFileUpload } from "@/hooks/use-node-file-upload";
-import { X } from "lucide-react";
 
 const nodeTypes = {
   "ifc-file": IFCFileNode,
   python: PythonNode,
   "ai-chat": AIChatNoteNode,
+  http: HttpNode,
 };
 
 export function WorkflowCanvas() {
@@ -47,12 +45,7 @@ export function WorkflowCanvas() {
     onEdgesChange,
     onConnect,
     addNode,
-    updateNodeData,
     setSelectedNode,
-    showViewer,
-    setShowViewer,
-    showChat,
-    setShowChat,
   } = useWorkflow();
 
   const onNodeClick = useCallback(
@@ -104,6 +97,16 @@ export function WorkflowCanvas() {
           label: "AI Chat",
           messages: [],
           note: "",
+        };
+      } else if (type === "http") {
+        nodeData = {
+          label: "HTTP Request",
+          method: "GET",
+          url: "",
+          timeout: 30000,
+          headers: [],
+          queryParams: [],
+          body: "",
         };
       }
 

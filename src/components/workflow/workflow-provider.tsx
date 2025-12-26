@@ -3,6 +3,8 @@
 import { createContext, useContext, useState, useCallback, type ReactNode } from "react";
 import type { Node, Edge, Connection, NodeChange, EdgeChange } from "@xyflow/react";
 import { applyNodeChanges, applyEdgeChanges, addEdge } from "@xyflow/react";
+import { useWorkflowExecution } from "./execution";
+import type { WorkflowExecutionState, ExecutionStatus, ExecutionOptions } from "./execution";
 
 type WorkflowContextType = {
   nodes: Node[];
@@ -19,6 +21,14 @@ type WorkflowContextType = {
   setShowViewer: (show: boolean) => void;
   showChat: boolean;
   setShowChat: (show: boolean) => void;
+  // Execution
+  executionState: WorkflowExecutionState;
+  isRunning: boolean;
+  executeWorkflow: (options?: ExecutionOptions) => Promise<WorkflowExecutionState | undefined>;
+  executeFromNode: (nodeId: string) => Promise<WorkflowExecutionState | undefined>;
+  stopExecution: () => void;
+  resetExecution: () => void;
+  getNodeStatus: (nodeId: string) => ExecutionStatus;
 };
 
 const WorkflowContext = createContext<WorkflowContextType | undefined>(undefined);
@@ -34,6 +44,17 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
   const [selectedNode, setSelectedNode] = useState<Node | null>(null);
   const [showViewer, setShowViewer] = useState(true);
   const [showChat, setShowChat] = useState(true);
+
+  // Workflow Execution
+  const {
+    executionState,
+    isRunning,
+    executeWorkflow,
+    executeFromNode,
+    stopExecution,
+    resetExecution,
+    getNodeStatus,
+  } = useWorkflowExecution(nodes, edges);
 
   const onNodesChange = useCallback(
     (changes: NodeChange[]) => {
@@ -99,6 +120,14 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
         setShowViewer,
         showChat,
         setShowChat,
+        // Execution
+        executionState,
+        isRunning,
+        executeWorkflow,
+        executeFromNode,
+        stopExecution,
+        resetExecution,
+        getNodeStatus,
       }}
     >
       {children}

@@ -7,4 +7,4 @@ export const AI_MODELS = [
 
 export type AIModel = (typeof AI_MODELS)[number];
 
-export const HANDLE_STYLE = "!w-3 !h-3 !bg-emerald-500 !border-2 !border-emerald-600";
+export const HANDLE_STYLE = "!w-3 !h-3 !bg-emerald-400 !border-2 !border-emerald-600 hover:!scale-125 transition-transform";
