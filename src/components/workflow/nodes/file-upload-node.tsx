@@ -1,7 +1,7 @@
 "use client";
 
 import { Handle, Position } from "@xyflow/react";
-import { Upload, FileUp, Check, X } from "lucide-react";
+import { Upload, Check, X } from "lucide-react";
 import { memo, useState } from "react";
 import { NodeCloseButton } from "./node-close-button";
 import { NodeExecutionBadge } from "./node-execution-badge";
@@ -143,7 +143,25 @@ export const FileUploadNode = memo(({ id, data, selected }: FileUploadNodeProps)
       />
 
       {/* Header */}
-
+      <div className="flex items-center justify-between border-b border-blue-500/30 bg-blue-500/10 px-3 py-2">
+        <div className="flex items-center gap-2">
+          <Upload className="h-4 w-4 text-blue-400" />
+          <span className="text-xs font-semibold text-blue-400">
+            {data.label || "File Upload"}
+          </span>
+        </div>
+        {data.fileType && (
+          <span className="text-lg" title={data.fileType.toUpperCase()}>
+            {{
+              gltf: "🎨",
+              glb: "📦",
+              rvt: "🏗️",
+              rfa: "🔧",
+              ifc: "🏢",
+            }[data.fileType] || "📄"}
+          </span>
+        )}
+      </div>
 
       {/* Content */}
       <div className="p-3">

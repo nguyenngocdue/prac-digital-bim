@@ -13,7 +13,6 @@ import { useChat } from "./hooks";
 import {
   LoadingIndicator,
   ChatMessage,
-  EmptyState,
   ModelSelector,
 } from "./components";
 import { useWorkflow } from "../../workflow-provider";
@@ -107,7 +106,7 @@ export const AIChatNoteNode = memo(
         />
 
         {/* Header */}
-        <header className="px-4 py-3 flex items-center justify-between bg-gradient-to-r from-emerald-600 to-emerald-500 rounded-t-[10px]">
+        <header className="px-4 py-3 flex items-center justify-between bg-linear-to-r from-emerald-600 to-emerald-500 rounded-t-[10px]">
           <div className="flex items-center gap-2.5">
             <div className="p-1.5 bg-white/20 rounded-lg">
               <Bot className="w-4 h-4 text-white" />

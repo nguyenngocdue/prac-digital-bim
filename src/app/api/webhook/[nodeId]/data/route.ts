@@ -9,11 +9,11 @@ import { NextRequest, NextResponse } from "next/server";
 const webhookStore = new Map<string, any[]>();
 
 export async function GET(
-  request: NextRequest,
-  { params }: { params: { nodeId: string } }
+  _request: NextRequest,
+  { params }: { params: Promise<{ nodeId: string }> }
 ) {
   try {
-    const { nodeId } = params;
+    const { nodeId } = await params;
     const data = webhookStore.get(nodeId) || [];
 
     return NextResponse.json({

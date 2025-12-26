@@ -73,13 +73,13 @@ export const GetParameterNode = memo(({ id, data, selected }: GetParameterNodePr
 
   return (
     <div
-      className={`group relative min-w-[280px] rounded-lg border bg-gradient-to-b shadow-lg backdrop-blur-sm transition-all ${
+      className={`group relative min-w-[280px] rounded-lg border bg-linear-to-b shadow-lg backdrop-blur-sm transition-all ${
         selected
           ? "border-amber-400 shadow-amber-500/50 ring-2 ring-amber-400/30"
           : statusColors[executionStatus]
       }`}
     >
-      <NodeCloseButton nodeId={id} variant="subtle" />
+      <NodeCloseButton nodeId={id} variant="yellow" />
       <NodeExecutionBadge 
         status={executionStatus} 
         duration={nodeState?.duration} 

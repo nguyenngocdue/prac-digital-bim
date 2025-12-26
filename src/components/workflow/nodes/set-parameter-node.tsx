@@ -1,7 +1,7 @@
 "use client";
 
 import { Handle, Position } from "@xyflow/react";
-import { Settings, Plus, X, Edit } from "lucide-react";
+import { Plus, X, Edit } from "lucide-react";
 import { memo, useState } from "react";
 import { NodeCloseButton } from "./node-close-button";
 import { NodeExecutionBadge } from "./node-execution-badge";
@@ -79,9 +79,11 @@ export const SetParameterNode = memo(({ id, data, selected }: SetParameterNodePr
 
   const handleEditParameter = (index: number) => {
     const param = parameters[index];
-    setNewParam({ name: param.name, value: String(param.value) });
-    setEditingIndex(index);
-    setIsAdding(false);
+    if (param) {
+      setNewParam({ name: param.name, value: String(param.value) });
+      setEditingIndex(index);
+      setIsAdding(false);
+    }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -106,7 +108,7 @@ export const SetParameterNode = memo(({ id, data, selected }: SetParameterNodePr
 
   return (
     <div
-      className={`group relative min-w-[280px] rounded-lg border bg-gradient-to-b shadow-lg backdrop-blur-sm transition-all ${
+      className={`group relative min-w-[280px] rounded-lg border bg-linear-to-b shadow-lg backdrop-blur-sm transition-all ${
         selected
           ? "border-blue-400 shadow-blue-500/50 ring-2 ring-blue-400/30"
           : statusColors[executionStatus]

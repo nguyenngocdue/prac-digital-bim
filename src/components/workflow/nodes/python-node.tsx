@@ -42,7 +42,7 @@ export const PythonNode = memo(({ id, data, selected }: PythonNodeProps) => {
 
   return (
     <div
-      className={`group relative min-w-[260px] rounded-lg border bg-gradient-to-b shadow-lg backdrop-blur-sm transition-all ${
+      className={`group relative min-w-[260px] rounded-lg border bg-linear-to-b shadow-lg backdrop-blur-sm transition-all ${
         selected
           ? "border-orange-400 shadow-orange-500/50 ring-2 ring-orange-400/30"
           : statusColors[executionStatus]
@@ -59,7 +59,7 @@ export const PythonNode = memo(({ id, data, selected }: PythonNodeProps) => {
         type="target"
         position={Position.Left}
         id="input"
-        className="!h-3 !w-3 !border-2 !border-orange-500 !bg-orange-400 hover:!scale-125 transition-transform"
+        className="h-3! w-3! border-2! border-orange-500! bg-orange-400! hover:scale-125! transition-transform"
         style={{ left: -6 }}
       />
 
@@ -118,7 +118,7 @@ export const PythonNode = memo(({ id, data, selected }: PythonNodeProps) => {
         type="source"
         position={Position.Right}
         id="output"
-        className="!h-3 !w-3 !border-2 !border-orange-500 !bg-orange-400 hover:!scale-125 transition-transform"
+        className="h-3! w-3! border-2! border-orange-500! bg-orange-400! hover:scale-125! transition-transform"
         style={{ right: -6 }}
       />
     </div>

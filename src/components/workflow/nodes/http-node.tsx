@@ -77,7 +77,7 @@ export const HttpNode = memo(({ id, data, selected }: HttpNodeProps) => {
         type="target"
         position={Position.Left}
         id="input"
-        className="!h-3 !w-3 !border-2 !border-zinc-600 !bg-zinc-500 hover:!bg-zinc-400 transition-colors"
+        className="h-3! w-3! border-2! border-zinc-600! bg-zinc-500! hover:bg-zinc-400! transition-colors"
         style={{ left: -6 }}
       />
 
@@ -115,7 +115,7 @@ export const HttpNode = memo(({ id, data, selected }: HttpNodeProps) => {
         type="source"
         position={Position.Right}
         id="output"
-        className="!h-3 !w-3 !border-2 !border-zinc-600 !bg-zinc-500 hover:!bg-zinc-400 transition-colors"
+        className="h-3! w-3! border-2! border-zinc-600! bg-zinc-500! hover:bg-zinc-400! transition-colors"
         style={{ right: -6 }}
       />
 

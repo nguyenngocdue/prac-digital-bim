@@ -21,37 +21,42 @@ const webhookConfigs = new Map<
 // Handle all HTTP methods
 export async function GET(
   request: NextRequest,
-  { params }: { params: { nodeId: string } }
+  { params }: { params: Promise<{ nodeId: string }> }
 ) {
-  return handleWebhook(request, params.nodeId, "GET");
+  const { nodeId } = await params;
+  return handleWebhook(request, nodeId, "GET");
 }
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { nodeId: string } }
+  { params }: { params: Promise<{ nodeId: string }> }
 ) {
-  return handleWebhook(request, params.nodeId, "POST");
+  const { nodeId } = await params;
+  return handleWebhook(request, nodeId, "POST");
 }
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { nodeId: string } }
+  { params }: { params: Promise<{ nodeId: string }> }
 ) {
-  return handleWebhook(request, params.nodeId, "PUT");
+  const { nodeId } = await params;
+  return handleWebhook(request, nodeId, "PUT");
 }
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { nodeId: string } }
+  { params }: { params: Promise<{ nodeId: string }> }
 ) {
-  return handleWebhook(request, params.nodeId, "PATCH");
+  const { nodeId } = await params;
+  return handleWebhook(request, nodeId, "PATCH");
 }
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { nodeId: string } }
+  { params }: { params: Promise<{ nodeId: string }> }
 ) {
-  return handleWebhook(request, params.nodeId, "DELETE");
+  const { nodeId } = await params;
+  return handleWebhook(request, nodeId, "DELETE");
 }
 
 async function handleWebhook(
@@ -84,6 +89,12 @@ async function handleWebhook(
         }
         // Validate basic auth
         const base64Credentials = authHeader.split(" ")[1];
+        if (!base64Credentials) {
+          return NextResponse.json(
+            { error: "Invalid authorization format" },
+            { status: 401 }
+          );
+        }
         const credentials = Buffer.from(base64Credentials, "base64").toString(
           "ascii"
         );
@@ -180,9 +191,9 @@ async function handleWebhook(
 // Configuration endpoint to set webhook options
 export async function OPTIONS(
   request: NextRequest,
-  { params }: { params: { nodeId: string } }
+  { params }: { params: Promise<{ nodeId: string }> }
 ) {
-  const { nodeId } = params;
+  const { nodeId } = await params;
 
   // Handle configuration requests
   if (request.headers.get("x-webhook-config")) {
