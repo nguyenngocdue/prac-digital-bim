@@ -30,6 +30,8 @@ import {
   Webhook,
   Upload,
   Type,
+  Hash,
+  GitBranch,
 } from "lucide-react";
 import type { CategoryGroup, NodeDefinition } from "@/types/workflow";
 
@@ -57,6 +59,14 @@ const INPUT_NODES: NodeDefinition[] = [
     icon: Type,
     badge: "New",
     description: "Enter text or string value",
+  },
+  {
+    id: "number-input",
+    label: "Number Input",
+    category: "Input",
+    icon: Hash,
+    badge: "New",
+    description: "Enter numeric value",
   },
   {
     id: "parameter",
@@ -214,6 +224,18 @@ const DATA_NODES: NodeDefinition[] = [
   },
 ];
 
+// Logic Nodes
+const LOGIC_NODES: NodeDefinition[] = [
+  {
+    id: "if-else",
+    label: "IF / ELSE",
+    category: "Logic",
+    icon: GitBranch,
+    badge: "New",
+    description: "Conditional branching with multiple operators",
+  },
+];
+
 // Output Nodes
 const OUTPUT_NODES: NodeDefinition[] = [
   {
@@ -259,6 +281,11 @@ export const NODE_CATEGORIES: CategoryGroup[] = [
     name: "Data",
     icon: Database,
     nodes: DATA_NODES,
+  },
+  {
+    name: "Logic",
+    icon: GitBranch,
+    nodes: LOGIC_NODES,
   },
   {
     name: "Output",

@@ -115,10 +115,10 @@ export const SetParameterNode = memo(({ id, data, selected }: SetParameterNodePr
       }`}
     >
       <NodeCloseButton nodeId={id} variant="default" />
-      <NodeExecutionBadge 
+      {/* <NodeExecutionBadge 
         status={executionStatus} 
         duration={nodeState?.duration} 
-      />
+      /> */}
 
       {/* Input Handle - Element */}
       <Handle

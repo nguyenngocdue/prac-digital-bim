@@ -22,6 +22,8 @@ import { FileUploadNode } from "./nodes/file-upload-node";
 import { GetParameterNode } from "./nodes/get-parameter-node";
 import { SetParameterNode } from "./nodes/set-parameter-node";
 import { StringInputNode } from "./nodes/string-input-node";
+import { NumberInputNode } from "./nodes/number-input-node";
+import { IfElseNode } from "./nodes/if-else-node";
 import { IFCUploadDialog } from "./dialogs/ifc-upload-dialog";
 import { useNodeFileUpload } from "@/hooks/use-node-file-upload";
 
@@ -36,6 +38,8 @@ const nodeTypes = {
   "get-parameter": GetParameterNode,
   "set-parameter": SetParameterNode,
   "string-input": StringInputNode,
+  "number-input": NumberInputNode,
+  "if-else": IfElseNode,
 };
 
 export function WorkflowCanvas() {

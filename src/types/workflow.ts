@@ -11,6 +11,7 @@ export type NodeCategory =
   | "Geometry"
   | "Data"
   | "Analysis"
+  | "Logic"
   | "Output"
   | "Custom";
 

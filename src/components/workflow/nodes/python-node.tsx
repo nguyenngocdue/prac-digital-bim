@@ -49,10 +49,10 @@ export const PythonNode = memo(({ id, data, selected }: PythonNodeProps) => {
       }`}
     >
       <NodeCloseButton nodeId={id} variant="orange" />
-      <NodeExecutionBadge 
+      {/* <NodeExecutionBadge 
         status={executionStatus} 
         duration={nodeState?.duration} 
-      />
+      /> */}
 
       {/* Input Handle */}
       <Handle

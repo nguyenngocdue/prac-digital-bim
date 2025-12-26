@@ -61,10 +61,10 @@ export const StringInputNode = memo(({ id, data, selected }: StringInputNodeProp
       }`}
     >
       <NodeCloseButton nodeId={id} variant="default" />
-      <NodeExecutionBadge 
+      {/* <NodeExecutionBadge 
         status={executionStatus} 
         duration={nodeState?.duration} 
-      />
+      /> */}
 
       {/* Output Handle */}
       <Handle

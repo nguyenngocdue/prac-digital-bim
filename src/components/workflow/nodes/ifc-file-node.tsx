@@ -40,10 +40,10 @@ export const IFCFileNode = memo(({ id, data, selected }: IFCFileNodeProps) => {
       } ${statusStyles[executionStatus]}`}
     >
       <NodeCloseButton nodeId={id} variant="subtle" />
-      <NodeExecutionBadge 
+      {/* <NodeExecutionBadge 
         status={executionStatus} 
         duration={nodeState?.duration} 
-      />
+      /> */}
       
       {/* Input Handle - Điểm kết nối ở trên */}
       <Handle

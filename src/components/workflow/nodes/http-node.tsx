@@ -67,10 +67,10 @@ export const HttpNode = memo(({ id, data, selected }: HttpNodeProps) => {
       }`}
     >
       <NodeCloseButton nodeId={id} variant="subtle" />
-      <NodeExecutionBadge 
+      {/* <NodeExecutionBadge 
         status={executionStatus} 
         duration={nodeState?.duration} 
-      />
+      /> */}
 
       {/* Input Handle */}
       <Handle

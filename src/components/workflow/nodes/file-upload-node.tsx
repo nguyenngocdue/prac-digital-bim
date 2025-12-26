@@ -128,10 +128,10 @@ export const FileUploadNode = memo(({ id, data, selected }: FileUploadNodeProps)
       }`}
     >
       <NodeCloseButton nodeId={id} variant="cyan" />
-      <NodeExecutionBadge 
+      {/* <NodeExecutionBadge 
         status={executionStatus} 
         duration={nodeState?.duration} 
-      />
+      /> */}
 
       {/* Output Handle */}
       <Handle
