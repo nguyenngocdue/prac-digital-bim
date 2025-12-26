@@ -53,7 +53,7 @@ function GLTFModel({
     const newScale = maxDim > 0 ? targetSize / maxDim : 1;
 
     modelRef.current.scale.setScalar(newScale);
-    modelRef.current.position.copy(center.multiplyScalar(-newScale));
+    modelRef.current.position.copy(center.clone().multiplyScalar(-1));
 
     // Recalculate bounds after scaling/centering
     const scaledBox = new THREE.Box3().setFromObject(modelRef.current);
@@ -263,12 +263,13 @@ export const GltfViewerNode = memo(({ id, data, selected }: GltfViewerNodeProps)
             <>
               <Canvas
                 className="w-full h-full"
-                gl={{ 
-                  antialias: true,
-                  alpha: true,
-                  preserveDrawingBuffer: true 
-                }}
-              >
+        gl={{ 
+          antialias: true,
+          alpha: true,
+          preserveDrawingBuffer: true 
+        }}
+        camera={{ fov: 50, position: [5, 5, 5], near: 0.1, far: 2000 }}
+      >
                 <PerspectiveCamera makeDefault position={[5, 5, 5]} fov={50} />
                 
                 {/* Lighting */}
