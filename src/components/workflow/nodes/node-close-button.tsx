@@ -6,7 +6,7 @@ import { memo } from "react";
 
 type NodeCloseButtonProps = {
   nodeId: string;
-  variant?: "default" | "subtle" | "emerald" | "orange";
+  variant?: "default" | "subtle" | "emerald" | "orange" | "cyan";
   position?: "outside" | "inside";
   className?: string;
 };
@@ -40,6 +40,10 @@ export const NodeCloseButton = memo(({
     orange: {
       button: "bg-orange-700/50 hover:bg-red-500 border-orange-600/50 hover:border-red-400",
       icon: "text-orange-200 hover:text-white",
+    },
+    cyan: {
+      button: "bg-cyan-700/50 hover:bg-red-500 border-cyan-600/50 hover:border-red-400",
+      icon: "text-cyan-200 hover:text-white",
     },
   };
 

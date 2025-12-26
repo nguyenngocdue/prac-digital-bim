@@ -15,6 +15,7 @@ import { IFCFileNode } from "./nodes/ifc-file-node";
 import { PythonNode } from "./nodes/python-node";
 import { AIChatNoteNode } from "./nodes/ai-chat-note-node";
 import { HttpNode } from "./nodes/http-node";
+import { Viewer3DNode } from "./nodes/viewer-3d-node";
 import { IFCUploadDialog } from "./dialogs/ifc-upload-dialog";
 import { useNodeFileUpload } from "@/hooks/use-node-file-upload";
 
@@ -23,6 +24,7 @@ const nodeTypes = {
   python: PythonNode,
   "ai-chat": AIChatNoteNode,
   http: HttpNode,
+  "3d-viewer": Viewer3DNode,
 };
 
 export function WorkflowCanvas() {
@@ -107,6 +109,12 @@ export function WorkflowCanvas() {
           headers: [],
           queryParams: [],
           body: "",
+        };
+      } else if (type === "3d-viewer") {
+        nodeData = {
+          label: "3D Viewer",
+          status: "waiting",
+          modelUrl: "",
         };
       }
 
