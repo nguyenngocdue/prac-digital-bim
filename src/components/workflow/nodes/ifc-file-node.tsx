@@ -2,8 +2,10 @@
 
 import { Handle, Position } from "@xyflow/react";
 import { memo } from "react";
+import { NodeCloseButton } from "./node-close-button";
 
 type IFCFileNodeProps = {
+  id: string;
   data: {
     label?: string;
     schema?: string;
@@ -13,15 +15,16 @@ type IFCFileNodeProps = {
   selected?: boolean;
 };
 
-export const IFCFileNode = memo(({ data, selected }: IFCFileNodeProps) => {
+export const IFCFileNode = memo(({ id, data, selected }: IFCFileNodeProps) => {
   return (
     <div
-      className={`relative min-w-[280px] rounded-lg border-2 bg-amber-300 shadow-md transition-all ${
+      className={`group relative min-w-[280px] rounded-lg border-2 bg-amber-300 shadow-md transition-all ${
         selected
           ? "border-zinc-900 shadow-lg"
           : "border-zinc-300 hover:border-zinc-400 hover:shadow-lg"
       }`}
     >
+      <NodeCloseButton nodeId={id} variant="subtle" />
       {/* Input Handle - Điểm kết nối ở trên */}
       <Handle
         type="target"

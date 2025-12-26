@@ -3,6 +3,7 @@
 import { Handle, Position } from "@xyflow/react";
 import { Code2, Play } from "lucide-react";
 import { memo } from "react";
+import { NodeCloseButton } from "./node-close-button";
 
 /**
  * Python Node - Node để chạy Python code
@@ -11,6 +12,7 @@ import { memo } from "react";
  */
 
 type PythonNodeProps = {
+  id: string;
   data: {
     label?: string;
     code?: string;
@@ -19,7 +21,7 @@ type PythonNodeProps = {
   selected?: boolean;
 };
 
-export const PythonNode = memo(({ data, selected }: PythonNodeProps) => {
+export const PythonNode = memo(({ id, data, selected }: PythonNodeProps) => {
   const statusColors = {
     idle: "border-orange-500/50 from-orange-950/40 to-orange-950/20",
     running: "border-yellow-500/50 from-yellow-950/40 to-yellow-950/20 animate-pulse",
@@ -37,6 +39,8 @@ export const PythonNode = memo(({ data, selected }: PythonNodeProps) => {
           : statusColors[status]
       }`}
     >
+      <NodeCloseButton nodeId={id} variant="orange" />
+
       {/* Input Handle */}
       <Handle
         type="target"
