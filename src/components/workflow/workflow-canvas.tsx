@@ -21,6 +21,7 @@ import { WebhookNode } from "./nodes/webhook-node";
 import { FileUploadNode } from "./nodes/file-upload-node";
 import { GetParameterNode } from "./nodes/get-parameter-node";
 import { SetParameterNode } from "./nodes/set-parameter-node";
+import { StringInputNode } from "./nodes/string-input-node";
 import { IFCUploadDialog } from "./dialogs/ifc-upload-dialog";
 import { useNodeFileUpload } from "@/hooks/use-node-file-upload";
 
@@ -34,6 +35,7 @@ const nodeTypes = {
   "file-upload": FileUploadNode,
   "get-parameter": GetParameterNode,
   "set-parameter": SetParameterNode,
+  "string-input": StringInputNode,
 };
 
 export function WorkflowCanvas() {

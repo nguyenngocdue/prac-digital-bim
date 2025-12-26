@@ -29,6 +29,7 @@ import {
   Globe,
   Webhook,
   Upload,
+  Type,
 } from "lucide-react";
 import type { CategoryGroup, NodeDefinition } from "@/types/workflow";
 
@@ -48,6 +49,14 @@ const INPUT_NODES: NodeDefinition[] = [
     icon: Upload,
     badge: "New",
     description: "Upload GLTF, Revit, IFC files",
+  },
+  {
+    id: "string-input",
+    label: "String Input",
+    category: "Input",
+    icon: Type,
+    badge: "New",
+    description: "Enter text or string value",
   },
   {
     id: "parameter",
