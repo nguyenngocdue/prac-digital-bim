@@ -20,6 +20,7 @@ import { Viewer3DNode } from "./nodes/viewer-3d-node";
 import { WebhookNode } from "./nodes/webhook-node";
 import { FileUploadNode } from "./nodes/file-upload-node";
 import { GetParameterNode } from "./nodes/get-parameter-node";
+import { SetParameterNode } from "./nodes/set-parameter-node";
 import { IFCUploadDialog } from "./dialogs/ifc-upload-dialog";
 import { useNodeFileUpload } from "@/hooks/use-node-file-upload";
 
@@ -32,6 +33,7 @@ const nodeTypes = {
   webhook: WebhookNode,
   "file-upload": FileUploadNode,
   "get-parameter": GetParameterNode,
+  "set-parameter": SetParameterNode,
 };
 
 export function WorkflowCanvas() {

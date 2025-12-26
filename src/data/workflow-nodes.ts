@@ -120,6 +120,14 @@ const DATA_NODES: NodeDefinition[] = [
     description: "Extract parameter values from BIM elements",
   },
   {
+    id: "set-parameter",
+    label: "Set Parameter",
+    category: "Data",
+    icon: PenLine,
+    badge: "New",
+    description: "Set parameter values for BIM elements",
+  },
+  {
     id: "filter-elements",
     label: "Filter Elements",
     category: "Data",
