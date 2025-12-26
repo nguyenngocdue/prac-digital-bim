@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import Header from "../components/header";
-import NavigationTabs from "../components/navigation-tabs";
+import UnifiedHeader from "../components/unified-header";
 import ClientProviders from "@/providers/client-providers";
 
 const geistSans = Geist({
@@ -67,8 +66,7 @@ const RootLayout = ({
       )}
         <body className={`${geistSans.variable} ${geistMono.variable} antialiased h-screen flex flex-col bg-zinc-950`}>
             <ClientProviders>
-              <Header />
-              <NavigationTabs />
+              <UnifiedHeader />
               <main className="flex-1 overflow-hidden">{children}</main>
               {/* <Footer /> */}
             </ClientProviders>
