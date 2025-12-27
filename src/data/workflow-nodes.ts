@@ -33,6 +33,7 @@ import {
   Hash,
   GitBranch,
   Box,
+  Loader2,
 } from "lucide-react";
 import type { CategoryGroup, NodeDefinition } from "@/types/workflow";
 
@@ -44,6 +45,14 @@ const INPUT_NODES: NodeDefinition[] = [
     category: "Input",
     icon: FileText,
     description: "Load IFC file",
+  },
+  {
+    id: "ifc-loader",
+    label: "IFC Loader",
+    category: "Input",
+    icon: Loader2,
+    badge: "New",
+    description: "Convert IFC to Fragments via @thatopen/components",
   },
   {
     id: "file-upload",

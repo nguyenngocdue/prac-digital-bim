@@ -4,11 +4,12 @@ export const fileUploadExecutor: NodeExecutor = async (
   context: NodeExecutionContext
 ) => {
   const { node, updateNodeData } = context;
-  const { fileName, fileSize, fileType, fileUrl } = (node.data || {}) as {
+  const { fileName, fileSize, fileType, fileUrl, file } = (node.data || {}) as {
     fileName?: string;
     fileSize?: number;
     fileType?: string;
     fileUrl?: string;
+    file?: File;
   };
 
   if (!fileName) {
@@ -31,11 +32,12 @@ export const fileUploadExecutor: NodeExecutor = async (
         type: fileType,
         url: fileUrl,
       },
+      blob: file ?? null,
     },
   };
 
   // Keep node data in sync for viewer nodes
-  updateNodeData?.(node.id, { fileName, fileSize, fileType, fileUrl });
+  updateNodeData?.(node.id, { fileName, fileSize, fileType, fileUrl, file });
 
   return result;
 };

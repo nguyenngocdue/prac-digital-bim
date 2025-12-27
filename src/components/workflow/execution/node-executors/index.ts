@@ -10,6 +10,8 @@ import { fileUploadExecutor } from "./file-upload-executor";
 import { gltfViewerExecutor } from "./gltf-viewer-executor";
 import { getParameterExecutor } from "./get-parameter-executor";
 import { setParameterExecutor } from "./set-parameter-executor";
+import { ifcLoaderExecutor } from "./ifc-loader-executor";
+import { viewer3DExecutor } from "./viewer-3d-executor";
 
 // ============================================================================
 // Register All Executors
@@ -27,6 +29,8 @@ export function registerAllExecutors(): void {
   workflowExecutor.registerExecutor("gltf-viewer", gltfViewerExecutor);
   workflowExecutor.registerExecutor("get-parameter", getParameterExecutor);
   workflowExecutor.registerExecutor("set-parameter", setParameterExecutor);
+  workflowExecutor.registerExecutor("ifc-loader", ifcLoaderExecutor);
+  workflowExecutor.registerExecutor("3d-viewer", viewer3DExecutor);
 }
 
 // Export individual executors
@@ -41,3 +45,5 @@ export { fileUploadExecutor } from "./file-upload-executor";
 export { gltfViewerExecutor } from "./gltf-viewer-executor";
 export { getParameterExecutor } from "./get-parameter-executor";
 export { setParameterExecutor } from "./set-parameter-executor";
+export { ifcLoaderExecutor } from "./ifc-loader-executor";
+export { viewer3DExecutor } from "./viewer-3d-executor";

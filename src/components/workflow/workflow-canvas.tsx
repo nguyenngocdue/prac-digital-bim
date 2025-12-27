@@ -25,6 +25,7 @@ import { StringInputNode } from "./nodes/string-input-node";
 import { NumberInputNode } from "./nodes/number-input-node";
 import { IfElseNode } from "./nodes/if-else-node";
 import { GltfViewerNode } from "./nodes/gltf-viewer-node";
+import { IfcLoaderNode } from "./nodes/ifc-loader-node";
 import { IFCUploadDialog } from "./dialogs/ifc-upload-dialog";
 import { useNodeFileUpload } from "@/hooks/use-node-file-upload";
 
@@ -42,6 +43,7 @@ const nodeTypes = {
   "number-input": NumberInputNode,
   "if-else": IfElseNode,
   "gltf-viewer": GltfViewerNode,
+  "ifc-loader": IfcLoaderNode,
 };
 
 export function WorkflowCanvas() {
@@ -105,6 +107,12 @@ export function WorkflowCanvas() {
           schema: "IFC2X3",
           elements: 108,
           filePath: "/path/to/building.ifc",
+        };
+      } else if (type === "ifc-loader") {
+        nodeData = {
+          label: "IfcLoader",
+          status: "waiting",
+          wasmPath: "/wasm/",
         };
       } else if (type === "python") {
         nodeData = {

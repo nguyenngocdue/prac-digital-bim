@@ -21,6 +21,7 @@ type FileUploadNodeProps = {
     fileType?: FileType;
     fileUrl?: string;
     allowedTypes?: FileType[];
+    file?: File;
   };
   selected?: boolean;
 };
@@ -89,6 +90,7 @@ export const FileUploadNode = memo(({ id, data, selected }: FileUploadNodeProps)
       fileSize: file.size,
       fileType: fileExt,
       fileUrl,
+      file,
     });
   };
 
@@ -129,6 +131,7 @@ export const FileUploadNode = memo(({ id, data, selected }: FileUploadNodeProps)
       fileSize: undefined,
       fileType: undefined,
       fileUrl: undefined,
+      file: undefined,
     });
   };
 
