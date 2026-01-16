@@ -2,6 +2,8 @@
 
 Web application for BIM workflows, built with Next.js. This project references IFC classification materials to support presentation and lookup.
 
+![UI](UI.png)
+
 ## Requirements
 
 - Node.js 18+ (recommended)
