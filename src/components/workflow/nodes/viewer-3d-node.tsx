@@ -7,7 +7,6 @@ import * as THREE from "three";
 import {
   Components,
   FragmentsManager,
-  IfcLoader,
   SimpleCamera,
   SimpleGrid,
   SimpleRenderer,
@@ -28,10 +27,13 @@ type Viewer3DNodeData = {
   status?: ViewerStatus;
   fileUrl?: string;
   fileName?: string;
+  modelId?: string;
   file?: File;
   bytes?: Uint8Array;
   arrayBuffer?: ArrayBuffer;
+  fragmentsBuffer?: ArrayBuffer | Uint8Array;
   meta?: Record<string, unknown>;
+  boundingBox?: { min: number[]; max: number[] };
 };
 
 type ViewerResources = {
@@ -44,7 +46,7 @@ type ViewerResources = {
   grid: SimpleGrid;
   world: any;
   model?: any;
-  animation?: number;
+  animationId?: number;
   fragmentsUpdating?: boolean;
 };
 
@@ -64,6 +66,12 @@ async function toBytes(data: Viewer3DNodeData): Promise<Uint8Array> {
     return new Uint8Array(buf);
   }
   throw new Error("No IFC data available");
+}
+
+function toFragmentsBuffer(data: Viewer3DNodeData): ArrayBuffer | Uint8Array | null {
+  if (data.fragmentsBuffer instanceof ArrayBuffer) return data.fragmentsBuffer;
+  if (data.fragmentsBuffer instanceof Uint8Array) return data.fragmentsBuffer;
+  return null;
 }
 
 async function ensureWebIfcWasmPaths(): Promise<void> {
@@ -103,11 +111,15 @@ async function focusCamera(camera: SimpleCamera, box: THREE.Box3) {
   const newPos = center.clone().add(direction.multiplyScalar(distance));
 
   const threeCam = camera.three;
+  if (threeCam instanceof THREE.PerspectiveCamera) {
+    threeCam.near = Math.max(0.05, distance / 1000);
+    threeCam.far = Math.max(1000, distance * 10);
+  }
   threeCam.position.copy(newPos);
   threeCam.lookAt(center);
   threeCam.updateProjectionMatrix();
 
-  camera.controls.setLookAt(newPos.x, newPos.y, newPos.z, center.x, center.y, center.z, true);
+  camera.controls.setLookAt(newPos.x, newPos.y, newPos.z, center.x, center.y, center.z, false);
 }
 
 export const Viewer3DNode = memo(({ id, data, selected }: { id: string; data: Viewer3DNodeData; selected: boolean }) => {
@@ -119,6 +131,14 @@ export const Viewer3DNode = memo(({ id, data, selected }: { id: string; data: Vi
   const resourcesRef = useRef<ViewerResources | null>(null);
   const [viewerStatus, setViewerStatus] = useState<ViewerStatus>(data.status || "waiting");
   const [error, setError] = useState<string | undefined>(undefined);
+
+  const stopPointerPropagation = (e: React.PointerEvent) => {
+    e.stopPropagation();
+  };
+
+  const stopWheelPropagation = (e: React.WheelEvent) => {
+    e.stopPropagation();
+  };
 
   const statusClasses: Record<ViewerStatus, string> = {
     waiting: "border-cyan-500/50 from-slate-950/60 to-slate-900/30",
@@ -133,8 +153,8 @@ export const Viewer3DNode = memo(({ id, data, selected }: { id: string; data: Vi
       resourcesRef.current = null;
       if (res) {
         try {
-          if (res.animation !== undefined) {
-            cancelAnimationFrame(res.animation);
+          if (res.animationId !== undefined) {
+            cancelAnimationFrame(res.animationId);
           }
           if (res.model?.object) {
             res.scene.three.remove(res.model.object);
@@ -161,22 +181,19 @@ export const Viewer3DNode = memo(({ id, data, selected }: { id: string; data: Vi
       backgroundColor: new THREE.Color("#0b1220"),
     });
 
-    const camera = new SimpleCamera(components);
     const renderer = new SimpleRenderer(components, containerRef.current, {
       antialias: true,
       alpha: true,
     });
     renderer.mode = RendererMode.AUTO;
-    renderer.resize();
-    camera.updateAspect();
-
-    // Important: assign renderer before camera so camera controls attach to a renderer
     world.scene = scene;
     world.renderer = renderer;
-    renderer.currentWorld = world;
+
+    // Important: assign renderer before camera so camera controls can attach to a renderer
+    const camera = new SimpleCamera(components);
     world.camera = camera;
-    camera.currentWorld = world;
     world.defaultCamera = camera;
+    camera.updateAspect();
 
     const grid = new SimpleGrid(components, world);
     grid.setup({ visible: true });
@@ -189,25 +206,7 @@ export const Viewer3DNode = memo(({ id, data, selected }: { id: string; data: Vi
     fragments.init(workerUrl);
 
     components.init();
-
-    let res: ViewerResources;
-    const tickFragments = async () => {
-      if (!res || res.fragmentsUpdating) return;
-      res.fragmentsUpdating = true;
-      try {
-        await res.fragments.core.update();
-      } finally {
-        res.fragmentsUpdating = false;
-      }
-    };
-    const animate = () => {
-      if (!res) return;
-      res.renderer.needsUpdate = true;
-      res.worlds.update();
-      void tickFragments();
-      res.animation = requestAnimationFrame(animate);
-    };
-    res = {
+    const res: ViewerResources = {
       components,
       fragments,
       worlds,
@@ -217,7 +216,25 @@ export const Viewer3DNode = memo(({ id, data, selected }: { id: string; data: Vi
       grid,
       world,
     };
-    res.animation = requestAnimationFrame(animate);
+
+    const tick = () => {
+      if (!resourcesRef.current) return;
+      if (!res.fragmentsUpdating && res.fragments.initialized) {
+        res.fragmentsUpdating = true;
+        try {
+          void res.fragments.core
+            .update()
+            .catch(() => undefined)
+            .finally(() => {
+              res.fragmentsUpdating = false;
+            });
+        } catch {
+          res.fragmentsUpdating = false;
+        }
+      }
+      res.animationId = requestAnimationFrame(tick);
+    };
+    res.animationId = requestAnimationFrame(tick);
 
     resourcesRef.current = res;
 
@@ -226,7 +243,8 @@ export const Viewer3DNode = memo(({ id, data, selected }: { id: string; data: Vi
 
   useEffect(() => {
     const hasSource = data.file || data.fileUrl || data.bytes || data.arrayBuffer;
-    if (!hasSource) {
+    const hasFragments = !!toFragmentsBuffer(data);
+    if (!hasSource && !hasFragments) {
       setViewerStatus("waiting");
       setError(undefined);
       return;
@@ -238,47 +256,76 @@ export const Viewer3DNode = memo(({ id, data, selected }: { id: string; data: Vi
       try {
         setViewerStatus("loading");
         setError(undefined);
-        await ensureWebIfcWasmPaths();
         const resources = ensureResources();
 
         if (resources.model?.object) {
           resources.scene.three.remove(resources.model.object);
-          resources.model.dispose?.();
+          void resources.model.dispose?.();
           resources.model = undefined;
         }
 
-        const bytes = await toBytes(data);
-        const ifcLoader = resources.components.get(IfcLoader);
-        await ifcLoader.setup({
-          autoSetWasm: false,
-          wasm: {
-            path:
-              typeof window !== "undefined"
-                ? new URL("/wasm/", window.location.origin).toString()
-                : "/wasm/",
-            absolute: true,
-          },
-        });
+        const modelId = data.modelId || data.fileName || "ifc-model";
 
-        const modelName = data.fileName || "ifc-model";
-        const model = await ifcLoader.load(bytes, true, modelName);
+        // If we have a bounding box from upstream (e.g. IfcLoader node),
+        // move the camera first so Fragments streaming requests geometry in view.
+        if (data.boundingBox?.min?.length === 3 && data.boundingBox?.max?.length === 3) {
+          const box = new THREE.Box3(
+            new THREE.Vector3(data.boundingBox.min[0], data.boundingBox.min[1], data.boundingBox.min[2]),
+            new THREE.Vector3(data.boundingBox.max[0], data.boundingBox.max[1], data.boundingBox.max[2])
+          );
+          if (!box.isEmpty()) {
+            await focusCamera(resources.camera, box);
+          }
+        }
+
+        let model: any;
+        const fragmentsBuffer = toFragmentsBuffer(data);
+        if (fragmentsBuffer) {
+          model = await resources.fragments.core.load(fragmentsBuffer, {
+            modelId,
+            camera: resources.camera.three,
+          });
+        } else {
+          await ensureWebIfcWasmPaths();
+          const bytes = await toBytes(data);
+          const { IfcImporter } = await import("@thatopen/fragments");
+          const importer = new IfcImporter();
+          importer.wasm.path =
+            typeof window !== "undefined"
+              ? new URL("/wasm/", window.location.origin).toString()
+              : "/wasm/";
+          importer.wasm.absolute = true;
+
+          const fragmentsBytes = await importer.process({ bytes });
+          model = await resources.fragments.core.load(fragmentsBytes, {
+            modelId,
+            camera: resources.camera.three,
+          });
+        }
 
         resources.model = model;
         resources.scene.three.add(model.object);
-        resources.world.meshes.add(model.object as THREE.Mesh);
+        // Track meshes for raycasting without assuming model.object is a Mesh.
+        model.object.traverse((obj: THREE.Object3D) => {
+          const asMesh = obj as THREE.Mesh;
+          if ((asMesh as any).isMesh) resources.world.meshes.add(asMesh);
+        });
 
-        try {
+        // Keep updating until at least some geometry is present in the scene graph.
+        for (let i = 0; i < 20; i++) {
           await resources.fragments.core.update(true);
-        } catch {
-          // ignore
+          const objectBox = new THREE.Box3().setFromObject(model.object);
+          if (!objectBox.isEmpty()) {
+            await focusCamera(resources.camera, objectBox);
+            break;
+          }
+          await new Promise((resolve) => setTimeout(resolve, 50));
         }
 
-        if (model.box) {
+        // Final camera focus if model.box is available
+        if (model.box && !model.box.isEmpty?.()) {
           await focusCamera(resources.camera, model.box);
         }
-
-        resources.renderer.needsUpdate = true;
-        resources.worlds.update();
 
         if (!cancelled) {
           setViewerStatus("ready");
@@ -298,7 +345,7 @@ export const Viewer3DNode = memo(({ id, data, selected }: { id: string; data: Vi
     return () => {
       cancelled = true;
     };
-  }, [data.file, data.fileUrl, data.bytes, data.arrayBuffer, data.fileName]);
+  }, [data.file, data.fileUrl, data.bytes, data.arrayBuffer, data.fragmentsBuffer, data.fileName, data.modelId, data.boundingBox]);
 
   const resolvedFileName =
     data.fileName ||
@@ -398,7 +445,14 @@ export const Viewer3DNode = memo(({ id, data, selected }: { id: string; data: Vi
         </div>
 
         <div className="relative flex-1">
-          <div ref={containerRef} className="absolute inset-0 rounded-b-xl overflow-hidden bg-[#0b1220]" />
+          <div
+            ref={containerRef}
+            className="absolute inset-0 rounded-b-xl overflow-hidden bg-[#0b1220] nodrag nowheel"
+            onPointerDown={stopPointerPropagation}
+            onPointerMove={stopPointerPropagation}
+            onPointerUp={stopPointerPropagation}
+            onWheel={stopWheelPropagation}
+          />
 
           {viewerStatus === "waiting" && (
             <div className="absolute inset-0 flex flex-col items-center justify-center text-zinc-400 gap-2 pointer-events-none">
@@ -408,14 +462,14 @@ export const Viewer3DNode = memo(({ id, data, selected }: { id: string; data: Vi
           )}
 
           {viewerStatus === "loading" && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center text-cyan-200 gap-2 bg-black/30 backdrop-blur-sm">
+            <div className="absolute inset-0 flex flex-col items-center justify-center text-cyan-200 gap-2 bg-black/30 backdrop-blur-sm pointer-events-none">
               <Loader2 className="h-6 w-6 animate-spin" />
               <p className="text-sm">Loading IFC fragments…</p>
             </div>
           )}
 
           {viewerStatus === "error" && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center text-rose-200 gap-2 bg-black/50 backdrop-blur-sm px-6 text-center">
+            <div className="absolute inset-0 flex flex-col items-center justify-center text-rose-200 gap-2 bg-black/50 backdrop-blur-sm px-6 text-center pointer-events-none">
               <AlertCircle className="h-6 w-6" />
               <p className="text-sm font-semibold">Failed to load IFC</p>
               {error && <p className="text-xs text-rose-100/80">{error}</p>}

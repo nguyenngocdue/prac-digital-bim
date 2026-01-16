@@ -118,7 +118,7 @@ export const ifcLoaderExecutor: NodeExecutor = async (
     }
     const ifcLoader = components.get(IfcLoader);
 
-    // Sử dụng wasm local để tránh phụ thuộc mạng
+    // Use local WASM assets to avoid network dependency.
     const wasmPath =
       typeof window !== "undefined"
         ? new URL("/wasm/", window.location.origin).toString()
@@ -139,6 +139,10 @@ export const ifcLoaderExecutor: NodeExecutor = async (
       `ifc-${node.id}`;
 
     const model = await ifcLoader.load(fileBytes, true, modelName);
+
+    // Export a fragments buffer so downstream nodes (e.g. 3D Viewer) can render
+    // without re-running IFC -> Fragments conversion and without web-ifc WASM.
+    const fragmentsBuffer = await model.getBuffer(false);
 
     let itemsWithGeometry: number | undefined;
     try {
@@ -166,6 +170,7 @@ export const ifcLoaderExecutor: NodeExecutor = async (
       success: true,
       fileName: modelName,
       modelId: model.modelId,
+      fragmentsBuffer,
       fragmentsCount,
       itemsWithGeometry,
       boundingBox,
@@ -179,6 +184,7 @@ export const ifcLoaderExecutor: NodeExecutor = async (
       status: "ready",
       fileName: modelName,
       modelId: model.modelId,
+      fragmentsBuffer,
       fragmentsCount,
       itemsWithGeometry,
       boundingBox,
