@@ -37,10 +37,10 @@ export const IfcLoaderNode = memo(({ id, data, selected }: IfcLoaderNodeProps) =
     (executionStatus === "running" ? "loading" : executionStatus === "error" ? "error" : "waiting");
 
   const statusStyles: Record<LoaderStatus, string> = {
-    waiting: "border-cyan-500/50 from-slate-950/60 to-slate-900/30",
-    loading: "border-blue-500/60 from-blue-950/50 to-slate-900/40 animate-pulse",
-    ready: "border-emerald-500/60 from-emerald-950/40 to-slate-900/30",
-    error: "border-rose-500/70 from-rose-950/50 to-slate-900/40",
+    waiting: "ring-1 ring-teal-200/70",
+    loading: "ring-2 ring-sky-200/70 animate-pulse",
+    ready: "ring-2 ring-emerald-200/70",
+    error: "ring-2 ring-rose-200/70",
   };
 
   const statusCopy: Record<LoaderStatus, string> = {
@@ -60,10 +60,10 @@ export const IfcLoaderNode = memo(({ id, data, selected }: IfcLoaderNodeProps) =
   return (
     <div
       className={cn(
-        "group relative min-w-[320px] max-w-[520px] rounded-xl border-2 bg-gradient-to-br shadow-lg transition-all",
+        "group relative min-w-[320px] max-w-[520px] rounded-2xl border border-[var(--workflow-border)] bg-[var(--workflow-panel)] shadow-[0_12px_30px_var(--workflow-shadow)] transition-all",
         selected
-          ? "shadow-cyan-500/30 ring-2 ring-cyan-400/30"
-          : "hover:border-cyan-400/60 hover:shadow-cyan-500/20",
+          ? "border-teal-300 ring-2 ring-teal-200/70"
+          : "hover:border-teal-200",
         statusStyles[loaderStatus]
       )}
     >
@@ -74,7 +74,7 @@ export const IfcLoaderNode = memo(({ id, data, selected }: IfcLoaderNodeProps) =
         type="target"
         position={Position.Left}
         id="file"
-        className="!w-3.5 !h-3.5 !bg-cyan-400 !border-[3px] !border-cyan-700 hover:!scale-110 transition-transform !rounded-full"
+        className="!w-3.5 !h-3.5 !bg-teal-500 !border-[3px] !border-teal-200 hover:!scale-110 transition-transform !rounded-full"
         style={{ left: -8, top: "50%" }}
       />
 
@@ -82,24 +82,24 @@ export const IfcLoaderNode = memo(({ id, data, selected }: IfcLoaderNodeProps) =
         type="source"
         position={Position.Right}
         id="model"
-        className="!w-3.5 !h-3.5 !bg-emerald-400 !border-[3px] !border-emerald-700 hover:!scale-110 transition-transform !rounded-full"
+        className="!w-3.5 !h-3.5 !bg-emerald-500 !border-[3px] !border-emerald-200 hover:!scale-110 transition-transform !rounded-full"
         style={{ right: -8, top: "50%" }}
       />
 
       {/* Header */}
-      <div className="flex items-center gap-3 border-b border-white/10 px-4 py-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-cyan-500/10 border border-cyan-500/30">
-          <PackageOpen className="h-5 w-5 text-cyan-300" />
+      <div className="flex items-center gap-3 border-b border-[var(--workflow-border)] bg-[var(--workflow-panel-strong)] px-4 py-3">
+        <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-teal-500/10 border border-teal-200">
+          <PackageOpen className="h-5 w-5 text-teal-700" />
         </div>
         <div className="flex flex-col">
-          <span className="text-sm font-semibold text-cyan-100">
+          <span className="text-sm font-semibold text-[var(--workflow-ink)]">
             {data.label || "IfcLoader"}
           </span>
-          <span className="text-[11px] uppercase tracking-[0.08em] text-cyan-400/80">
+          <span className="text-[11px] uppercase tracking-[0.18em] text-[var(--workflow-muted)]">
             Core · Fragments
           </span>
         </div>
-        <div className="ml-auto flex items-center gap-2 rounded-full bg-white/5 px-3 py-1 text-xs text-white/80 border border-white/10">
+        <div className="ml-auto flex items-center gap-2 rounded-full border border-[var(--workflow-border)] bg-white/70 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-[var(--workflow-ink)]">
           <Loader2
             className={cn("h-3.5 w-3.5", loaderStatus === "loading" ? "animate-spin" : "opacity-60")}
           />
@@ -108,33 +108,33 @@ export const IfcLoaderNode = memo(({ id, data, selected }: IfcLoaderNodeProps) =
       </div>
 
       {/* Content */}
-      <div className="space-y-3 px-4 py-3 text-sm text-zinc-200">
-        <div className="rounded-lg border border-white/10 bg-white/5 px-3 py-2">
+      <div className="space-y-3 px-4 py-3 text-sm text-[var(--workflow-ink)]">
+        <div className="rounded-xl border border-[var(--workflow-border)] bg-white/80 px-3 py-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Box className="h-4 w-4 text-cyan-300" />
+              <Box className="h-4 w-4 text-teal-700" />
               <div className="flex flex-col">
-                <span className="text-xs uppercase tracking-[0.08em] text-zinc-400">
+                <span className="text-xs uppercase tracking-[0.18em] text-[var(--workflow-muted)]">
                   File
                 </span>
-                <span className="font-medium text-white">
+                <span className="font-semibold text-[var(--workflow-ink)]">
                   {resolvedFileName || "No file selected"}
                 </span>
               </div>
             </div>
             <span
               className={cn(
-                "rounded-full border px-2 py-0.5 text-[11px] font-semibold",
+                "rounded-full border px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[0.16em]",
                 loaderStatus === "ready"
-                  ? "border-emerald-500/40 text-emerald-300 bg-emerald-500/10"
-                  : "border-cyan-500/30 text-cyan-200 bg-cyan-500/10"
+                  ? "border-emerald-200 text-emerald-700 bg-emerald-500/10"
+                  : "border-teal-200 text-teal-700 bg-teal-500/10"
               )}
             >
               {loaderStatus === "ready" ? "Ready" : "IFC"}
             </span>
           </div>
           {data.fileUrl && (
-            <p className="mt-1 text-[11px] text-zinc-400 break-all">
+            <p className="mt-1 text-[11px] text-[var(--workflow-muted)] break-all">
               {data.fileUrl}
             </p>
           )}
@@ -160,12 +160,12 @@ export const IfcLoaderNode = memo(({ id, data, selected }: IfcLoaderNodeProps) =
         </div>
 
         {data.boundingBox && (
-          <div className="rounded-lg border border-cyan-500/30 bg-cyan-500/5 px-3 py-2">
-            <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-cyan-200">
+          <div className="rounded-xl border border-teal-200 bg-teal-500/10 px-3 py-2">
+            <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-teal-700">
               <Map className="h-3.5 w-3.5" />
               Bounding Box
             </div>
-            <div className="mt-1 grid grid-cols-2 gap-2 text-[11px] text-cyan-100">
+            <div className="mt-1 grid grid-cols-2 gap-2 text-[11px] text-teal-700">
               <span>Min: {data.boundingBox.min.map((v) => v.toFixed?.(3) ?? v).join(", ")}</span>
               <span>Max: {data.boundingBox.max.map((v) => v.toFixed?.(3) ?? v).join(", ")}</span>
             </div>
@@ -173,13 +173,13 @@ export const IfcLoaderNode = memo(({ id, data, selected }: IfcLoaderNodeProps) =
         )}
 
         {data.lastLoadedAt && (
-          <p className="text-[11px] text-zinc-500">
+          <p className="text-[11px] text-[var(--workflow-muted)]">
             Loaded at {new Date(data.lastLoadedAt).toLocaleTimeString()}
           </p>
         )}
 
         {errorMessage && (
-          <div className="rounded-lg border border-rose-500/40 bg-rose-500/10 px-3 py-2 text-xs text-rose-200">
+          <div className="rounded-xl border border-rose-200 bg-rose-500/10 px-3 py-2 text-xs text-rose-700">
             {errorMessage}
           </div>
         )}
@@ -192,11 +192,11 @@ IfcLoaderNode.displayName = "IfcLoaderNode";
 
 function StatBlock({ label, value }: { label: string; value: number | string }) {
   return (
-    <div className="rounded-lg border border-white/10 bg-white/5 px-3 py-2">
-      <span className="text-[11px] uppercase tracking-[0.08em] text-zinc-400">
+    <div className="rounded-xl border border-[var(--workflow-border)] bg-white/80 px-3 py-2">
+      <span className="text-[11px] uppercase tracking-[0.18em] text-[var(--workflow-muted)]">
         {label}
       </span>
-      <div className="text-lg font-semibold text-white">
+      <div className="text-lg font-semibold text-[var(--workflow-ink)]">
         {typeof value === "number" ? value.toLocaleString() : value}
       </div>
     </div>

@@ -32,12 +32,12 @@ export const IfElseNode = memo(({ id, data, selected }: IfElseNodeProps) => {
   const executionStatus = getNodeStatus(id);
 
   const statusColors = {
-    idle: "border-violet-500/50 from-violet-950/40 to-violet-950/20",
-    pending: "border-yellow-500/50 from-yellow-950/40 to-yellow-950/20",
-    running: "border-violet-500/50 from-violet-950/40 to-violet-950/20 animate-pulse",
-    success: "border-green-500/50 from-green-950/40 to-green-950/20",
-    error: "border-red-500/50 from-red-950/40 to-red-950/20",
-    skipped: "border-zinc-500/50 from-zinc-950/40 to-zinc-950/20",
+    idle: "",
+    pending: "ring-2 ring-amber-400/40",
+    running: "ring-2 ring-sky-400/40 animate-pulse",
+    success: "ring-2 ring-emerald-400/40",
+    error: "ring-2 ring-rose-400/40",
+    skipped: "opacity-70",
   };
 
   const handleOperatorChange = (newOperator: ComparisonOperator) => {
@@ -95,11 +95,11 @@ export const IfElseNode = memo(({ id, data, selected }: IfElseNodeProps) => {
 
   return (
     <div
-      className={`group relative min-w-[280px] rounded-lg border bg-gradient-to-b shadow-lg backdrop-blur-sm transition-all ${
+      className={`group relative min-w-[280px] rounded-2xl border border-[var(--workflow-border)] bg-[var(--workflow-panel)] shadow-[0_12px_30px_var(--workflow-shadow)] transition-all ${
         selected
-          ? "border-violet-400 shadow-violet-500/50 ring-2 ring-violet-400/30"
-          : statusColors[executionStatus]
-      }`}
+          ? "border-slate-600 ring-2 ring-slate-500/20"
+          : "hover:border-slate-400"
+      } ${statusColors[executionStatus]}`}
     >
       <NodeCloseButton nodeId={id} variant="purple" />
       {/* <NodeExecutionBadge 
@@ -112,7 +112,7 @@ export const IfElseNode = memo(({ id, data, selected }: IfElseNodeProps) => {
         type="target"
         position={Position.Left}
         id="input"
-        className="h-3! w-3! border-2! border-violet-500! bg-violet-400! hover:scale-125! transition-transform"
+        className="h-3! w-3! border-2! border-slate-300! bg-slate-600! hover:scale-125! transition-transform"
         style={{ left: -6 }}
       />
 
@@ -121,7 +121,7 @@ export const IfElseNode = memo(({ id, data, selected }: IfElseNodeProps) => {
         type="source"
         position={Position.Right}
         id="true"
-        className="h-3! w-3! border-2! border-green-500! bg-green-400! hover:scale-125! transition-transform"
+        className="h-3! w-3! border-2! border-emerald-200! bg-emerald-500! hover:scale-125! transition-transform"
         style={{ top: "35%", right: -6 }}
       />
 
@@ -130,23 +130,23 @@ export const IfElseNode = memo(({ id, data, selected }: IfElseNodeProps) => {
         type="source"
         position={Position.Right}
         id="false"
-        className="h-3! w-3! border-2! border-red-500! bg-red-400! hover:scale-125! transition-transform"
+        className="h-3! w-3! border-2! border-rose-200! bg-rose-500! hover:scale-125! transition-transform"
         style={{ top: "65%", right: -6 }}
       />
 
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-violet-500/30 bg-violet-500/10 px-2.5 py-1.5">
+      <div className="flex items-center justify-between border-b border-[var(--workflow-border)] bg-[var(--workflow-panel-strong)] px-2.5 py-2">
         <div className="flex items-center gap-2">
-          <GitBranch className="h-4 w-4 text-violet-400" />
-          <span className="text-xs font-semibold text-violet-400">
+          <GitBranch className="h-4 w-4 text-slate-600" />
+          <span className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-700">
             {data.label || "IF / ELSE"}
           </span>
         </div>
         {conditionResult !== null && (
-          <div className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold ${
+          <div className={`flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] ${
             conditionResult 
-              ? "bg-green-500/20 text-green-400" 
-              : "bg-red-500/20 text-red-400"
+              ? "border-emerald-200 bg-emerald-500/10 text-emerald-700" 
+              : "border-rose-200 bg-rose-500/10 text-rose-700"
           }`}>
             {conditionResult ? (
               <>
@@ -167,9 +167,11 @@ export const IfElseNode = memo(({ id, data, selected }: IfElseNodeProps) => {
       <div className="p-2.5 space-y-2">
         {/* Condition Display */}
         {data.inputValue !== undefined && (
-          <div className="px-2.5 py-1.5 rounded-lg bg-zinc-900/50 border border-violet-700/30">
-            <div className="text-[10px] text-zinc-500 mb-0.5">Input Value</div>
-            <div className="text-xs text-violet-300 font-mono">
+          <div className="rounded-xl border border-[var(--workflow-border)] bg-white/80 px-2.5 py-1.5">
+            <div className="mb-0.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--workflow-muted)]">
+              Input Value
+            </div>
+            <div className="text-xs text-slate-700 font-mono">
               {String(data.inputValue)}
             </div>
           </div>
@@ -177,11 +179,13 @@ export const IfElseNode = memo(({ id, data, selected }: IfElseNodeProps) => {
 
         {/* Operator Selection */}
         <div>
-          <label className="text-[10px] text-zinc-500 mb-1 block">Condition</label>
+          <label className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--workflow-muted)] mb-1 block">
+            Condition
+          </label>
           <select
             value={data.operator || ""}
             onChange={(e) => handleOperatorChange(e.target.value as ComparisonOperator)}
-            className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-violet-700/30 bg-zinc-900/80 text-violet-100 focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500/50 transition-all"
+            className="w-full rounded-xl border border-[var(--workflow-border)] bg-[var(--workflow-panel-strong)] px-2.5 py-1.5 text-xs text-[var(--workflow-ink)] focus:outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-200 transition-all"
           >
             <option value="">Select operator...</option>
             <optgroup label="Comparison">
@@ -207,66 +211,68 @@ export const IfElseNode = memo(({ id, data, selected }: IfElseNodeProps) => {
         {/* Compare Value Input */}
         {needsCompareValue && (
           <div>
-            <label className="text-[10px] text-zinc-500 mb-1 block">Compare With</label>
+            <label className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--workflow-muted)] mb-1 block">
+              Compare With
+            </label>
             <input
               type="text"
               value={data.compareValue ?? ""}
               onChange={(e) => handleCompareValueChange(e.target.value)}
               placeholder="Enter value to compare..."
-              className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-violet-700/30 bg-zinc-900/80 text-violet-100 placeholder:text-zinc-600 focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500/50 transition-all"
+              className="w-full rounded-xl border border-[var(--workflow-border)] bg-[var(--workflow-panel-strong)] px-2.5 py-1.5 text-xs text-[var(--workflow-ink)] placeholder:text-[var(--workflow-muted)] focus:outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-200 transition-all"
             />
           </div>
         )}
 
         {/* Outputs Legend */}
-        <div className="flex items-center justify-between pt-1 border-t border-violet-700/30">
-          <div className="flex items-center gap-1.5 text-[10px] text-green-400">
-            <div className="w-2 h-2 rounded-full bg-green-400"></div>
-            <span>TRUE path</span>
+        <div className="flex items-center justify-between border-t border-[var(--workflow-border)] pt-2">
+          <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-emerald-700">
+            <div className="h-2 w-2 rounded-full bg-emerald-500"></div>
+            <span>True path</span>
           </div>
-          <div className="flex items-center gap-1.5 text-[10px] text-red-400">
-            <div className="w-2 h-2 rounded-full bg-red-400"></div>
-            <span>FALSE path</span>
+          <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-rose-700">
+            <div className="h-2 w-2 rounded-full bg-rose-500"></div>
+            <span>False path</span>
           </div>
         </div>
       </div>
 
       {/* Quick Conditions Panel - Only show when selected */}
       {selected && (
-        <div className="absolute left-full top-0 ml-2 w-[200px] rounded-lg border border-violet-500/30 bg-zinc-900/95 backdrop-blur-sm shadow-xl z-10">
-          <div className="border-b border-violet-500/30 bg-violet-500/10 px-3 py-2">
-            <span className="text-xs font-semibold text-violet-400">
+        <div className="absolute left-full top-0 z-10 ml-2 w-[200px] rounded-2xl border border-[var(--workflow-border)] bg-[var(--workflow-panel)]/95 backdrop-blur-sm shadow-xl">
+          <div className="border-b border-[var(--workflow-border)] bg-[var(--workflow-panel-strong)] px-3 py-2">
+            <span className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--workflow-ink)]">
               Quick Conditions
             </span>
           </div>
           <div className="p-2 space-y-1">
             <button
               onClick={() => handleOperatorChange("exists")}
-              className="w-full px-3 py-1.5 text-xs text-left rounded-md border border-violet-700/30 bg-zinc-900/50 text-violet-300 hover:bg-violet-500/10 hover:border-violet-500/50 transition-all"
+              className="w-full rounded-xl border border-[var(--workflow-border)] bg-[var(--workflow-panel-strong)] px-3 py-1.5 text-left text-xs text-[var(--workflow-ink)] transition-all hover:border-slate-400"
             >
               Check if exists
             </button>
             <button
               onClick={() => handleOperatorChange("isEmpty")}
-              className="w-full px-3 py-1.5 text-xs text-left rounded-md border border-violet-700/30 bg-zinc-900/50 text-violet-300 hover:bg-violet-500/10 hover:border-violet-500/50 transition-all"
+              className="w-full rounded-xl border border-[var(--workflow-border)] bg-[var(--workflow-panel-strong)] px-3 py-1.5 text-left text-xs text-[var(--workflow-ink)] transition-all hover:border-slate-400"
             >
               Check if empty
             </button>
             <button
               onClick={() => handleOperatorChange("==")}
-              className="w-full px-3 py-1.5 text-xs text-left rounded-md border border-violet-700/30 bg-zinc-900/50 text-violet-300 hover:bg-violet-500/10 hover:border-violet-500/50 transition-all"
+              className="w-full rounded-xl border border-[var(--workflow-border)] bg-[var(--workflow-panel-strong)] px-3 py-1.5 text-left text-xs text-[var(--workflow-ink)] transition-all hover:border-slate-400"
             >
               Check equality
             </button>
             <button
               onClick={() => handleOperatorChange(">")}
-              className="w-full px-3 py-1.5 text-xs text-left rounded-md border border-violet-700/30 bg-zinc-900/50 text-violet-300 hover:bg-violet-500/10 hover:border-violet-500/50 transition-all"
+              className="w-full rounded-xl border border-[var(--workflow-border)] bg-[var(--workflow-panel-strong)] px-3 py-1.5 text-left text-xs text-[var(--workflow-ink)] transition-all hover:border-slate-400"
             >
               Compare numbers
             </button>
             <button
               onClick={() => handleOperatorChange("contains")}
-              className="w-full px-3 py-1.5 text-xs text-left rounded-md border border-violet-700/30 bg-zinc-900/50 text-violet-300 hover:bg-violet-500/10 hover:border-violet-500/50 transition-all"
+              className="w-full rounded-xl border border-[var(--workflow-border)] bg-[var(--workflow-panel-strong)] px-3 py-1.5 text-left text-xs text-[var(--workflow-ink)] transition-all hover:border-slate-400"
             >
               Search text
             </button>

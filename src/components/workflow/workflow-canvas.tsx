@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState, useEffect } from "react";
+import { useCallback, useRef, useState } from "react";
 import {
   ReactFlow,
   ReactFlowProvider,
@@ -153,46 +153,24 @@ export function WorkflowCanvas() {
     setReactFlowInstance(instance);
   }, []);
 
-  // Listen to theme changes from document class
-  const [isDark, setIsDark] = useState(true);
-  
-  useEffect(() => {
-    const checkTheme = () => {
-      setIsDark(document.documentElement.classList.contains("dark"));
-    };
-    
-    checkTheme();
-    
-    // Watch for class changes on documentElement
-    const observer = new MutationObserver(checkTheme);
-    observer.observe(document.documentElement, { 
-      attributes: true, 
-      attributeFilter: ["class"] 
-    });
-    
-    return () => observer.disconnect();
-  }, []);
-
-  // Theme-aware styles
   const themeStyles = {
-    canvas: isDark ? "bg-[#0a1628]" : "bg-slate-100",
-    background: isDark ? "#1e3a5f" : "#cbd5e1",
-    edge: isDark ? "#6366f1" : "#4f46e5",
-    controls: isDark
-      ? "border border-slate-700 bg-slate-900 [&>button]:border-slate-700 [&>button]:bg-slate-800 [&>button]:text-slate-300 [&>button:hover]:bg-slate-700"
-      : "border border-slate-300 bg-white [&>button]:border-slate-200 [&>button]:bg-slate-50 [&>button]:text-slate-700 [&>button:hover]:bg-slate-100",
+    canvas:
+      "rounded-2xl border border-[var(--workflow-border)] bg-[var(--workflow-panel)]/60 shadow-[0_18px_40px_var(--workflow-shadow)] backdrop-blur overflow-hidden",
+    background: "var(--workflow-grid)",
+    edge: "var(--workflow-accent)",
+    controls:
+      "rounded-xl border border-[var(--workflow-border)] bg-[var(--workflow-panel)]/90 shadow-sm [&>button]:border-[var(--workflow-border)] [&>button]:bg-[var(--workflow-panel-strong)] [&>button]:text-[var(--workflow-ink)] [&>button:hover]:bg-[var(--workflow-panel)]",
     minimap: {
-      className: isDark
-        ? "border border-slate-700 bg-slate-900"
-        : "border border-slate-300 bg-white",
-      nodeColor: isDark ? "#3b82f6" : "#2563eb",
-      maskColor: isDark ? "rgba(10, 22, 40, 0.6)" : "rgba(255, 255, 255, 0.7)",
+      className:
+        "rounded-xl border border-[var(--workflow-border)] bg-[var(--workflow-panel)]/90",
+      nodeColor: "#0f766e",
+      maskColor: "rgba(15, 118, 110, 0.18)",
     },
   };
 
   return (
     <ReactFlowProvider>
-      <div className="relative flex-1" ref={reactFlowWrapper}>
+      <div className="relative flex-1 min-w-0 animate-in fade-in duration-700" ref={reactFlowWrapper}>
         <ReactFlow
           onInit={onInit}
           onDrop={onDrop}
@@ -214,8 +192,8 @@ export function WorkflowCanvas() {
           }}
         >
           <Background
-            variant={BackgroundVariant.Dots}
-            gap={20}
+            variant={BackgroundVariant.Lines}
+            gap={42}
             size={1}
             color={themeStyles.background}
           />

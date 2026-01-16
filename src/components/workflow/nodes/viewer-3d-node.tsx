@@ -141,10 +141,10 @@ export const Viewer3DNode = memo(({ id, data, selected }: { id: string; data: Vi
   };
 
   const statusClasses: Record<ViewerStatus, string> = {
-    waiting: "border-cyan-500/50 from-slate-950/60 to-slate-900/30",
-    loading: "border-blue-500/60 from-blue-950/50 to-slate-900/40 animate-pulse",
-    ready: "border-emerald-500/60 from-emerald-950/40 to-slate-900/30",
-    error: "border-rose-500/70 from-rose-950/50 to-slate-900/40",
+    waiting: "ring-1 ring-teal-200/70",
+    loading: "ring-2 ring-sky-200/70 animate-pulse",
+    ready: "ring-2 ring-emerald-200/70",
+    error: "ring-2 ring-rose-200/70",
   };
 
   useEffect(() => {
@@ -178,7 +178,7 @@ export const Viewer3DNode = memo(({ id, data, selected }: { id: string; data: Vi
 
     const scene = new SimpleScene(components);
     scene.setup({
-      backgroundColor: new THREE.Color("#0b1220"),
+      backgroundColor: new THREE.Color("#e9eef2"),
     });
 
     const renderer = new SimpleRenderer(components, containerRef.current, {
@@ -355,10 +355,10 @@ export const Viewer3DNode = memo(({ id, data, selected }: { id: string; data: Vi
   return (
     <div
       className={cn(
-        "group relative h-full w-full min-w-[420px] min-h-[360px] rounded-xl border-2 bg-gradient-to-br shadow-lg transition-all flex flex-col",
+        "group relative h-full w-full min-w-[420px] min-h-[360px] rounded-2xl border border-[var(--workflow-border)] bg-[var(--workflow-panel)] shadow-[0_12px_30px_var(--workflow-shadow)] transition-all flex flex-col",
         selected
-          ? "border-cyan-400 shadow-[0_0_30px_rgba(34,211,238,0.3)]"
-          : "border-cyan-500/50 hover:border-cyan-400/70",
+          ? "border-teal-300 ring-2 ring-teal-200/70"
+          : "hover:border-teal-200",
         statusClasses[viewerStatus]
       )}
     >
@@ -366,8 +366,8 @@ export const Viewer3DNode = memo(({ id, data, selected }: { id: string; data: Vi
         minWidth={420}
         minHeight={360}
         isVisible={selected}
-        lineClassName="!border-cyan-400"
-        handleClassName="!w-2.5 !h-2.5 !bg-cyan-400 !border-cyan-600 !rounded-full"
+        lineClassName="!border-teal-300"
+        handleClassName="!w-2.5 !h-2.5 !bg-teal-500 !border-teal-200 !rounded-full"
       />
 
       <NodeCloseButton nodeId={id} variant="cyan" />
@@ -377,7 +377,7 @@ export const Viewer3DNode = memo(({ id, data, selected }: { id: string; data: Vi
         type="target"
         position={Position.Left}
         id="file"
-        className="!w-3.5 !h-3.5 !bg-cyan-400 !border-[3px] !border-cyan-700 hover:!scale-110 transition-transform !rounded-full"
+        className="!w-3.5 !h-3.5 !bg-teal-500 !border-[3px] !border-teal-200 hover:!scale-110 transition-transform !rounded-full"
         style={{ left: -8, top: "50%" }}
       />
 
@@ -385,21 +385,21 @@ export const Viewer3DNode = memo(({ id, data, selected }: { id: string; data: Vi
         type="source"
         position={Position.Right}
         id="output"
-        className="!w-3.5 !h-3.5 !bg-emerald-400 !border-[3px] !border-emerald-700 hover:!scale-110 transition-transform !rounded-full"
+        className="!w-3.5 !h-3.5 !bg-emerald-500 !border-[3px] !border-emerald-200 hover:!scale-110 transition-transform !rounded-full"
         style={{ right: -8, top: "50%" }}
       />
 
-      <header className="px-4 py-3 flex items-center gap-2.5 bg-gradient-to-r from-cyan-600/20 to-cyan-500/10 border-b border-cyan-500/30">
-        <div className="p-1.5 bg-cyan-500/20 rounded-lg">
-          <Box className="w-4 h-4 text-cyan-300" />
+      <header className="px-4 py-3 flex items-center gap-2.5 bg-[var(--workflow-panel-strong)] border-b border-[var(--workflow-border)]">
+        <div className="p-1.5 bg-teal-500/10 rounded-2xl border border-teal-200">
+          <Box className="w-4 h-4 text-teal-700" />
         </div>
         <div className="flex flex-col">
-          <span className="text-sm font-bold text-cyan-100">{data.label || "3D Viewer"}</span>
-          <span className="text-[11px] uppercase tracking-[0.08em] text-cyan-400/80">
+          <span className="text-sm font-semibold text-[var(--workflow-ink)]">{data.label || "3D Viewer"}</span>
+          <span className="text-[11px] uppercase tracking-[0.18em] text-[var(--workflow-muted)]">
             IFC · Fragments
           </span>
         </div>
-        <div className="ml-auto flex items-center gap-2 rounded-full bg-white/5 px-3 py-1 text-xs text-white/80 border border-white/10">
+        <div className="ml-auto flex items-center gap-2 rounded-full border border-[var(--workflow-border)] bg-white/70 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-[var(--workflow-ink)]">
           <Loader2
             className={cn(
               "h-3.5 w-3.5",
@@ -416,12 +416,12 @@ export const Viewer3DNode = memo(({ id, data, selected }: { id: string; data: Vi
       </header>
 
       <div className="flex-1 flex flex-col">
-        <div className="px-4 py-3 border-b border-white/5 flex items-center justify-between text-sm text-white/80">
+        <div className="px-4 py-3 border-b border-[var(--workflow-border)] flex items-center justify-between text-sm text-[var(--workflow-ink)]">
           <div className="flex items-center gap-2">
-            <Box className="h-4 w-4 text-cyan-300" />
+            <Box className="h-4 w-4 text-teal-700" />
             <div className="flex flex-col">
-              <span className="text-[11px] uppercase tracking-[0.08em] text-cyan-200">File</span>
-              <span className="font-semibold text-white">
+              <span className="text-[11px] uppercase tracking-[0.18em] text-[var(--workflow-muted)]">File</span>
+              <span className="font-semibold text-[var(--workflow-ink)]">
                 {resolvedFileName || "No file selected"}
               </span>
             </div>
@@ -437,7 +437,7 @@ export const Viewer3DNode = memo(({ id, data, selected }: { id: string; data: Vi
               setViewerStatus("waiting");
               setError(undefined);
             }}
-            className="flex items-center gap-1 text-xs text-cyan-300 hover:text-cyan-100 transition"
+            className="flex items-center gap-1 text-xs font-semibold uppercase tracking-[0.16em] text-teal-700 hover:text-teal-600 transition"
           >
             <RefreshCw className="h-3 w-3" />
             Reset
@@ -447,7 +447,7 @@ export const Viewer3DNode = memo(({ id, data, selected }: { id: string; data: Vi
         <div className="relative flex-1">
           <div
             ref={containerRef}
-            className="absolute inset-0 rounded-b-xl overflow-hidden bg-[#0b1220] nodrag nowheel"
+            className="absolute inset-0 rounded-b-2xl overflow-hidden bg-slate-100 nodrag nowheel"
             onPointerDown={stopPointerPropagation}
             onPointerMove={stopPointerPropagation}
             onPointerUp={stopPointerPropagation}
@@ -455,24 +455,24 @@ export const Viewer3DNode = memo(({ id, data, selected }: { id: string; data: Vi
           />
 
           {viewerStatus === "waiting" && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center text-zinc-400 gap-2 pointer-events-none">
-              <Box className="h-8 w-8 text-cyan-400" />
-              <p className="text-sm">Connect an IFC source to view the model</p>
+            <div className="absolute inset-0 flex flex-col items-center justify-center text-[var(--workflow-muted)] gap-2 pointer-events-none">
+              <Box className="h-8 w-8 text-teal-500" />
+              <p className="text-sm font-medium text-[var(--workflow-ink)]">Connect an IFC source to view the model</p>
             </div>
           )}
 
           {viewerStatus === "loading" && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center text-cyan-200 gap-2 bg-black/30 backdrop-blur-sm pointer-events-none">
+            <div className="absolute inset-0 flex flex-col items-center justify-center text-teal-700 gap-2 bg-white/60 backdrop-blur-sm pointer-events-none">
               <Loader2 className="h-6 w-6 animate-spin" />
               <p className="text-sm">Loading IFC fragments…</p>
             </div>
           )}
 
           {viewerStatus === "error" && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center text-rose-200 gap-2 bg-black/50 backdrop-blur-sm px-6 text-center pointer-events-none">
+            <div className="absolute inset-0 flex flex-col items-center justify-center text-rose-700 gap-2 bg-white/70 backdrop-blur-sm px-6 text-center pointer-events-none">
               <AlertCircle className="h-6 w-6" />
               <p className="text-sm font-semibold">Failed to load IFC</p>
-              {error && <p className="text-xs text-rose-100/80">{error}</p>}
+              {error && <p className="text-xs text-rose-600/80">{error}</p>}
             </div>
           )}
         </div>

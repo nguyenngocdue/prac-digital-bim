@@ -21,38 +21,38 @@ const statusConfig: Record<
 > = {
   idle: {
     icon: Clock,
-    color: "text-zinc-400",
-    bgColor: "bg-zinc-500/20",
+    color: "text-slate-600",
+    bgColor: "bg-slate-500/10 border-slate-200",
     label: "Idle",
   },
   pending: {
     icon: Clock,
-    color: "text-yellow-400",
-    bgColor: "bg-yellow-500/20",
+    color: "text-amber-700",
+    bgColor: "bg-amber-500/10 border-amber-200",
     label: "Pending",
   },
   running: {
     icon: Loader2,
-    color: "text-blue-400",
-    bgColor: "bg-blue-500/20",
+    color: "text-sky-700",
+    bgColor: "bg-sky-500/10 border-sky-200",
     label: "Running",
   },
   success: {
     icon: CheckCircle,
-    color: "text-emerald-400",
-    bgColor: "bg-emerald-500/20",
+    color: "text-emerald-700",
+    bgColor: "bg-emerald-500/10 border-emerald-200",
     label: "Success",
   },
   error: {
     icon: XCircle,
-    color: "text-red-400",
-    bgColor: "bg-red-500/20",
+    color: "text-rose-700",
+    bgColor: "bg-rose-500/10 border-rose-200",
     label: "Error",
   },
   skipped: {
     icon: SkipForward,
-    color: "text-zinc-400",
-    bgColor: "bg-zinc-500/20",
+    color: "text-slate-600",
+    bgColor: "bg-slate-500/10 border-slate-200",
     label: "Skipped",
   },
 };
@@ -70,7 +70,7 @@ export function NodeExecutionBadge({
   return (
     <div
       className={cn(
-        "absolute -top-2 -right-2 flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-medium shadow-lg",
+        "absolute -top-2 -right-2 flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] shadow-sm",
         config.bgColor,
         config.color,
         className

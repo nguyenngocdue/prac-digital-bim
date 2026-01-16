@@ -35,20 +35,20 @@ export const HttpNode = memo(({ id, data, selected }: HttpNodeProps) => {
   const url = data.url || "";
 
   const methodColors: Record<HttpMethod, string> = {
-    GET: "text-emerald-400",
-    POST: "text-amber-400",
-    PUT: "text-blue-400",
-    PATCH: "text-purple-400",
-    DELETE: "text-red-400",
+    GET: "text-emerald-700",
+    POST: "text-amber-700",
+    PUT: "text-sky-700",
+    PATCH: "text-indigo-700",
+    DELETE: "text-rose-700",
   };
 
   const statusStyles = {
-    idle: "border-zinc-700",
-    pending: "border-yellow-500/50",
-    running: "border-blue-500/50 animate-pulse",
-    success: "border-green-500/50",
-    error: "border-red-500/50",
-    skipped: "border-zinc-600 opacity-60",
+    idle: "",
+    pending: "ring-2 ring-amber-400/40",
+    running: "ring-2 ring-sky-400/40 animate-pulse",
+    success: "ring-2 ring-emerald-400/40",
+    error: "ring-2 ring-rose-400/40",
+    skipped: "opacity-70",
   };
 
   const handleAddNextNode = (e: React.MouseEvent) => {
@@ -59,11 +59,11 @@ export const HttpNode = memo(({ id, data, selected }: HttpNodeProps) => {
 
   return (
     <div
-      className={`group relative min-w-[200px] rounded-lg border-2 bg-[#1a1f2e] shadow-lg transition-all ${
+      className={`group relative min-w-[220px] rounded-2xl border border-[var(--workflow-border)] bg-[var(--workflow-panel)] shadow-[0_12px_30px_var(--workflow-shadow)] transition-all ${
         selected
-          ? "border-blue-500 shadow-blue-500/30 ring-2 ring-blue-500/20"
-          : statusStyles[executionStatus]
-      }`}
+          ? "border-[var(--workflow-warm)] ring-2 ring-[var(--workflow-warm)]/20"
+          : "hover:border-[var(--workflow-warm)]"
+      } ${statusStyles[executionStatus]}`}
     >
       <NodeCloseButton nodeId={id} variant="subtle" />
       {/* <NodeExecutionBadge 
@@ -76,26 +76,26 @@ export const HttpNode = memo(({ id, data, selected }: HttpNodeProps) => {
         type="target"
         position={Position.Left}
         id="input"
-        className="h-3! w-3! border-2! border-zinc-600! bg-zinc-500! hover:bg-zinc-400! transition-colors"
+        className="h-3! w-3! border-2! border-rose-200! bg-rose-500! hover:bg-rose-400! transition-colors"
         style={{ left: -6 }}
       />
 
       {/* Content */}
       <div className="px-4 py-3">
         {/* Header */}
-        <div className="flex items-center gap-2 mb-2">
-          <div className="flex h-7 w-7 items-center justify-center rounded bg-rose-500">
-            <Globe className="h-4 w-4 text-white" />
+        <div className="mb-2 flex items-center gap-2">
+          <div className="flex h-8 w-8 items-center justify-center rounded-2xl bg-[var(--workflow-warm)] text-white shadow-[0_10px_20px_rgba(194,65,12,0.25)]">
+            <Globe className="h-4 w-4" />
           </div>
-          <span className="text-sm font-semibold text-zinc-200">HTTP</span>
+          <span className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--workflow-ink)]">HTTP</span>
         </div>
 
         {/* Method & URL Preview */}
         <div className="flex items-center gap-2 text-xs">
-          <span className={`font-mono font-bold ${methodColors[method]}`}>
+          <span className={`rounded-full border border-[var(--workflow-border)] bg-[var(--workflow-panel-strong)] px-2 py-0.5 font-mono font-bold ${methodColors[method]}`}>
             {method}
           </span>
-          <span className="text-zinc-500 truncate max-w-[120px]">
+          <span className="text-[var(--workflow-muted)] truncate max-w-[120px]">
             {url || "No URL"}
           </span>
         </div>
@@ -104,7 +104,7 @@ export const HttpNode = memo(({ id, data, selected }: HttpNodeProps) => {
       {/* Add Next Node Button */}
       <button
         onClick={handleAddNextNode}
-        className="absolute -right-3 top-1/2 -translate-y-1/2 flex h-6 w-6 items-center justify-center rounded-full bg-blue-500 text-white shadow-lg hover:bg-blue-600 transition-colors opacity-0 group-hover:opacity-100"
+        className="absolute -right-3 top-1/2 -translate-y-1/2 flex h-7 w-7 items-center justify-center rounded-full bg-[var(--workflow-accent)] text-white shadow-lg transition-colors opacity-0 group-hover:opacity-100 hover:bg-[var(--workflow-accent-strong)]"
       >
         <Plus className="h-4 w-4" />
       </button>
@@ -114,13 +114,13 @@ export const HttpNode = memo(({ id, data, selected }: HttpNodeProps) => {
         type="source"
         position={Position.Right}
         id="output"
-        className="h-3! w-3! border-2! border-zinc-600! bg-zinc-500! hover:bg-zinc-400! transition-colors"
+        className="h-3! w-3! border-2! border-rose-200! bg-rose-500! hover:bg-rose-400! transition-colors"
         style={{ right: -6 }}
       />
 
       {/* Error message */}
       {executionStatus === "error" && nodeState?.error && (
-        <div className="mx-3 mb-3 text-xs text-red-400 bg-red-500/10 p-2 rounded border border-red-500/30">
+        <div className="mx-3 mb-3 rounded-xl border border-rose-200 bg-rose-500/10 p-2 text-xs text-rose-700">
           {nodeState.error}
         </div>
       )}

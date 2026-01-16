@@ -96,7 +96,7 @@ function LoadingSpinner() {
   return (
     <mesh>
       <boxGeometry args={[1, 1, 1]} />
-      <meshStandardMaterial color="#6366f1" wireframe />
+      <meshStandardMaterial color="#0f766e" wireframe />
     </mesh>
   );
 }
@@ -109,12 +109,12 @@ export const GltfViewerNode = memo(({ id, data, selected }: GltfViewerNodeProps)
   const containerRef = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ width: 420, height: 360 });
   const statusColors = {
-    idle: "border-purple-500/50 from-purple-950/40 to-purple-950/20",
-    pending: "border-yellow-500/50 from-yellow-950/40 to-yellow-950/20",
-    running: "border-purple-500/50 from-purple-950/40 to-purple-950/20 animate-pulse",
-    success: "border-green-500/50 from-green-950/40 to-green-950/20",
-    error: "border-red-500/50 from-red-950/40 to-red-950/20",
-    skipped: "border-zinc-500/50 from-zinc-950/40 to-zinc-950/20",
+    idle: "",
+    pending: "ring-2 ring-amber-400/40",
+    running: "ring-2 ring-sky-400/40 animate-pulse",
+    success: "ring-2 ring-emerald-400/40",
+    error: "ring-2 ring-rose-400/40",
+    skipped: "opacity-70",
   };
 
   const handleReset = () => {
@@ -201,13 +201,13 @@ export const GltfViewerNode = memo(({ id, data, selected }: GltfViewerNodeProps)
           maxHeight: 720,
           overflow: "visible",
         }}
-        className={`group relative min-w-[320px] rounded-lg border bg-gradient-to-b shadow-lg backdrop-blur-sm transition-all flex flex-col ${
+        className={`group relative min-w-[320px] rounded-2xl border border-[var(--workflow-border)] bg-[var(--workflow-panel)] shadow-[0_12px_30px_var(--workflow-shadow)] transition-all flex flex-col ${
           selected
-            ? "border-purple-400 shadow-purple-500/50 ring-2 ring-purple-400/30"
-            : statusColors[executionStatus]
-        }`}
+            ? "border-teal-300 ring-2 ring-teal-200/70"
+            : "hover:border-teal-200"
+        } ${statusColors[executionStatus]}`}
       >
-        <NodeCloseButton nodeId={id} variant="purple" />
+        <NodeCloseButton nodeId={id} variant="cyan" />
         <NodeExecutionBadge 
           status={executionStatus} 
           duration={nodeState?.duration} 
@@ -218,7 +218,7 @@ export const GltfViewerNode = memo(({ id, data, selected }: GltfViewerNodeProps)
           type="target"
           position={Position.Left}
           id="file"
-          className="h-3! w-3! border-2! border-purple-500! bg-purple-400! hover:scale-125! transition-transform"
+          className="h-3! w-3! border-2! border-teal-200! bg-teal-500! hover:scale-125! transition-transform"
           style={{ left: -6 }}
         />
 
@@ -227,32 +227,32 @@ export const GltfViewerNode = memo(({ id, data, selected }: GltfViewerNodeProps)
           type="source"
           position={Position.Right}
           id="model"
-          className="h-3! w-3! border-2! border-purple-500! bg-purple-400! hover:scale-125! transition-transform"
+          className="h-3! w-3! border-2! border-teal-200! bg-teal-500! hover:scale-125! transition-transform"
           style={{ right: -6 }}
         />
 
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-purple-500/30 bg-purple-500/10 px-2.5 py-1.5">
+        <div className="flex items-center justify-between border-b border-[var(--workflow-border)] bg-[var(--workflow-panel-strong)] px-2.5 py-2">
           <div className="flex items-center gap-2">
-            <Box className="h-4 w-4 text-purple-400" />
-            <span className="text-xs font-semibold text-purple-400">
+            <Box className="h-4 w-4 text-teal-700" />
+            <span className="text-xs font-semibold uppercase tracking-[0.18em] text-teal-800">
               {data.label || "GLTF Viewer"}
             </span>
           </div>
           <div className="flex items-center gap-1">
             <button
               onClick={refocusCamera}
-              className="rounded p-1 transition-colors hover:bg-purple-500/20"
+              className="rounded-full p-1 transition-colors hover:bg-teal-500/10"
               title="Refocus model"
             >
-              <RefreshCw className="h-3 w-3 text-purple-400" />
+              <RefreshCw className="h-3 w-3 text-teal-700" />
             </button>
           </div>
         </div>
 
         {/* Content */}
         <div
-          className="bg-zinc-950/50 relative nodrag nowheel"
+          className="bg-slate-100/80 relative nodrag nowheel"
           style={{ height: contentHeight }}
           onPointerDown={stopPointerPropagation}
           onPointerMove={stopPointerPropagation}
@@ -299,38 +299,38 @@ export const GltfViewerNode = memo(({ id, data, selected }: GltfViewerNodeProps)
                 />
                 
                 {/* Ground */}
-                <gridHelper args={[gridSize, gridDivisions, '#444', '#222']} />
+                <gridHelper args={[gridSize, gridDivisions, "#94a3b8", "#e2e8f0"]} />
                 <ContactShadows
                   position={[0, -0.01, 0]}
                   opacity={0.35}
                   blur={1.5}
                   far={25}
                   resolution={256}
-                  color="#1e1b4b"
+                  color="#1f2937"
                 />
               </Canvas>
 
               {/* File Info Overlay */}
               {data.fileName && (
-                <div className="absolute top-2 left-2 px-2 py-1 rounded bg-zinc-900/90 backdrop-blur-sm border border-purple-500/30">
-                  <p className="text-[10px] text-purple-300">
+                <div className="absolute top-2 left-2 rounded-full bg-white/90 px-2 py-1 backdrop-blur-sm border border-teal-200">
+                  <p className="text-[10px] text-teal-700 font-semibold uppercase tracking-[0.14em]">
                     {data.fileName}
                   </p>
                 </div>
               )}
 
               {/* Controls Info */}
-              <div className="absolute bottom-2 right-2 px-2 py-1 rounded bg-zinc-900/90 backdrop-blur-sm border border-purple-500/30">
-                <p className="text-[10px] text-zinc-500">
+              <div className="absolute bottom-2 right-2 rounded-full bg-white/90 px-2 py-1 backdrop-blur-sm border border-[var(--workflow-border)]">
+                <p className="text-[10px] text-[var(--workflow-muted)]">
                   Left: Rotate • Right: Pan • Scroll: Zoom
                 </p>
               </div>
             </>
           ) : (
             <div className="flex flex-col items-center justify-center h-full text-center p-4">
-              <Box className="h-12 w-12 text-purple-500/30 mb-3" />
-              <p className="text-sm text-purple-300 mb-1">No Model Loaded</p>
-              <p className="text-xs text-zinc-500">
+              <Box className="h-12 w-12 text-teal-400/40 mb-3" />
+              <p className="text-sm font-semibold text-teal-700 mb-1">No Model Loaded</p>
+              <p className="text-xs text-[var(--workflow-muted)]">
                 Connect a file-upload node with a GLTF/GLB file
               </p>
             </div>
@@ -339,13 +339,13 @@ export const GltfViewerNode = memo(({ id, data, selected }: GltfViewerNodeProps)
 
         {/* Footer with Actions */}
         {data.fileUrl && (
-          <div className="border-t border-purple-500/30 bg-purple-500/5 px-2.5 py-1.5 flex items-center justify-between">
-            <div className="text-[10px] text-zinc-500">
+          <div className="border-t border-[var(--workflow-border)] bg-[var(--workflow-panel-strong)] px-2.5 py-1.5 flex items-center justify-between">
+            <div className="text-[10px] text-[var(--workflow-muted)]">
               Manual orbit, pan, and zoom enabled
             </div>
             <button
               onClick={handleReset}
-              className="px-2 py-1 text-[10px] rounded border border-purple-700/30 bg-zinc-900/50 text-purple-300 hover:bg-purple-500/10 hover:border-purple-500/50 transition-all"
+              className="rounded-full border border-teal-200 bg-white/80 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-teal-700 transition-all hover:border-teal-300"
             >
               Clear Model
             </button>
@@ -354,7 +354,7 @@ export const GltfViewerNode = memo(({ id, data, selected }: GltfViewerNodeProps)
 
         {/* Resize handle */}
         <div
-          className="absolute right-1 bottom-1 h-3 w-3 cursor-se-resize rounded-sm bg-purple-500/70 nodrag nowheel"
+          className="absolute right-1 bottom-1 h-3 w-3 cursor-se-resize rounded-sm bg-teal-500/70 nodrag nowheel"
           onPointerDown={handleResizeMouseDown}
           onTouchStart={handleResizeTouchStart}
           role="presentation"

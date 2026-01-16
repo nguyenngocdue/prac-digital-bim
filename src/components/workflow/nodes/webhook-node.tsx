@@ -98,7 +98,7 @@ export function WebhookNode({ id, data }: WebhookNodeProps) {
 
   return (
     <div 
-      className="group relative rounded-lg border border-purple-500/30 bg-zinc-900 shadow-xl shadow-purple-500/10"
+      className="group relative rounded-2xl border border-[var(--workflow-border)] bg-[var(--workflow-panel)] shadow-[0_12px_30px_var(--workflow-shadow)]"
       onDoubleClick={() => setIsEditMode(true)}
     >
       <NodeCloseButton nodeId={id} variant="default" />
@@ -107,19 +107,19 @@ export function WebhookNode({ id, data }: WebhookNodeProps) {
       <Handle
         type="source"
         position={Position.Right}
-        className="h-3! w-3! border-2! border-purple-500! bg-purple-400!"
+        className="h-3! w-3! border-2! border-teal-200! bg-teal-500!"
       />
 
       {/* Header */}
-      <div className="flex items-center gap-2 border-b border-purple-500/30 bg-purple-500/10 px-3 py-2">
-        <div className="flex h-6 w-6 items-center justify-center rounded bg-purple-500/20">
-          <span className="text-xs font-bold text-purple-400">🪝</span>
+      <div className="flex items-center gap-2 border-b border-[var(--workflow-border)] bg-[var(--workflow-panel-strong)] px-3 py-2">
+        <div className="flex h-6 w-6 items-center justify-center rounded-full bg-teal-500/10 border border-teal-200">
+          <span className="text-xs font-bold text-teal-700">🪝</span>
         </div>
         <div className="flex-1">
-          <div className="text-xs font-semibold text-purple-300">
+          <div className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--workflow-ink)]">
             {data.label}
           </div>
-          <div className="text-[10px] text-zinc-400">
+          <div className="text-[10px] text-[var(--workflow-muted)]">
             {config.method.join(", ")} Webhook
           </div>
         </div>
@@ -132,7 +132,7 @@ export function WebhookNode({ id, data }: WebhookNodeProps) {
           <>
             {/* Webhook URL Display */}
             <div className="space-y-1">
-              <label className="text-[10px] font-medium text-zinc-400">
+              <label className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--workflow-muted)]">
                 Webhook URL
               </label>
               <div className="flex gap-1">
@@ -140,15 +140,15 @@ export function WebhookNode({ id, data }: WebhookNodeProps) {
                   type="text"
                   value={webhookUrl}
                   readOnly
-                  className="flex-1 rounded border border-zinc-700 bg-zinc-800 px-2 py-1 text-[10px] text-zinc-300"
+                  className="flex-1 rounded-xl border border-[var(--workflow-border)] bg-white/80 px-2 py-1 text-[10px] text-[var(--workflow-ink)]"
                 />
                 <button
                   onClick={handleCopyUrl}
-                  className="rounded border border-zinc-700 bg-zinc-800 px-2 py-1 text-zinc-400 transition-colors hover:bg-zinc-700"
+                  className="rounded-xl border border-[var(--workflow-border)] bg-[var(--workflow-panel-strong)] px-2 py-1 text-[var(--workflow-muted)] transition-colors hover:text-[var(--workflow-ink)]"
                   title="Copy URL"
                 >
                   {copied ? (
-                    <Check className="h-3 w-3 text-emerald-400" />
+                    <Check className="h-3 w-3 text-emerald-600" />
                   ) : (
                     <Copy className="h-3 w-3" />
                   )}
@@ -158,18 +158,18 @@ export function WebhookNode({ id, data }: WebhookNodeProps) {
 
             {/* Quick Info */}
             <div className="space-y-1 text-[10px]">
-              <div className="flex items-center justify-between text-zinc-500">
+              <div className="flex items-center justify-between text-[var(--workflow-muted)]">
                 <span>Auth:</span>
-                <span className="text-zinc-300 capitalize">{config.authType}</span>
+                <span className="text-[var(--workflow-ink)] capitalize">{config.authType}</span>
               </div>
-              <div className="flex items-center justify-between text-zinc-500">
+              <div className="flex items-center justify-between text-[var(--workflow-muted)]">
                 <span>Response:</span>
-                <span className="text-zinc-300">{config.responseCode}</span>
+                <span className="text-[var(--workflow-ink)]">{config.responseCode}</span>
               </div>
             </div>
 
             {/* Edit Hint */}
-            <div className="rounded bg-purple-500/10 px-2 py-1.5 text-center text-[9px] text-purple-400">
+            <div className="rounded-full border border-teal-200 bg-teal-500/10 px-2 py-1.5 text-center text-[9px] font-semibold uppercase tracking-[0.2em] text-teal-700">
               Double-click to configure
             </div>
           </>
@@ -179,7 +179,7 @@ export function WebhookNode({ id, data }: WebhookNodeProps) {
         {/* Webhook URL Display */}
         {showUrl && (
           <div className="space-y-1">
-            <label className="text-[10px] font-medium text-zinc-400">
+            <label className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--workflow-muted)]">
               Webhook URL
             </label>
             <div className="flex gap-1">
@@ -187,22 +187,22 @@ export function WebhookNode({ id, data }: WebhookNodeProps) {
                 type="text"
                 value={webhookUrl}
                 readOnly
-                className="flex-1 rounded border border-zinc-700 bg-zinc-800 px-2 py-1 text-[10px] text-zinc-300"
+                className="flex-1 rounded-xl border border-[var(--workflow-border)] bg-white/80 px-2 py-1 text-[10px] text-[var(--workflow-ink)]"
               />
               <button
                 onClick={handleCopyUrl}
-                className="rounded border border-zinc-700 bg-zinc-800 px-2 py-1 text-zinc-400 transition-colors hover:bg-zinc-700"
+                className="rounded-xl border border-[var(--workflow-border)] bg-[var(--workflow-panel-strong)] px-2 py-1 text-[var(--workflow-muted)] transition-colors hover:text-[var(--workflow-ink)]"
                 title="Copy URL"
               >
                 {copied ? (
-                  <Check className="h-3 w-3 text-emerald-400" />
+                  <Check className="h-3 w-3 text-emerald-600" />
                 ) : (
                   <Copy className="h-3 w-3" />
                 )}
               </button>
               <button
                 onClick={() => setShowUrl(false)}
-                className="rounded border border-zinc-700 bg-zinc-800 px-2 py-1 text-zinc-400 transition-colors hover:bg-zinc-700"
+                className="rounded-xl border border-[var(--workflow-border)] bg-[var(--workflow-panel-strong)] px-2 py-1 text-[var(--workflow-muted)] transition-colors hover:text-[var(--workflow-ink)]"
                 title="Hide URL"
               >
                 <EyeOff className="h-3 w-3" />
@@ -214,7 +214,7 @@ export function WebhookNode({ id, data }: WebhookNodeProps) {
         {!showUrl && (
           <button
             onClick={() => setShowUrl(true)}
-            className="w-full rounded border border-zinc-700 bg-zinc-800 px-2 py-1 text-[10px] text-zinc-400 transition-colors hover:bg-zinc-700"
+            className="w-full rounded-xl border border-[var(--workflow-border)] bg-[var(--workflow-panel-strong)] px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--workflow-muted)] transition-colors hover:text-[var(--workflow-ink)]"
           >
             <Eye className="inline h-3 w-3 mr-1" />
             Show URL
@@ -223,7 +223,7 @@ export function WebhookNode({ id, data }: WebhookNodeProps) {
 
         {/* Path Configuration */}
         <div className="space-y-1">
-          <label className="text-[10px] font-medium text-zinc-400">
+          <label className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--workflow-muted)]">
             Webhook Path
           </label>
           <input
@@ -231,13 +231,13 @@ export function WebhookNode({ id, data }: WebhookNodeProps) {
             value={config.path}
             onChange={(e) => updateConfig({ path: e.target.value })}
             placeholder="webhook-path"
-            className="w-full rounded border border-zinc-700 bg-zinc-800 px-2 py-1 text-xs text-zinc-300 placeholder:text-zinc-600"
+            className="w-full rounded-xl border border-[var(--workflow-border)] bg-[var(--workflow-panel-strong)] px-2 py-1 text-xs text-[var(--workflow-ink)] placeholder:text-[var(--workflow-muted)]"
           />
         </div>
 
         {/* HTTP Methods */}
         <div className="space-y-1">
-          <label className="text-[10px] font-medium text-zinc-400">
+          <label className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--workflow-muted)]">
             HTTP Methods
           </label>
           <div className="flex flex-wrap gap-1">
@@ -250,10 +250,10 @@ export function WebhookNode({ id, data }: WebhookNodeProps) {
                     : [...config.method, method];
                   updateConfig({ method: methods.length > 0 ? methods : [method] });
                 }}
-                className={`rounded px-2 py-0.5 text-[10px] font-medium transition-colors ${
+                className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.16em] transition-colors ${
                   config.method.includes(method)
-                    ? "bg-purple-500 text-white"
-                    : "bg-zinc-800 text-zinc-400 hover:bg-zinc-700"
+                    ? "bg-[var(--workflow-accent)] text-white"
+                    : "border border-[var(--workflow-border)] bg-[var(--workflow-panel-strong)] text-[var(--workflow-muted)] hover:text-[var(--workflow-ink)]"
                 }`}
               >
                 {method}
@@ -264,7 +264,7 @@ export function WebhookNode({ id, data }: WebhookNodeProps) {
 
         {/* Authentication */}
         <div className="space-y-1">
-          <label className="text-[10px] font-medium text-zinc-400">
+          <label className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--workflow-muted)]">
             Authentication
           </label>
           <select
@@ -274,7 +274,7 @@ export function WebhookNode({ id, data }: WebhookNodeProps) {
                 authType: e.target.value as WebhookConfig["authType"],
               })
             }
-            className="w-full rounded border border-zinc-700 bg-zinc-800 px-2 py-1 text-xs text-zinc-300"
+            className="w-full rounded-xl border border-[var(--workflow-border)] bg-[var(--workflow-panel-strong)] px-2 py-1 text-xs text-[var(--workflow-ink)]"
           >
             <option value="none">None</option>
             <option value="basic">Basic Auth</option>
@@ -285,7 +285,7 @@ export function WebhookNode({ id, data }: WebhookNodeProps) {
         {/* Auth Value */}
         {config.authType !== "none" && (
           <div className="space-y-1">
-            <label className="text-[10px] font-medium text-zinc-400">
+            <label className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--workflow-muted)]">
               {config.authType === "basic"
                 ? "Credentials (username:password)"
                 : "Token"}
@@ -299,10 +299,10 @@ export function WebhookNode({ id, data }: WebhookNodeProps) {
                   ? "username:password"
                   : "your-token-here"
               }
-              className="w-full rounded border border-zinc-700 bg-zinc-800 px-2 py-1 text-xs text-zinc-300 placeholder:text-zinc-600"
+              className="w-full rounded-xl border border-[var(--workflow-border)] bg-[var(--workflow-panel-strong)] px-2 py-1 text-xs text-[var(--workflow-ink)] placeholder:text-[var(--workflow-muted)]"
             />
             {config.authType === "header" && (
-              <div className="text-[9px] text-zinc-500">
+              <div className="text-[9px] text-[var(--workflow-muted)]">
                 Send as: x-webhook-token header
               </div>
             )}
@@ -311,7 +311,7 @@ export function WebhookNode({ id, data }: WebhookNodeProps) {
 
         {/* Response Configuration */}
         <div className="space-y-1">
-          <label className="text-[10px] font-medium text-zinc-400">
+          <label className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--workflow-muted)]">
             Response
           </label>
           <select
@@ -321,7 +321,7 @@ export function WebhookNode({ id, data }: WebhookNodeProps) {
                 responseMode: e.target.value as WebhookConfig["responseMode"],
               })
             }
-            className="w-full rounded border border-zinc-700 bg-zinc-800 px-2 py-1 text-xs text-zinc-300"
+            className="w-full rounded-xl border border-[var(--workflow-border)] bg-[var(--workflow-panel-strong)] px-2 py-1 text-xs text-[var(--workflow-ink)]"
           >
             <option value="lastNode">Last Node Output</option>
             <option value="firstNode">First Node Output</option>
@@ -331,7 +331,7 @@ export function WebhookNode({ id, data }: WebhookNodeProps) {
 
         {/* Response Code */}
         <div className="space-y-1">
-          <label className="text-[10px] font-medium text-zinc-400">
+          <label className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--workflow-muted)]">
             Response Code
           </label>
           <input
@@ -340,21 +340,21 @@ export function WebhookNode({ id, data }: WebhookNodeProps) {
             onChange={(e) =>
               updateConfig({ responseCode: parseInt(e.target.value) })
             }
-            className="w-full rounded border border-zinc-700 bg-zinc-800 px-2 py-1 text-xs text-zinc-300"
+            className="w-full rounded-xl border border-[var(--workflow-border)] bg-[var(--workflow-panel-strong)] px-2 py-1 text-xs text-[var(--workflow-ink)]"
           />
         </div>
 
         {/* Custom Response Data */}
         {config.responseMode === "custom" && (
           <div className="space-y-1">
-            <label className="text-[10px] font-medium text-zinc-400">
+            <label className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--workflow-muted)]">
               Response Body (JSON)
             </label>
             <textarea
               value={config.responseData || ""}
               onChange={(e) => updateConfig({ responseData: e.target.value })}
               placeholder='{"message": "Success"}'
-              className="w-full rounded border border-zinc-700 bg-zinc-800 px-2 py-1 text-xs text-zinc-300 placeholder:text-zinc-600"
+              className="w-full rounded-xl border border-[var(--workflow-border)] bg-[var(--workflow-panel-strong)] px-2 py-1 text-xs text-[var(--workflow-ink)] placeholder:text-[var(--workflow-muted)]"
               rows={3}
             />
           </div>
@@ -363,7 +363,7 @@ export function WebhookNode({ id, data }: WebhookNodeProps) {
         {/* Test Button */}
         <button
           onClick={handleTestWebhook}
-          className="flex w-full items-center justify-center gap-1 rounded bg-purple-600 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-purple-500"
+          className="flex w-full items-center justify-center gap-1 rounded-full bg-[var(--workflow-accent)] px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.18em] text-white transition-colors hover:bg-[var(--workflow-accent-strong)]"
         >
           <RefreshCw className="h-3 w-3" />
           Test Webhook
@@ -371,11 +371,11 @@ export function WebhookNode({ id, data }: WebhookNodeProps) {
 
         {/* Test Response */}
         {testResponse && (
-          <div className="rounded border border-zinc-700 bg-zinc-800 p-2">
-            <div className="mb-1 text-[10px] font-medium text-zinc-400">
+          <div className="rounded-xl border border-[var(--workflow-border)] bg-white/80 p-2">
+            <div className="mb-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--workflow-muted)]">
               Test Response:
             </div>
-            <pre className="text-[9px] text-zinc-300 overflow-auto max-h-20">
+            <pre className="text-[9px] text-[var(--workflow-ink)] overflow-auto max-h-20">
               {JSON.stringify(testResponse, null, 2)}
             </pre>
           </div>
@@ -384,7 +384,7 @@ export function WebhookNode({ id, data }: WebhookNodeProps) {
         {/* Close Edit Mode Button */}
         <button
           onClick={() => setIsEditMode(false)}
-          className="w-full rounded bg-zinc-800 px-3 py-1.5 text-xs font-medium text-zinc-300 transition-colors hover:bg-zinc-700"
+          className="w-full rounded-full border border-[var(--workflow-border)] bg-[var(--workflow-panel-strong)] px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.18em] text-[var(--workflow-muted)] transition-colors hover:text-[var(--workflow-ink)]"
         >
           Done
         </button>
@@ -393,13 +393,13 @@ export function WebhookNode({ id, data }: WebhookNodeProps) {
       </div>
 
       {/* Footer */}
-      <div className="flex items-center justify-between border-t border-purple-500/30 bg-purple-500/5 px-3 py-1.5">
-        <div className="text-[9px] text-zinc-500">
-          Calls: <span className="text-purple-400 font-medium">0</span>
+      <div className="flex items-center justify-between border-t border-[var(--workflow-border)] bg-[var(--workflow-panel-strong)] px-3 py-1.5">
+        <div className="text-[9px] text-[var(--workflow-muted)]">
+          Calls: <span className="text-teal-700 font-semibold uppercase tracking-[0.16em]">0</span>
         </div>
         <button
           onClick={() => setTestResponse(null)}
-          className="text-[9px] text-zinc-500 hover:text-zinc-300 transition-colors"
+          className="text-[9px] text-[var(--workflow-muted)] hover:text-[var(--workflow-ink)] transition-colors"
         >
           <Trash2 className="h-3 w-3" />
         </button>

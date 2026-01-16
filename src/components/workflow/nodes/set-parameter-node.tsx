@@ -37,12 +37,12 @@ export const SetParameterNode = memo(({ id, data, selected }: SetParameterNodePr
   const parameters = data.parameters || [];
 
   const statusColors = {
-    idle: "border-blue-500/50 from-blue-950/40 to-blue-950/20",
-    pending: "border-yellow-500/50 from-yellow-950/40 to-yellow-950/20",
-    running: "border-blue-500/50 from-blue-950/40 to-blue-950/20 animate-pulse",
-    success: "border-green-500/50 from-green-950/40 to-green-950/20",
-    error: "border-red-500/50 from-red-950/40 to-red-950/20",
-    skipped: "border-zinc-500/50 from-zinc-950/40 to-zinc-950/20",
+    idle: "",
+    pending: "ring-2 ring-amber-400/40",
+    running: "ring-2 ring-sky-400/40 animate-pulse",
+    success: "ring-2 ring-emerald-400/40",
+    error: "ring-2 ring-rose-400/40",
+    skipped: "opacity-70",
   };
 
   const handleAddParameter = () => {
@@ -106,11 +106,11 @@ export const SetParameterNode = memo(({ id, data, selected }: SetParameterNodePr
 
   return (
     <div
-      className={`group relative min-w-[280px] rounded-lg border bg-linear-to-b shadow-lg backdrop-blur-sm transition-all ${
+      className={`group relative min-w-[280px] rounded-2xl border border-[var(--workflow-border)] bg-[var(--workflow-panel)] shadow-[0_12px_30px_var(--workflow-shadow)] transition-all ${
         selected
-          ? "border-blue-400 shadow-blue-500/50 ring-2 ring-blue-400/30"
-          : statusColors[executionStatus]
-      }`}
+          ? "border-blue-400 ring-2 ring-blue-400/20"
+          : "hover:border-blue-300"
+      } ${statusColors[executionStatus]}`}
     >
       <NodeCloseButton nodeId={id} variant="default" />
       {/* <NodeExecutionBadge 
@@ -123,7 +123,7 @@ export const SetParameterNode = memo(({ id, data, selected }: SetParameterNodePr
         type="target"
         position={Position.Left}
         id="element"
-        className="h-3! w-3! border-2! border-blue-500! bg-blue-400! hover:scale-125! transition-transform"
+        className="h-3! w-3! border-2! border-blue-200! bg-blue-500! hover:scale-125! transition-transform"
         style={{ left: -6, top: 32 }}
       />
 
@@ -132,7 +132,7 @@ export const SetParameterNode = memo(({ id, data, selected }: SetParameterNodePr
         type="target"
         position={Position.Left}
         id="parameterName"
-        className="h-3! w-3! border-2! border-blue-500! bg-blue-400! hover:scale-125! transition-transform"
+        className="h-3! w-3! border-2! border-blue-200! bg-blue-500! hover:scale-125! transition-transform"
         style={{ left: -6, top: 60 }}
       />
 
@@ -141,7 +141,7 @@ export const SetParameterNode = memo(({ id, data, selected }: SetParameterNodePr
         type="target"
         position={Position.Left}
         id="value"
-        className="h-3! w-3! border-2! border-blue-500! bg-blue-400! hover:scale-125! transition-transform"
+        className="h-3! w-3! border-2! border-blue-200! bg-blue-500! hover:scale-125! transition-transform"
         style={{ left: -6, top: 88 }}
       />
 
@@ -150,19 +150,19 @@ export const SetParameterNode = memo(({ id, data, selected }: SetParameterNodePr
         type="source"
         position={Position.Right}
         id="output"
-        className="h-3! w-3! border-2! border-blue-500! bg-blue-400! hover:scale-125! transition-transform"
+        className="h-3! w-3! border-2! border-blue-200! bg-blue-500! hover:scale-125! transition-transform"
         style={{ right: -6 }}
       />
 
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-blue-500/30 bg-blue-500/10 px-3 py-2">
+      <div className="flex items-center justify-between border-b border-blue-200 bg-blue-500/10 px-3 py-2">
         <div className="flex items-center gap-2">
-          <Edit className="h-4 w-4 text-blue-400" />
-          <span className="text-xs font-semibold text-blue-400">
+          <Edit className="h-4 w-4 text-blue-600" />
+          <span className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-700">
             {data.label || "Set Parameter"}
           </span>
         </div>
-        <span className="text-[9px] text-blue-600 font-medium">
+        <span className="text-[9px] font-semibold uppercase tracking-[0.2em] text-blue-700">
           BIM
         </span>
       </div>
@@ -171,16 +171,16 @@ export const SetParameterNode = memo(({ id, data, selected }: SetParameterNodePr
       <div className="p-3 space-y-3">
         {/* Input Labels */}
         <div className="space-y-2">
-          <div className="flex items-center gap-2 text-[10px] text-zinc-400">
-            <div className="h-2 w-2 rounded-full bg-blue-500/50" />
+          <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--workflow-muted)]">
+            <div className="h-2 w-2 rounded-full bg-blue-500" />
             <span>element</span>
           </div>
-          <div className="flex items-center gap-2 text-[10px] text-zinc-400">
-            <div className="h-2 w-2 rounded-full bg-blue-500/50" />
+          <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--workflow-muted)]">
+            <div className="h-2 w-2 rounded-full bg-blue-500" />
             <span>parameterName</span>
           </div>
-          <div className="flex items-center gap-2 text-[10px] text-zinc-400">
-            <div className="h-2 w-2 rounded-full bg-blue-500/50" />
+          <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--workflow-muted)]">
+            <div className="h-2 w-2 rounded-full bg-blue-500" />
             <span>value</span>
           </div>
         </div>
@@ -188,33 +188,33 @@ export const SetParameterNode = memo(({ id, data, selected }: SetParameterNodePr
         {/* Parameters List */}
         {parameters.length > 0 && (
           <div className="space-y-1.5">
-            <div className="text-[10px] text-zinc-500 font-medium">
+            <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--workflow-muted)]">
               Parameters to Set:
             </div>
             {parameters.map((param, index) => (
               <div
                 key={index}
-                className="flex items-center justify-between gap-2 rounded-md border border-blue-700/30 bg-blue-900/20 px-2 py-1.5"
+                className="flex items-center justify-between gap-2 rounded-xl border border-blue-200 bg-blue-500/10 px-2 py-1.5"
               >
                 <div className="flex-1 min-w-0">
-                  <div className="text-xs text-blue-300 font-medium truncate">
+                  <div className="text-xs font-semibold text-blue-700 truncate">
                     {param.name}
                   </div>
-                  <div className="text-[10px] text-blue-400/70">
+                  <div className="text-[10px] text-blue-500/80">
                     = {String(param.value)}
                   </div>
                 </div>
                 <div className="flex gap-1">
                   <button
                     onClick={() => handleEditParameter(index)}
-                    className="p-0.5 rounded hover:bg-blue-500/20 text-zinc-500 hover:text-blue-400 transition-colors"
+                    className="rounded-full p-0.5 text-[var(--workflow-muted)] transition-colors hover:bg-blue-500/10 hover:text-blue-600"
                     title="Edit parameter"
                   >
                     <Edit className="h-3 w-3" />
                   </button>
                   <button
                     onClick={() => handleRemoveParameter(index)}
-                    className="p-0.5 rounded hover:bg-red-500/20 text-zinc-500 hover:text-red-400 transition-colors"
+                    className="rounded-full p-0.5 text-[var(--workflow-muted)] transition-colors hover:bg-rose-500/10 hover:text-rose-600"
                     title="Remove parameter"
                   >
                     <X className="h-3 w-3" />
@@ -227,14 +227,14 @@ export const SetParameterNode = memo(({ id, data, selected }: SetParameterNodePr
 
         {/* Add/Edit Parameter Form */}
         {(isAdding || editingIndex !== null) ? (
-          <div className="space-y-2 rounded-lg border border-blue-600/50 bg-blue-900/20 p-2">
+          <div className="space-y-2 rounded-xl border border-[var(--workflow-border)] bg-[var(--workflow-panel-strong)] p-2">
             <input
               type="text"
               value={newParam.name}
               onChange={(e) => setNewParam({ ...newParam, name: e.target.value })}
               onKeyDown={handleKeyPress}
               placeholder="Parameter name..."
-              className="w-full px-2 py-1 text-xs rounded border border-blue-600/50 bg-zinc-900/80 text-blue-200 placeholder:text-zinc-600 focus:outline-none focus:border-blue-500"
+              className="w-full rounded-lg border border-[var(--workflow-border)] bg-white/80 px-2 py-1 text-xs text-[var(--workflow-ink)] placeholder:text-[var(--workflow-muted)] focus:outline-none focus:border-blue-300"
               autoFocus
             />
             <input
@@ -243,18 +243,18 @@ export const SetParameterNode = memo(({ id, data, selected }: SetParameterNodePr
               onChange={(e) => setNewParam({ ...newParam, value: e.target.value })}
               onKeyDown={handleKeyPress}
               placeholder="Value..."
-              className="w-full px-2 py-1 text-xs rounded border border-blue-600/50 bg-zinc-900/80 text-blue-200 placeholder:text-zinc-600 focus:outline-none focus:border-blue-500"
+              className="w-full rounded-lg border border-[var(--workflow-border)] bg-white/80 px-2 py-1 text-xs text-[var(--workflow-ink)] placeholder:text-[var(--workflow-muted)] focus:outline-none focus:border-blue-300"
             />
             <div className="flex gap-1">
               <button
                 onClick={editingIndex !== null ? () => handleUpdateParameter(editingIndex) : handleAddParameter}
-                className="flex-1 px-2 py-1 text-xs rounded bg-blue-600 hover:bg-blue-500 text-white transition-colors"
+                className="flex-1 rounded-full bg-blue-500 px-2 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-white transition-colors hover:bg-blue-400"
               >
                 {editingIndex !== null ? "Update" : "Add"}
               </button>
               <button
                 onClick={handleCancel}
-                className="px-2 py-1 text-xs rounded bg-zinc-700 hover:bg-zinc-600 text-zinc-300 transition-colors"
+                className="rounded-full border border-[var(--workflow-border)] bg-[var(--workflow-panel)] px-2 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-[var(--workflow-muted)] transition-colors hover:text-[var(--workflow-ink)]"
               >
                 Cancel
               </button>
@@ -263,7 +263,7 @@ export const SetParameterNode = memo(({ id, data, selected }: SetParameterNodePr
         ) : (
           <button
             onClick={() => setIsAdding(true)}
-            className="w-full flex items-center justify-center gap-1.5 px-2 py-1.5 text-[10px] rounded border border-blue-700/30 bg-blue-900/20 hover:bg-blue-900/30 text-blue-400 hover:text-blue-300 transition-colors"
+            className="flex w-full items-center justify-center gap-1.5 rounded-full border border-blue-200 bg-blue-500/10 px-2 py-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-blue-700 transition-colors hover:bg-blue-500/20"
           >
             <Plus className="h-3 w-3" />
             <span>Add Parameter</span>
@@ -272,10 +272,10 @@ export const SetParameterNode = memo(({ id, data, selected }: SetParameterNodePr
       </div>
 
       {/* Footer */}
-      <div className="border-t border-blue-500/30 bg-blue-500/5 px-3 py-1.5">
+      <div className="border-t border-blue-200 bg-blue-500/5 px-3 py-1.5">
         <div className="flex items-center justify-between text-[9px]">
-          <span className="text-zinc-500">Output</span>
-          <span className="text-blue-400 font-medium">
+          <span className="text-[var(--workflow-muted)]">Output</span>
+          <span className="text-blue-700 font-semibold uppercase tracking-[0.16em]">
             {parameters.length > 0 
               ? `${parameters.length} parameters`
               : "Ready"}

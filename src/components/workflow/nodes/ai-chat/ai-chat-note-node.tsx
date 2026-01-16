@@ -56,20 +56,20 @@ export const AIChatNoteNode = memo(
 
     const statusStyles = {
       idle: "",
-      pending: "ring-2 ring-yellow-400/50",
-      running: "ring-2 ring-blue-400/50 animate-pulse",
-      success: "ring-2 ring-green-400/50",
-      error: "ring-2 ring-red-400/50",
-      skipped: "opacity-60",
+      pending: "ring-2 ring-amber-400/40",
+      running: "ring-2 ring-sky-400/40 animate-pulse",
+      success: "ring-2 ring-emerald-400/40",
+      error: "ring-2 ring-rose-400/40",
+      skipped: "opacity-70",
     };
 
     return (
       <div
         className={cn(
-          "group relative h-full w-full min-w-[360px] min-h-[320px] rounded-xl border-2 shadow-xl transition-all flex flex-col bg-gradient-to-b from-zinc-900 to-zinc-950",
+          "group relative h-full w-full min-w-[360px] min-h-[320px] rounded-2xl border border-[var(--workflow-border)] shadow-[0_12px_30px_var(--workflow-shadow)] transition-all flex flex-col bg-[var(--workflow-panel)]",
           selected
-            ? "border-emerald-400 shadow-emerald-500/20"
-            : "border-zinc-700/50 hover:border-emerald-500/50",
+            ? "border-emerald-400 ring-2 ring-emerald-400/20"
+            : "hover:border-emerald-300",
           statusStyles[executionStatus]
         )}
       >
@@ -77,8 +77,8 @@ export const AIChatNoteNode = memo(
           minWidth={360}
           minHeight={320}
           isVisible={selected}
-          lineClassName="!border-emerald-400"
-          handleClassName="!w-2.5 !h-2.5 !bg-emerald-400 !border-emerald-600 !rounded-full"
+          lineClassName="!border-emerald-300"
+          handleClassName="!w-2.5 !h-2.5 !bg-emerald-500 !border-emerald-200 !rounded-full"
         />
 
         <NodeCloseButton nodeId={id} variant="emerald" />
@@ -92,7 +92,7 @@ export const AIChatNoteNode = memo(
           type="target"
           position={Position.Left}
           id="input"
-          className="!w-4 !h-4 !bg-emerald-400 !border-[3px] !border-emerald-600 hover:!scale-110 transition-transform !rounded-full"
+          className="!w-4 !h-4 !bg-emerald-500 !border-[3px] !border-emerald-200 hover:!scale-110 transition-transform !rounded-full"
           style={{ left: -8, top: "50%" }}
         />
         
@@ -101,21 +101,21 @@ export const AIChatNoteNode = memo(
           type="source"
           position={Position.Right}
           id="output"
-          className="!w-4 !h-4 !bg-emerald-400 !border-[3px] !border-emerald-600 hover:!scale-110 transition-transform !rounded-full"
+          className="!w-4 !h-4 !bg-emerald-500 !border-[3px] !border-emerald-200 hover:!scale-110 transition-transform !rounded-full"
           style={{ right: -8, top: "50%" }}
         />
 
         {/* Header */}
-        <header className="px-4 py-3 flex items-center justify-between bg-linear-to-r from-emerald-600 to-emerald-500 rounded-t-[10px]">
+        <header className="px-4 py-3 flex items-center justify-between bg-[var(--workflow-accent)] rounded-t-[14px]">
           <div className="flex items-center gap-2.5">
-            <div className="p-1.5 bg-white/20 rounded-lg">
+            <div className="p-1.5 bg-white/20 rounded-2xl">
               <Bot className="w-4 h-4 text-white" />
             </div>
             <div>
               <span className="text-sm font-bold text-white block">
                 {data.label || "AI Chat"}
               </span>
-              <span className="text-[10px] text-white/70">Powered by AI</span>
+              <span className="text-[10px] uppercase tracking-[0.18em] text-white/80">Powered by AI</span>
             </div>
           </div>
           <div className="flex items-center gap-1.5 bg-white/20 px-2 py-1 rounded-full">
@@ -130,12 +130,12 @@ export const AIChatNoteNode = memo(
           <ScrollArea className="flex-1 px-3 py-3">
             <div className="space-y-3">
               {messages.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-8 text-zinc-500">
-                  <div className="p-3 bg-zinc-800/50 rounded-full mb-3">
+                <div className="flex flex-col items-center justify-center py-8 text-[var(--workflow-muted)]">
+                  <div className="p-3 bg-[var(--workflow-panel-strong)] rounded-full mb-3">
                     <MessageSquare className="w-6 h-6" />
                   </div>
-                  <p className="text-xs font-medium">Start a conversation</p>
-                  <p className="text-[10px] text-zinc-600 mt-1">Ask anything to get started</p>
+                  <p className="text-xs font-semibold text-[var(--workflow-ink)]">Start a conversation</p>
+                  <p className="text-[10px] text-[var(--workflow-muted)] mt-1">Ask anything to get started</p>
                 </div>
               ) : (
                 messages.map((msg) => <ChatMessage key={msg.id} message={msg} />)
@@ -156,7 +156,7 @@ export const AIChatNoteNode = memo(
 
           {/* Input Area */}
           <div className="px-3 pb-3">
-            <div className="flex items-center gap-2 bg-zinc-800/80 rounded-xl border border-zinc-700/50 px-3 py-2 focus-within:border-emerald-500/50 transition-colors">
+            <div className="flex items-center gap-2 bg-white/80 rounded-xl border border-[var(--workflow-border)] px-3 py-2 focus-within:border-emerald-300 transition-colors">
               <input
                 ref={inputRef}
                 type="text"
@@ -164,7 +164,7 @@ export const AIChatNoteNode = memo(
                 onChange={(e) => setInputText(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder="Type your message..."
-                className="flex-1 bg-transparent text-sm text-zinc-200 placeholder:text-zinc-500 outline-none nodrag"
+                className="flex-1 bg-transparent text-sm text-[var(--workflow-ink)] placeholder:text-[var(--workflow-muted)] outline-none nodrag"
                 disabled={isLoading}
               />
 
@@ -175,7 +175,7 @@ export const AIChatNoteNode = memo(
                   "p-2 rounded-lg transition-all",
                   inputText.trim() && !isLoading
                     ? "bg-emerald-500 hover:bg-emerald-400 shadow-lg shadow-emerald-500/25"
-                    : "bg-zinc-700 cursor-not-allowed"
+                    : "bg-[var(--workflow-border)] cursor-not-allowed"
                 )}
               >
                 <Send className="w-4 h-4 text-white" />
@@ -184,8 +184,8 @@ export const AIChatNoteNode = memo(
           </div>
 
           {/* Footer */}
-          <footer className="px-3 pb-2 border-t border-zinc-800/50 pt-2">
-            <p className="text-[9px] text-zinc-600 text-center">
+          <footer className="px-3 pb-2 border-t border-[var(--workflow-border)] pt-2">
+            <p className="text-[9px] text-[var(--workflow-muted)] text-center">
               AI responses may not always be accurate. Verify important information.
             </p>
           </footer>

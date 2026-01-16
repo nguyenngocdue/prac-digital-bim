@@ -27,12 +27,12 @@ export const PythonNode = memo(({ id, data, selected }: PythonNodeProps) => {
   const nodeState = executionState.nodeStates[id];
 
   const statusColors = {
-    idle: "border-orange-500/50 from-orange-950/40 to-orange-950/20",
-    pending: "border-yellow-500/50 from-yellow-950/40 to-yellow-950/20",
-    running: "border-blue-500/50 from-blue-950/40 to-blue-950/20 animate-pulse",
-    success: "border-green-500/50 from-green-950/40 to-green-950/20",
-    error: "border-red-500/50 from-red-950/40 to-red-950/20",
-    skipped: "border-zinc-500/50 from-zinc-950/40 to-zinc-950/20",
+    idle: "",
+    pending: "ring-2 ring-amber-400/40",
+    running: "ring-2 ring-sky-400/40 animate-pulse",
+    success: "ring-2 ring-emerald-400/40",
+    error: "ring-2 ring-rose-400/40",
+    skipped: "opacity-70",
   };
 
   const handleRunNode = async () => {
@@ -41,11 +41,11 @@ export const PythonNode = memo(({ id, data, selected }: PythonNodeProps) => {
 
   return (
     <div
-      className={`group relative min-w-[260px] rounded-lg border bg-linear-to-b shadow-lg backdrop-blur-sm transition-all ${
+      className={`group relative min-w-[260px] rounded-2xl border border-[var(--workflow-border)] bg-[var(--workflow-panel)] shadow-[0_12px_30px_var(--workflow-shadow)] transition-all ${
         selected
-          ? "border-orange-400 shadow-orange-500/50 ring-2 ring-orange-400/30"
-          : statusColors[executionStatus]
-      }`}
+          ? "border-orange-400 ring-2 ring-orange-400/20"
+          : "hover:border-orange-300"
+      } ${statusColors[executionStatus]}`}
     >
       <NodeCloseButton nodeId={id} variant="orange" />
       {/* <NodeExecutionBadge 
@@ -58,32 +58,32 @@ export const PythonNode = memo(({ id, data, selected }: PythonNodeProps) => {
         type="target"
         position={Position.Left}
         id="input"
-        className="h-3! w-3! border-2! border-orange-500! bg-orange-400! hover:scale-125! transition-transform"
+        className="h-3! w-3! border-2! border-orange-200! bg-orange-500! hover:scale-125! transition-transform"
         style={{ left: -6 }}
       />
 
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-orange-500/30 bg-orange-500/10 px-3 py-2">
+      <div className="flex items-center justify-between border-b border-orange-200 bg-orange-500/10 px-3 py-2">
         <div className="flex items-center gap-2">
-          <Code2 className="h-4 w-4 text-orange-400" />
-          <span className="text-xs font-semibold text-orange-400">Python</span>
+          <Code2 className="h-4 w-4 text-orange-600" />
+          <span className="text-xs font-semibold uppercase tracking-[0.2em] text-orange-700">Python</span>
         </div>
       </div>
 
       {/* Content */}
       <div className="p-3">
         {data.code ? (
-          <div className="rounded border border-orange-700/30 bg-zinc-900/80 p-3">
-            <pre className="text-[10px] text-zinc-300 font-mono overflow-x-auto">
+          <div className="rounded-xl border border-orange-200 bg-white/80 p-3">
+            <pre className="text-[10px] text-[var(--workflow-ink)] font-mono overflow-x-auto">
               {data.code}
             </pre>
           </div>
         ) : (
-          <div className="flex h-32 items-center justify-center rounded border border-dashed border-orange-700/30 bg-zinc-900/30">
+          <div className="flex h-32 items-center justify-center rounded-xl border border-dashed border-orange-200 bg-orange-50/70">
             <div className="text-center">
               <div className="mb-2 text-4xl opacity-20">🐍</div>
-              <p className="text-xs text-zinc-500">No code yet</p>
-              <button className="mt-2 text-[10px] font-medium text-orange-400 hover:text-orange-300 transition-colors">
+              <p className="text-xs text-[var(--workflow-muted)]">No code yet</p>
+              <button className="mt-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-orange-600 hover:text-orange-500 transition-colors">
                 Double-click to edit code
               </button>
             </div>
@@ -91,14 +91,14 @@ export const PythonNode = memo(({ id, data, selected }: PythonNodeProps) => {
         )}
 
         {data.label && (
-          <div className="mt-2 text-xs text-zinc-400 truncate">{data.label}</div>
+          <div className="mt-2 text-xs text-[var(--workflow-muted)] truncate">{data.label}</div>
         )}
 
         {/* Run button */}
         <button 
           onClick={handleRunNode}
           disabled={executionStatus === "running" || executionStatus === "pending"}
-          className="mt-2 w-full rounded bg-orange-600/20 px-3 py-1.5 text-[11px] font-medium text-orange-400 transition-colors hover:bg-orange-600/30 active:bg-orange-600/40 flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-full border border-orange-200 bg-orange-500/10 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.2em] text-orange-700 transition-colors hover:bg-orange-500/20 active:bg-orange-500/30 disabled:cursor-not-allowed disabled:opacity-50"
         >
           <Play className="h-3 w-3" />
           {executionStatus === "running" ? "Running..." : "Run Script"}
@@ -117,7 +117,7 @@ export const PythonNode = memo(({ id, data, selected }: PythonNodeProps) => {
         type="source"
         position={Position.Right}
         id="output"
-        className="h-3! w-3! border-2! border-orange-500! bg-orange-400! hover:scale-125! transition-transform"
+        className="h-3! w-3! border-2! border-orange-200! bg-orange-500! hover:scale-125! transition-transform"
         style={{ right: -6 }}
       />
     </div>

@@ -26,32 +26,39 @@ export const NodeCloseButton = memo(({
 
   const variants = {
     default: {
-      button: "bg-zinc-700/80 hover:bg-red-500 border-zinc-600 hover:border-red-400",
-      icon: "text-zinc-400 hover:text-white",
+      button:
+        "bg-[var(--workflow-panel-strong)] hover:bg-[var(--workflow-warm)] border-[var(--workflow-border)] hover:border-[var(--workflow-warm)]",
+      icon: "text-[var(--workflow-muted)] hover:text-white",
     },
     subtle: {
-      button: "bg-zinc-200 hover:bg-red-500 border-zinc-300 hover:border-red-500",
-      icon: "text-zinc-600 hover:text-white",
+      button:
+        "bg-white/80 hover:bg-[var(--workflow-warm)] border-[var(--workflow-border)] hover:border-[var(--workflow-warm)]",
+      icon: "text-[var(--workflow-muted)] hover:text-white",
     },
     emerald: {
-      button: "bg-emerald-700/50 hover:bg-red-500 border-emerald-600/50 hover:border-red-400",
-      icon: "text-white/80 hover:text-white",
+      button:
+        "bg-emerald-500/15 hover:bg-[var(--workflow-warm)] border-emerald-200 hover:border-[var(--workflow-warm)]",
+      icon: "text-emerald-700 hover:text-white",
     },
     orange: {
-      button: "bg-orange-700/50 hover:bg-red-500 border-orange-600/50 hover:border-red-400",
-      icon: "text-orange-200 hover:text-white",
+      button:
+        "bg-orange-500/15 hover:bg-[var(--workflow-warm)] border-orange-200 hover:border-[var(--workflow-warm)]",
+      icon: "text-orange-700 hover:text-white",
     },
     cyan: {
-      button: "bg-cyan-700/50 hover:bg-red-500 border-cyan-600/50 hover:border-red-400",
-      icon: "text-cyan-200 hover:text-white",
+      button:
+        "bg-teal-500/15 hover:bg-[var(--workflow-warm)] border-teal-200 hover:border-[var(--workflow-warm)]",
+      icon: "text-teal-700 hover:text-white",
     },
     purple: {
-      button: "bg-purple-700/50 hover:bg-red-500 border-purple-600/50 hover:border-red-400",
-      icon: "text-purple-200 hover:text-white",
+      button:
+        "bg-indigo-500/15 hover:bg-[var(--workflow-warm)] border-indigo-200 hover:border-[var(--workflow-warm)]",
+      icon: "text-indigo-700 hover:text-white",
     },
     yellow: {
-      button: "bg-amber-700/50 hover:bg-red-500 border-amber-600/50 hover:border-red-400",
-      icon: "text-amber-200 hover:text-white",
+      button:
+        "bg-amber-500/15 hover:bg-[var(--workflow-warm)] border-amber-200 hover:border-[var(--workflow-warm)]",
+      icon: "text-amber-700 hover:text-white",
     },
   };
 
@@ -64,7 +71,7 @@ export const NodeCloseButton = memo(({
   return (
     <button
       onClick={handleDelete}
-      className={`${positionStyles} opacity-0 group-hover:opacity-100 p-1 rounded transition-all duration-200 border z-10 ${styles.button} ${className}`}
+      className={`${positionStyles} opacity-0 group-hover:opacity-100 p-1 rounded-full transition-all duration-200 border z-10 ${styles.button} ${className}`}
       title="Delete node"
     >
       <X className={`w-3 h-3 ${styles.icon} transition-colors`} />

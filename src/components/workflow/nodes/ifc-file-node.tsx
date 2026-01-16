@@ -23,19 +23,19 @@ export const IFCFileNode = memo(({ id, data, selected }: IFCFileNodeProps) => {
 
   const statusStyles = {
     idle: "",
-    pending: "ring-2 ring-yellow-400/50",
-    running: "ring-2 ring-blue-400/50 animate-pulse",
-    success: "ring-2 ring-green-400/50",
-    error: "ring-2 ring-red-400/50",
-    skipped: "opacity-60",
+    pending: "ring-2 ring-amber-400/40",
+    running: "ring-2 ring-sky-400/40 animate-pulse",
+    success: "ring-2 ring-emerald-400/40",
+    error: "ring-2 ring-rose-400/40",
+    skipped: "opacity-70",
   };
 
   return (
     <div
-      className={`group relative min-w-[280px] rounded-lg border-2 bg-amber-300 shadow-md transition-all ${
+      className={`group relative min-w-[260px] rounded-2xl border border-[var(--workflow-border)] bg-[var(--workflow-panel)] shadow-[0_12px_30px_var(--workflow-shadow)] transition-all ${
         selected
-          ? "border-zinc-900 shadow-lg"
-          : "border-zinc-300 hover:border-zinc-400 hover:shadow-lg"
+          ? "border-[var(--workflow-accent)] ring-2 ring-[var(--workflow-accent)]/20"
+          : "hover:border-[var(--workflow-accent)]"
       } ${statusStyles[executionStatus]}`}
     >
       <NodeCloseButton nodeId={id} variant="subtle" />
@@ -44,13 +44,13 @@ export const IFCFileNode = memo(({ id, data, selected }: IFCFileNodeProps) => {
         type="target"
         position={Position.Top}
         id="input"
-        className="transition-transform bg-amber-700"
+        className="h-3! w-3! border-2! border-amber-200! bg-amber-500! transition-transform"
         style={{ top: -6 }}
       />
 
       {/* Content - Chỉ hiển thị tên file */}
-      <div className="px-6 py-4 flex items-center justify-center">
-        <span className="text-sm font-medium text-zinc-900 text-center">
+      <div className="flex items-center justify-center px-6 py-4">
+        <span className="text-sm font-semibold text-[var(--workflow-ink)] text-center">
           {data.label || "untitled.ifc"}
         </span>
       </div>
@@ -67,7 +67,7 @@ export const IFCFileNode = memo(({ id, data, selected }: IFCFileNodeProps) => {
         type="source"
         position={Position.Bottom}
         id="output"
-        className="transition-transform bg-amber-700"
+        className="h-3! w-3! border-2! border-amber-200! bg-amber-500! transition-transform"
         style={{ bottom: -6 }}
       />
     </div>

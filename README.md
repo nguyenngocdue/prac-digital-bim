@@ -30,5 +30,13 @@ Open `http://localhost:3000` to view the app.
 
 ## References
 
-- IFC classify: https://www.ifcflow.com
+- IFC classify: https://www.ifcclassify.com
 
+## Inspiration
+
+Inspired by the UI of IFCflow: https://www.ifcflow.com/
+
+## License
+
+Released under the GNU Affero General Public License v3.0 (AGPLv3).
+See `LICENSE`.
