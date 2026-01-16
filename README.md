@@ -32,7 +32,3 @@ Open `http://localhost:3000` to view the app.
 
 - IFC classify: https://www.ifcflow.com
 
-## License
-
-Released under the GNU Affero General Public License v3.0 (AGPLv3).
-See the license file or: https://www.gnu.org/licenses/agpl-3.0.html
