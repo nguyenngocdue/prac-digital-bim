@@ -30,7 +30,7 @@ Open `http://localhost:3000` to view the app.
 
 ## References
 
-- IFC classify: https://www.ifcclassify.com
+- IFC classify: https://www.ifcflow.com
 
 ## License
 
