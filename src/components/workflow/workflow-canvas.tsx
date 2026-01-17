@@ -26,6 +26,7 @@ import { NumberInputNode } from "./nodes/number-input-node";
 import { IfElseNode } from "./nodes/if-else-node";
 import { GltfViewerNode } from "./nodes/gltf-viewer-node";
 import { IfcLoaderNode } from "./nodes/ifc-loader-node";
+import { PanelToggleNode } from "./nodes/panel-toggle-node";
 import { IFCUploadDialog } from "./dialogs/ifc-upload-dialog";
 import { useNodeFileUpload } from "@/hooks/use-node-file-upload";
 
@@ -44,9 +45,20 @@ const nodeTypes = {
   "if-else": IfElseNode,
   "gltf-viewer": GltfViewerNode,
   "ifc-loader": IfcLoaderNode,
+  "panel-toggle": PanelToggleNode,
 };
 
-export function WorkflowCanvas() {
+type WorkflowCanvasProps = {
+  backgroundVariant?: BackgroundVariant;
+  backgroundGap?: number;
+  backgroundSize?: number;
+};
+
+export function WorkflowCanvas({
+  backgroundVariant = BackgroundVariant.Lines,
+  backgroundGap = 42,
+  backgroundSize = 1,
+}: WorkflowCanvasProps) {
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const [reactFlowInstance, setReactFlowInstance] = 
     useState<ReactFlowInstance | null>(null);
@@ -141,6 +153,10 @@ export function WorkflowCanvas() {
           status: "waiting",
           modelUrl: "",
         };
+      } else if (type === "panel-toggle") {
+        nodeData = {
+          label: "Panel Toggle",
+        };
       }
 
       // Thêm node mới vào canvas
@@ -155,22 +171,24 @@ export function WorkflowCanvas() {
 
   const themeStyles = {
     canvas:
-      "rounded-2xl border border-[var(--workflow-border)] bg-[var(--workflow-panel)]/60 shadow-[0_18px_40px_var(--workflow-shadow)] backdrop-blur overflow-hidden",
+      "rounded-md border workflow-canvas shadow-sm overflow-hidden",
     background: "var(--workflow-grid)",
     edge: "var(--workflow-accent)",
     controls:
-      "rounded-xl border border-[var(--workflow-border)] bg-[var(--workflow-panel)]/90 shadow-sm [&>button]:border-[var(--workflow-border)] [&>button]:bg-[var(--workflow-panel-strong)] [&>button]:text-[var(--workflow-ink)] [&>button:hover]:bg-[var(--workflow-panel)]",
+      "rounded-md border workflow-controls",
     minimap: {
-      className:
-        "rounded-xl border border-[var(--workflow-border)] bg-[var(--workflow-panel)]/90",
-      nodeColor: "#0f766e",
-      maskColor: "rgba(15, 118, 110, 0.18)",
+      className: "rounded-md border workflow-minimap",
+      nodeColor: "var(--workflow-accent)",
+      maskColor: "var(--workflow-accent-soft)",
     },
   };
 
   return (
     <ReactFlowProvider>
-      <div className="relative flex-1 min-w-0 animate-in fade-in duration-700" ref={reactFlowWrapper}>
+      <div
+        className="relative h-full min-h-0 w-full animate-in fade-in duration-700"
+        ref={reactFlowWrapper}
+      >
         <ReactFlow
           onInit={onInit}
           onDrop={onDrop}
@@ -184,7 +202,7 @@ export function WorkflowCanvas() {
           onNodeDoubleClick={onNodeDoubleClick}
           nodeTypes={nodeTypes}
           fitView
-          className={themeStyles.canvas}
+          className={`${themeStyles.canvas} h-full w-full`}
           defaultEdgeOptions={{
             type: "smoothstep",
             animated: true,
@@ -192,9 +210,9 @@ export function WorkflowCanvas() {
           }}
         >
           <Background
-            variant={BackgroundVariant.Lines}
-            gap={42}
-            size={1}
+            variant={backgroundVariant}
+            gap={backgroundGap}
+            size={backgroundSize}
             color={themeStyles.background}
           />
           <Controls className={themeStyles.controls} />

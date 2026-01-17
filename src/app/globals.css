@@ -9,8 +9,8 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-app-sans);
+  --font-mono: var(--font-app-mono);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -188,5 +188,150 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
+  }
+}
+
+@layer components {
+  .workflow-shell {
+    background: var(--workflow-bg);
+    color: var(--workflow-ink);
+  }
+  .workflow-canvas {
+    background: var(--workflow-canvas);
+    border-color: var(--workflow-border);
+  }
+  .workflow-surface {
+    background: var(--workflow-panel);
+    color: var(--workflow-ink);
+  }
+  .workflow-surface-strong {
+    background: var(--workflow-panel-strong);
+  }
+  .workflow-border {
+    border-color: var(--workflow-border);
+  }
+  .workflow-ink {
+    color: var(--workflow-ink);
+  }
+  .workflow-ink-hover:hover {
+    color: var(--workflow-ink);
+  }
+  .workflow-muted {
+    color: var(--workflow-muted);
+  }
+  .workflow-accent {
+    color: var(--workflow-accent);
+  }
+  .workflow-accent-bg {
+    background: var(--workflow-accent);
+  }
+  .workflow-accent-tint {
+    background: color-mix(in srgb, var(--workflow-accent) 15%, transparent);
+  }
+  .workflow-border-accent {
+    border-color: var(--workflow-accent);
+  }
+  .workflow-border-accent-hover:hover {
+    border-color: var(--workflow-accent);
+  }
+  .workflow-border-warm {
+    border-color: var(--workflow-warm);
+  }
+  .workflow-border-warm-hover:hover {
+    border-color: var(--workflow-warm);
+  }
+  .workflow-accent-strong-hover:hover {
+    background: var(--workflow-accent-strong);
+  }
+  .workflow-accent-strong-hover-text:hover {
+    color: var(--workflow-accent-strong);
+  }
+  .workflow-surface-hover:hover {
+    background: var(--workflow-panel-strong);
+  }
+  .workflow-warm {
+    color: var(--workflow-warm);
+  }
+  .workflow-warm-bg {
+    background: var(--workflow-warm);
+  }
+  .workflow-warm-tint {
+    background: color-mix(in srgb, var(--workflow-warm) 15%, transparent);
+  }
+  .workflow-warm-strong-hover:hover {
+    background: var(--workflow-warm-strong);
+  }
+  .workflow-chrome {
+    background: var(--workflow-chrome);
+    color: var(--workflow-chrome-ink);
+    border-color: var(--workflow-chrome-border);
+  }
+  .workflow-chrome-muted {
+    background: var(--workflow-chrome-muted);
+  }
+  .workflow-chrome-muted-hover:hover {
+    background: var(--workflow-chrome-muted);
+  }
+  .workflow-chrome-ink {
+    color: var(--workflow-chrome-ink);
+  }
+  .workflow-chrome-ink-hover:hover {
+    color: var(--workflow-chrome-ink);
+  }
+  .workflow-chrome-border {
+    border-color: var(--workflow-chrome-border);
+  }
+  .workflow-chrome-border-bg {
+    background: var(--workflow-chrome-border);
+  }
+  .workflow-sidebar {
+    background: var(--workflow-sidebar);
+    color: var(--workflow-sidebar-ink);
+    border-color: var(--workflow-sidebar-border);
+  }
+  .workflow-sidebar-ink {
+    color: var(--workflow-sidebar-ink);
+  }
+  .workflow-sidebar-muted {
+    color: var(--workflow-sidebar-muted);
+  }
+  .workflow-sidebar-ink-hover:hover {
+    color: var(--workflow-sidebar-ink);
+  }
+  .workflow-sidebar-border {
+    border-color: var(--workflow-sidebar-border);
+  }
+  .workflow-statusbar {
+    background: var(--workflow-statusbar);
+  }
+  .workflow-shadow {
+    box-shadow: 0 18px 40px var(--workflow-shadow);
+  }
+  .workflow-controls {
+    border-color: var(--workflow-border);
+    background: var(--workflow-panel);
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
+  }
+  .workflow-controls > button {
+    border-color: var(--workflow-border);
+    background: var(--workflow-panel-strong);
+    color: var(--workflow-ink);
+  }
+  .workflow-controls > button:hover {
+    background: var(--workflow-panel);
+  }
+  .workflow-minimap {
+    border-color: var(--workflow-border);
+    background: var(--workflow-panel);
+  }
+  .group:hover .workflow-ink-on-hover {
+    color: var(--workflow-ink);
+  }
+  .workflow-surface-glass {
+    background: color-mix(in srgb, var(--workflow-panel) 95%, transparent);
+  }
+  .workflow-focus:focus {
+    border-color: var(--workflow-accent);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--workflow-accent) 20%, transparent);
   }
 }

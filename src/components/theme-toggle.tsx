@@ -1,9 +1,19 @@
 "use client";
 import { useEffect, useState } from "react";
-import { Button } from "./ui/button";
 import { Sun, Moon } from "lucide-react";
+import { Button } from "./ui/button";
 
-const ThemeToggle = () => {
+type ThemeToggleProps = {
+  className?: string;
+  size?: "default" | "sm" | "lg" | "icon" | "icon-sm" | "icon-lg";
+  variant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link";
+};
+
+const ThemeToggle = ({
+  className,
+  size = "sm",
+  variant = "ghost",
+}: ThemeToggleProps) => {
   const [theme, setTheme] = useState<"light" | "dark">("light");
 
   useEffect(() => {
@@ -32,7 +42,13 @@ const ThemeToggle = () => {
   }
 
   return (
-    <Button variant="ghost" size="sm" onClick={toggle} aria-label="Toggle theme">
+    <Button
+      variant={variant}
+      size={size}
+      className={className}
+      onClick={toggle}
+      aria-label="Toggle theme"
+    >
       {theme === "dark" ? <Sun className="size-4" /> : <Moon className="size-4" />}
       <span className="sr-only">Toggle theme</span>
     </Button>

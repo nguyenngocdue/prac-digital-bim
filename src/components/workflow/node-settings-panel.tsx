@@ -24,27 +24,29 @@ export function NodeSettingsPanel() {
     : "Select a node to view and edit its settings.";
 
   return (
-    <div className="w-80 shrink-0 rounded-2xl border border-[var(--workflow-border)] bg-[var(--workflow-panel)]/85 p-4 shadow-[0_18px_40px_var(--workflow-shadow)] backdrop-blur animate-in fade-in slide-in-from-right-4 duration-700">
-      <div className="flex items-center justify-between">
+    <div className="workflow-surface w-full shrink-0 h-full min-h-0 rounded-md border workflow-border shadow-sm animate-in fade-in slide-in-from-right-4 duration-700">
+      <div className="flex items-center justify-between border-b workflow-border px-4 py-3">
         <div>
-          <div className="text-[10px] uppercase tracking-[0.28em] text-[var(--workflow-muted)]">
+          <div className="text-[10px] uppercase tracking-[0.28em] workflow-muted">
             {title}
           </div>
-          <div className="mt-1 text-sm font-semibold text-[var(--workflow-ink)]">
+          <div className="mt-1 text-sm font-semibold workflow-ink">
             Workflow Inspector
           </div>
         </div>
         {selectedNode && (
           <button
             onClick={handleClose}
-            className="rounded-full border border-[var(--workflow-border)] bg-[var(--workflow-panel-strong)] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--workflow-muted)] transition hover:text-[var(--workflow-ink)]"
+            className="rounded-full border workflow-border workflow-surface-strong px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] workflow-muted transition workflow-ink-hover"
           >
             Clear
           </button>
         )}
       </div>
-      <div className="mt-4 rounded-xl border border-dashed border-[var(--workflow-border)] bg-[var(--workflow-panel-strong)]/70 p-4 text-sm text-[var(--workflow-muted)]">
-        {description}
+      <div className="flex h-full min-h-0 flex-col px-4 py-3">
+        <div className="flex-1 overflow-y-auto overscroll-contain rounded-md border border-dashed workflow-border workflow-surface-strong p-4 text-sm workflow-muted">
+          {description}
+        </div>
       </div>
     </div>
   );

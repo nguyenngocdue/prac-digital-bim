@@ -34,6 +34,7 @@ import {
   GitBranch,
   Box,
   Loader2,
+  LayoutPanelLeft,
 } from "lucide-react";
 import type { CategoryGroup, NodeDefinition } from "@/types/workflow";
 
@@ -277,6 +278,14 @@ const OUTPUT_NODES: NodeDefinition[] = [
     category: "Output",
     icon: Activity,
     description: "Monitor values",
+  },
+  {
+    id: "panel-toggle",
+    label: "Panel Toggle",
+    category: "Output",
+    icon: LayoutPanelLeft,
+    badge: "New",
+    description: "Show or hide editor side panels",
   },
 ];
 

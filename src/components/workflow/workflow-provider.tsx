@@ -17,10 +17,10 @@ type WorkflowContextType = {
   deleteNode: (id: string) => void;
   selectedNode: Node | null;
   setSelectedNode: (node: Node | null) => void;
-  showViewer: boolean;
-  setShowViewer: (show: boolean) => void;
-  showChat: boolean;
-  setShowChat: (show: boolean) => void;
+  showSidebar: boolean;
+  setShowSidebar: (show: boolean) => void;
+  showInspector: boolean;
+  setShowInspector: (show: boolean) => void;
   // Execution
   executionState: WorkflowExecutionState;
   isRunning: boolean;
@@ -42,8 +42,8 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
   const [nodes, setNodes] = useState<Node[]>(initialNodes);
   const [edges, setEdges] = useState<Edge[]>(initialEdges);
   const [selectedNode, setSelectedNode] = useState<Node | null>(null);
-  const [showViewer, setShowViewer] = useState(true);
-  const [showChat, setShowChat] = useState(true);
+  const [showSidebar, setShowSidebar] = useState(true);
+  const [showInspector, setShowInspector] = useState(true);
 
   const updateNodeData = useCallback((nodeId: string, newData: any) => {
     setNodes((nds) =>
@@ -116,10 +116,10 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
         deleteNode,
         selectedNode,
         setSelectedNode,
-        showViewer,
-        setShowViewer,
-        showChat,
-        setShowChat,
+        showSidebar,
+        setShowSidebar,
+        showInspector,
+        setShowInspector,
         // Execution
         executionState,
         isRunning,
