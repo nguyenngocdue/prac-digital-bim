@@ -330,6 +330,18 @@
   .workflow-surface-glass {
     background: color-mix(in srgb, var(--workflow-panel) 95%, transparent);
   }
+  .workflow-label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+  }
+  .workflow-label-muted {
+    font-size: 11px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+  }
   .workflow-focus:focus {
     border-color: var(--workflow-accent);
     box-shadow: 0 0 0 2px color-mix(in srgb, var(--workflow-accent) 20%, transparent);

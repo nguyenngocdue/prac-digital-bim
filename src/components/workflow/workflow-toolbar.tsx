@@ -94,9 +94,9 @@ export function WorkflowToolbar({
 
   return (
     <div className="relative z-20 w-full">
-      <div className="workflow-chrome flex items-center justify-between border-b workflow-chrome-border px-4 py-2 text-[10px] uppercase tracking-[0.24em] workflow-sidebar-muted">
+      <div className="workflow-chrome flex items-center justify-between gap-4 border-b workflow-chrome-border px-4 py-2 workflow-label-muted workflow-sidebar-muted">
         <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.34em] workflow-chrome-ink">
+          <div className="flex items-center gap-2 workflow-chrome-ink workflow-label">
             <Workflow className="h-4 w-4" />
             <span>Dynamo</span>
           </div>
@@ -104,38 +104,23 @@ export function WorkflowToolbar({
             {menuItems.map((item) => (
               <button
                 key={item}
-                className="workflow-sidebar-muted transition workflow-chrome-ink-hover"
+                className="workflow-label-muted workflow-sidebar-muted transition workflow-chrome-ink-hover"
               >
                 {item}
               </button>
             ))}
           </nav>
-        </div>
-        <div className="flex items-center gap-3">
-          <button className="flex items-center gap-1 rounded-md border workflow-chrome-border workflow-chrome-muted px-2 py-1 text-[9px] uppercase tracking-[0.2em] workflow-chrome-ink">
-            Extensions
-            <ChevronDown className="h-3 w-3" />
-          </button>
-          <div className="flex items-center gap-1 rounded-full border workflow-chrome-border workflow-chrome-muted px-2 py-1 text-[9px] font-semibold workflow-chrome-ink">
-            <Bell className="h-3 w-3" />
-            <span>1</span>
-          </div>
-        </div>
-      </div>
-
-      <div className="flex items-center justify-between border-b workflow-chrome-border workflow-chrome-muted px-4 py-2">
-        <div className="flex items-center gap-3">
-          <div className="workflow-chrome flex items-center gap-2 rounded-md px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em]">
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-            Home
-          </div>
-          <div className="flex items-center gap-2 border-l workflow-chrome-border pl-3">
+          <div className="flex items-center gap-3 border-l workflow-chrome-border pl-3">
+            <div className="workflow-chrome flex items-center gap-2 rounded-md px-3 py-1 workflow-label">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+              Home
+            </div>
             <button
               onClick={() => setShowSidebar(!showSidebar)}
               aria-pressed={showSidebar}
               title={showSidebar ? "Hide left panel" : "Show left panel"}
               className={cn(
-                "rounded-md border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] transition",
+                "rounded-md border px-2.5 py-1 transition workflow-label",
                 showSidebar
                   ? "workflow-border-accent workflow-accent workflow-accent-tint"
                   : "workflow-chrome-border workflow-chrome workflow-sidebar-muted workflow-chrome-ink-hover"
@@ -152,7 +137,7 @@ export function WorkflowToolbar({
               aria-pressed={showInspector}
               title={showInspector ? "Hide right panel" : "Show right panel"}
               className={cn(
-                "rounded-md border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] transition",
+                "rounded-md border px-2.5 py-1 transition workflow-label",
                 showInspector
                   ? "workflow-border-accent workflow-warm workflow-warm-tint"
                   : "workflow-chrome-border workflow-chrome workflow-sidebar-muted workflow-chrome-ink-hover"
@@ -169,7 +154,10 @@ export function WorkflowToolbar({
 
         <div className="flex items-center gap-2">
           <div
-            className={`flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] ${statusStyles[executionState.status]}`}
+            className={cn(
+              "flex items-center gap-1.5 rounded-full border px-2.5 py-1 workflow-label",
+              statusStyles[executionState.status]
+            )}
           >
             {executionState.status === "running" && (
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -179,7 +167,7 @@ export function WorkflowToolbar({
           {isRunning ? (
             <button
               onClick={stopExecution}
-              className="flex items-center gap-2 rounded-md workflow-warm-bg px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-white transition workflow-warm-strong-hover"
+              className="flex items-center gap-2 rounded-md workflow-warm-bg px-3 py-1.5 text-white transition workflow-warm-strong-hover workflow-label"
             >
               <Square className="h-3.5 w-3.5" />
               Stop
@@ -187,7 +175,7 @@ export function WorkflowToolbar({
           ) : (
             <button
               onClick={handleRun}
-              className="flex items-center gap-2 rounded-md workflow-accent-bg px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-white transition workflow-accent-strong-hover"
+              className="flex items-center gap-2 rounded-md workflow-accent-bg px-3 py-1.5 text-white transition workflow-accent-strong-hover workflow-label"
             >
               <Play className="h-3.5 w-3.5" />
               Run
@@ -195,7 +183,7 @@ export function WorkflowToolbar({
           )}
           <button
             onClick={resetExecution}
-            className="rounded-md border workflow-chrome-border workflow-chrome px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] workflow-chrome-ink transition workflow-chrome-muted-hover"
+            className="rounded-md border workflow-chrome-border workflow-chrome px-2.5 py-1.5 workflow-chrome-ink transition workflow-chrome-muted-hover workflow-label"
             title="Reset Execution"
           >
             <RotateCcw className="h-3.5 w-3.5" />
@@ -212,16 +200,24 @@ export function WorkflowToolbar({
               </button>
             ))}
           </div>
-          <button className="flex items-center gap-2 rounded-md border workflow-chrome-border workflow-chrome px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] workflow-chrome-ink transition workflow-chrome-muted-hover">
+          <button className="flex items-center gap-2 rounded-md border workflow-chrome-border workflow-chrome px-3 py-1.5 workflow-chrome-ink transition workflow-chrome-muted-hover workflow-label">
             <Download className="h-3.5 w-3.5" />
             Export as Image
           </button>
+          <button className="flex items-center gap-1 rounded-md border workflow-chrome-border workflow-chrome-muted px-2 py-1 workflow-chrome-ink workflow-label">
+            Extensions
+            <ChevronDown className="h-3 w-3" />
+          </button>
+          <div className="flex items-center gap-1 rounded-full border workflow-chrome-border workflow-chrome-muted px-2 py-1 workflow-chrome-ink workflow-label">
+            <Bell className="h-3 w-3" />
+            <span>1</span>
+          </div>
           <div className="relative">
             <button
               onClick={() => setSettingsOpen((prev) => !prev)}
               aria-pressed={settingsOpen}
               className={cn(
-                "rounded-md border workflow-chrome-border workflow-chrome px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] workflow-chrome-ink transition workflow-chrome-muted-hover",
+                "rounded-md border workflow-chrome-border workflow-chrome px-2.5 py-1.5 workflow-chrome-ink transition workflow-chrome-muted-hover workflow-label",
                 settingsOpen && "workflow-border-accent"
               )}
             >
