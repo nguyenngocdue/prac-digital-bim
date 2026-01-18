@@ -1,6 +1,7 @@
 # prac-digital-bim
 
 Web application for BIM workflows, built with Next.js. This project references IFC classification materials to support presentation and lookup.
+Go to my project: https://prac-digital-9esyno29t-nguyenngocdues-projects.vercel.app
 
 ![UI](UI.png)
 
