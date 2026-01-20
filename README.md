@@ -18,7 +18,7 @@ Photorealistic IFC render that shows spatial relationships and annotations for t
 
 ### Workflow
 Drag‑and‑drop workflow canvas that keeps automation steps and integrations neatly organized.
-![Workflow](./public/images/Workflow.png)
+![Workflow](./public/images/Workflow-UI.png)
 
 ## Requirements
 
