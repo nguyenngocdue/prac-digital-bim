@@ -111,7 +111,7 @@ export const GetParameterNode = memo(({ id, data, selected }: GetParameterNodePr
       />
 
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-amber-200 bg-amber-500/10 px-3 py-2">
+      <div className="flex items-center justify-between border-b border-amber-200 bg-amber-500/10 px-3 py-2 rounded-t-2xl">
         <div className="flex items-center gap-2">
           <Settings className="h-4 w-4 text-amber-600" />
           <span className="text-xs font-semibold uppercase tracking-[0.18em] text-amber-700">
@@ -221,7 +221,7 @@ export const GetParameterNode = memo(({ id, data, selected }: GetParameterNodePr
       </div>
 
       {/* Footer */}
-      <div className="border-t border-amber-200 bg-amber-500/5 px-3 py-1.5">
+      <div className="border-t border-amber-200 bg-amber-500/5 px-3 py-1.5 rounded-b-2xl">
         <div className="flex items-center justify-between text-[9px]">
           <span className="text-[var(--workflow-muted)]">Output</span>
           <span className="text-amber-700 font-semibold uppercase tracking-[0.16em]">

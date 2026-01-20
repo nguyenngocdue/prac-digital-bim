@@ -101,7 +101,7 @@ export const NumberInputNode = memo(({ id, data, selected }: NumberInputNodeProp
       />
 
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-emerald-200 bg-emerald-500/10 px-2.5 py-2">
+      <div className="flex items-center justify-between border-b border-emerald-200 bg-emerald-500/10 px-2.5 py-2 rounded-t-2xl">
         <div className="flex items-center gap-2">
           <Hash className="h-4 w-4 text-emerald-600" />
           <span className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700">

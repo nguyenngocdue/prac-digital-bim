@@ -21,12 +21,12 @@ const MiddlePanel = ({ showCameraPanel, showIotOverlay, showGltfControls }: Midd
           <span className="viewer-chip rounded-full px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em]">
             Realtime
           </span>
-          <span className="rounded-full border border-[var(--viewer-border)] px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em]">
+          <span className="rounded-full border viewer-border px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em]">
             Orbit controls
           </span>
         </div>
       </div>
-      <div className="relative flex-1 min-h-0 overflow-hidden rounded-2xl border border-[var(--viewer-border)] bg-slate-950/90">
+      <div className="relative flex-1 min-h-0 overflow-hidden rounded-2xl border viewer-border bg-slate-950/90">
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(120%_120%_at_20%_0%,rgba(16,185,129,0.12),transparent_45%)]" />
         <Viewer
           showCameraPanel={showCameraPanel}

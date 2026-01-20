@@ -48,7 +48,7 @@ export const IotLegend = ({ className = "" }: IotLegendProps) => {
         </div>
         
         {/* Info footer */}
-        <div className="mt-4 pt-3 border-t border-[var(--viewer-border)]">
+        <div className="mt-4 pt-3 border-t viewer-border">
           <p className="text-[10px] text-muted-foreground">
             Real-time monitoring from {mockRooms.length} rooms
           </p>

@@ -232,7 +232,7 @@ export const GltfViewerNode = memo(({ id, data, selected }: GltfViewerNodeProps)
         />
 
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-[var(--workflow-border)] bg-[var(--workflow-panel-strong)] px-2.5 py-2">
+        <div className="flex items-center justify-between border-b border-[var(--workflow-border)] bg-[var(--workflow-panel-strong)] px-2.5 py-2 rounded-t-2xl">
           <div className="flex items-center gap-2">
             <Box className="h-4 w-4 text-teal-700" />
             <span className="text-xs font-semibold uppercase tracking-[0.18em] text-teal-800">
@@ -339,7 +339,7 @@ export const GltfViewerNode = memo(({ id, data, selected }: GltfViewerNodeProps)
 
         {/* Footer with Actions */}
         {data.fileUrl && (
-          <div className="border-t border-[var(--workflow-border)] bg-[var(--workflow-panel-strong)] px-2.5 py-1.5 flex items-center justify-between">
+          <div className="border-t border-[var(--workflow-border)] bg-[var(--workflow-panel-strong)] px-2.5 py-1.5 flex items-center justify-between rounded-b-2xl">
             <div className="text-[10px] text-[var(--workflow-muted)]">
               Manual orbit, pan, and zoom enabled
             </div>

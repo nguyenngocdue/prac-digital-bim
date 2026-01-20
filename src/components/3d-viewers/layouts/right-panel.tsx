@@ -30,12 +30,12 @@ const RightPanel: FC<RightPanelProps> = ({ projectId }) => {
             </div>
             <h2 className="mt-2 text-lg font-semibold">Properties</h2>
           </div>
-          <span className="rounded-full border border-[var(--viewer-border)] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] viewer-muted">
+          <span className="rounded-full border viewer-border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] viewer-muted">
             Read only
           </span>
         </div>
 
-        <div className="mt-4 rounded-xl border border-[var(--viewer-border)] bg-[var(--viewer-panel-strong)] p-3">
+        <div className="mt-4 rounded-xl border viewer-border viewer-panel-strong p-3">
           <div className="text-sm font-semibold">No selection</div>
           <p className="mt-1 text-[11px] viewer-muted">
             Select a model, camera, or sensor to inspect attributes.
@@ -43,7 +43,7 @@ const RightPanel: FC<RightPanelProps> = ({ projectId }) => {
         </div>
       </div>
 
-      <Separator className="bg-[var(--viewer-border)]" />
+      <Separator className="viewer-border-bg" />
 
       <ScrollArea className="flex-1 min-h-0">
         <div className="space-y-6 px-5 py-4">
@@ -55,7 +55,7 @@ const RightPanel: FC<RightPanelProps> = ({ projectId }) => {
               {stats.map((stat) => (
                 <div
                   key={stat.label}
-                  className="flex items-center justify-between rounded-xl border border-[var(--viewer-border)] bg-[var(--viewer-panel-strong)] px-3 py-2"
+                  className="flex items-center justify-between rounded-xl border viewer-border viewer-panel-strong px-3 py-2"
                 >
                   <div className="flex items-center gap-2 text-xs font-semibold">
                     <stat.icon className="h-4 w-4 viewer-muted" />
@@ -71,7 +71,7 @@ const RightPanel: FC<RightPanelProps> = ({ projectId }) => {
             <h3 className="text-xs font-semibold uppercase tracking-[0.24em] viewer-muted">
               Mode
             </h3>
-            <div className="mt-3 rounded-xl border border-[var(--viewer-border)] bg-[var(--viewer-panel-strong)] p-3">
+            <div className="mt-3 rounded-xl border viewer-border viewer-panel-strong p-3">
               <div className="flex items-center justify-between">
                 <div>
                   <div className="text-sm font-semibold">Placement</div>
@@ -81,7 +81,7 @@ const RightPanel: FC<RightPanelProps> = ({ projectId }) => {
                   className={`rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] ${
                     creationMode
                       ? "border border-amber-200 bg-amber-500/10 text-amber-700"
-                      : "border border-[var(--viewer-border)] viewer-muted"
+                      : "border viewer-border viewer-muted"
                   }`}
                 >
                   {creationMode ? "Active" : "Idle"}
@@ -95,7 +95,7 @@ const RightPanel: FC<RightPanelProps> = ({ projectId }) => {
               Health
             </h3>
             <div className="mt-3 grid gap-2">
-              <div className="rounded-xl border border-[var(--viewer-border)] bg-[var(--viewer-panel-strong)] px-3 py-2">
+              <div className="rounded-xl border viewer-border viewer-panel-strong px-3 py-2">
                 <div className="flex items-center justify-between text-xs font-semibold">
                   <div className="flex items-center gap-2">
                     <Activity className="h-4 w-4 viewer-muted" />
@@ -105,7 +105,7 @@ const RightPanel: FC<RightPanelProps> = ({ projectId }) => {
                 </div>
                 <p className="mt-1 text-[11px] viewer-muted">Last sync 2 min ago</p>
               </div>
-              <div className="rounded-xl border border-[var(--viewer-border)] bg-[var(--viewer-panel-strong)] px-3 py-2">
+              <div className="rounded-xl border viewer-border viewer-panel-strong px-3 py-2">
                 <div className="flex items-center justify-between text-xs font-semibold">
                   <div>Session</div>
                   <span className="viewer-muted text-[10px] font-mono uppercase tracking-[0.18em]">

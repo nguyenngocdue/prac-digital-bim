@@ -63,7 +63,7 @@ export const PythonNode = memo(({ id, data, selected }: PythonNodeProps) => {
       />
 
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-orange-200 bg-orange-500/10 px-3 py-2">
+      <div className="flex items-center justify-between border-b border-orange-200 bg-orange-500/10 px-3 py-2 rounded-t-2xl">
         <div className="flex items-center gap-2">
           <Code2 className="h-4 w-4 text-orange-600" />
           <span className="text-xs font-semibold uppercase tracking-[0.2em] text-orange-700">Python</span>

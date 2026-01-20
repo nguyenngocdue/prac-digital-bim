@@ -232,6 +232,10 @@
   .workflow-accent-tint {
     background: color-mix(in srgb, var(--workflow-accent) 15%, transparent);
   }
+  .workflow-outline-accent {
+    outline: 2px solid color-mix(in srgb, var(--workflow-accent) 35%, transparent);
+    outline-offset: 1px;
+  }
   .workflow-border-accent {
     border-color: var(--workflow-accent);
   }
@@ -261,6 +265,14 @@
   }
   .workflow-warm-tint {
     background: color-mix(in srgb, var(--workflow-warm) 15%, transparent);
+  }
+  .workflow-handle-accent {
+    background: var(--workflow-accent) !important;
+    border-color: color-mix(in srgb, var(--workflow-accent) 40%, transparent) !important;
+  }
+  .workflow-handle-warm {
+    background: var(--workflow-warm) !important;
+    border-color: color-mix(in srgb, var(--workflow-warm) 40%, transparent) !important;
   }
   .workflow-warm-strong-hover:hover {
     background: var(--workflow-warm-strong);
@@ -413,6 +425,18 @@
     background: var(--viewer-accent-soft);
     border: 1px solid var(--viewer-accent-border);
     color: var(--viewer-accent);
+  }
+  .viewer-border {
+    border-color: var(--viewer-border);
+  }
+  .viewer-border-bg {
+    background: var(--viewer-border);
+  }
+  .viewer-resize-handle::after {
+    background: var(--viewer-border);
+  }
+  .viewer-resize-handle:hover::after {
+    background: var(--viewer-accent);
   }
   .viewer-panel-enter {
     animation: viewer-rise 520ms ease-out both;

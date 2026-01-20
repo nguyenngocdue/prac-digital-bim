@@ -202,6 +202,10 @@ export function WorkflowCanvas({
           onNodeDoubleClick={onNodeDoubleClick}
           nodeTypes={nodeTypes}
           fitView
+          defaultViewport={{ x: 0, y: 0, zoom: 0.2 }}
+          fitViewOptions={{ padding: 0.2, maxZoom: 0.9 }}
+          minZoom={0.2}
+          maxZoom={1.5}
           className={`${themeStyles.canvas} h-full w-full`}
           defaultEdgeOptions={{
             type: "smoothstep",

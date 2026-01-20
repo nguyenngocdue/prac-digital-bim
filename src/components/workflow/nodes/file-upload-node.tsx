@@ -159,7 +159,7 @@ export const FileUploadNode = memo(({ id, data, selected }: FileUploadNodeProps)
       />
 
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-blue-200 bg-blue-500/10 px-3 py-2">
+      <div className="flex items-center justify-between rounded-t-2xl border-b border-blue-200 bg-blue-500/10 px-3 py-2">
         <div className="flex items-center gap-2">
           <Upload className="h-4 w-4 text-blue-600" />
           <span className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-700">
@@ -285,7 +285,7 @@ export const FileUploadNode = memo(({ id, data, selected }: FileUploadNodeProps)
 
       {/* Footer */}
       {nodeState?.output && (
-        <div className="border-t border-blue-200 bg-blue-500/5 px-3 py-1.5">
+        <div className="rounded-b-2xl border-t border-blue-200 bg-blue-500/5 px-3 py-1.5">
           <div className="text-[9px] text-[var(--workflow-muted)]">
             Output: <span className="text-blue-700 font-semibold uppercase tracking-[0.16em]">Ready</span>
           </div>

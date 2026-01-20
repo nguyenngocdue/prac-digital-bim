@@ -389,7 +389,7 @@ export const Viewer3DNode = memo(({ id, data, selected }: { id: string; data: Vi
         style={{ right: -8, top: "50%" }}
       />
 
-      <header className="px-4 py-3 flex items-center gap-2.5 bg-[var(--workflow-panel-strong)] border-b border-[var(--workflow-border)]">
+      <header className="px-4 py-3 flex items-center gap-2.5 bg-[var(--workflow-panel-strong)] border-b border-[var(--workflow-border)] rounded-t-2xl">
         <div className="p-1.5 bg-teal-500/10 rounded-2xl border border-teal-200">
           <Box className="w-4 h-4 text-teal-700" />
         </div>

@@ -111,7 +111,7 @@ export function WebhookNode({ id, data }: WebhookNodeProps) {
       />
 
       {/* Header */}
-      <div className="flex items-center gap-2 border-b border-[var(--workflow-border)] bg-[var(--workflow-panel-strong)] px-3 py-2">
+      <div className="flex items-center gap-2 border-b border-[var(--workflow-border)] bg-[var(--workflow-panel-strong)] px-3 py-2 rounded-t-2xl">
         <div className="flex h-6 w-6 items-center justify-center rounded-full bg-teal-500/10 border border-teal-200">
           <span className="text-xs font-bold text-teal-700">🪝</span>
         </div>
@@ -393,7 +393,7 @@ export function WebhookNode({ id, data }: WebhookNodeProps) {
       </div>
 
       {/* Footer */}
-      <div className="flex items-center justify-between border-t border-[var(--workflow-border)] bg-[var(--workflow-panel-strong)] px-3 py-1.5">
+      <div className="flex items-center justify-between border-t border-[var(--workflow-border)] bg-[var(--workflow-panel-strong)] px-3 py-1.5 rounded-b-2xl">
         <div className="text-[9px] text-[var(--workflow-muted)]">
           Calls: <span className="text-teal-700 font-semibold uppercase tracking-[0.16em]">0</span>
         </div>

@@ -64,7 +64,7 @@ export const PanelToggleNode = memo(({ id, data, selected }: PanelToggleNodeProp
         style={{ right: -6 }}
       />
 
-      <div className="flex items-center justify-between border-b border-[var(--workflow-border)] bg-[var(--workflow-panel-strong)] px-3 py-2">
+      <div className="flex items-center justify-between border-b border-[var(--workflow-border)] bg-[var(--workflow-panel-strong)] px-3 py-2 rounded-t-2xl">
         <div className="flex items-center gap-2">
           <LayoutPanelLeft className="h-4 w-4 text-[var(--workflow-accent)]" />
           <span className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--workflow-ink)]">

@@ -74,7 +74,7 @@ export const StringInputNode = memo(({ id, data, selected }: StringInputNodeProp
       />
 
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-indigo-200 bg-indigo-500/10 px-2.5 py-2">
+      <div className="flex items-center justify-between border-b border-indigo-200 bg-indigo-500/10 px-2.5 py-2 rounded-t-2xl">
         <div className="flex items-center gap-2">
           <Type className="h-4 w-4 text-indigo-600" />
           <span className="text-xs font-semibold uppercase tracking-[0.18em] text-indigo-700">
@@ -164,7 +164,7 @@ export const StringInputNode = memo(({ id, data, selected }: StringInputNodeProp
       )}
 
       {/* Footer */}
-      <div className="border-t border-indigo-200 bg-indigo-500/5 px-3 py-1.5">
+      <div className="border-t border-indigo-200 bg-indigo-500/5 px-3 py-1.5 rounded-b-2xl">
         <div className="flex items-center justify-between text-[9px]">
           <span className="text-[var(--workflow-muted)]">Output</span>
           <span className="text-indigo-700 font-semibold uppercase tracking-[0.18em]">

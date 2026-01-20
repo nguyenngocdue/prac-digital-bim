@@ -70,7 +70,7 @@ export function NodeExecutionBadge({
   return (
     <div
       className={cn(
-        "absolute -top-2 -right-2 flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] shadow-sm",
+        "absolute top-2 right-10 flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] shadow-sm",
         config.bgColor,
         config.color,
         className

@@ -24,7 +24,7 @@ export function NodeSettingsPanel() {
     : "Select a node to view and edit its settings.";
 
   return (
-    <div className="workflow-surface w-full shrink-0 h-full min-h-0 rounded-md border workflow-border shadow-sm animate-in fade-in slide-in-from-right-4 duration-700">
+    <div className="workflow-surface w-full shrink-0 h-full min-h-0 flex flex-col rounded-md border workflow-border shadow-sm animate-in fade-in slide-in-from-right-4 duration-700">
       <div className="flex items-center justify-between border-b workflow-border px-4 py-3">
         <div>
           <div className="text-[10px] uppercase tracking-[0.28em] workflow-muted">
@@ -43,7 +43,7 @@ export function NodeSettingsPanel() {
           </button>
         )}
       </div>
-      <div className="flex h-full min-h-0 flex-col px-4 py-3">
+      <div className="flex flex-1 min-h-0 flex-col px-4 py-3">
         <div className="flex-1 overflow-y-auto overscroll-contain rounded-md border border-dashed workflow-border workflow-surface-strong p-4 text-sm workflow-muted">
           {description}
         </div>

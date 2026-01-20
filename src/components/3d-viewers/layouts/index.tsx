@@ -18,9 +18,9 @@ type PanelsLayoutProps = {
 const PanelsLayout: FC<PanelsLayoutProps> = ({ projectId }) => {
   const [isCompact, setIsCompact] = useState(false);
   const [showHeader, setShowHeader] = useState(true);
-  const [showCameraPanel, setShowCameraPanel] = useState(true);
-  const [showIotOverlay, setShowIotOverlay] = useState(true);
-  const [showGltfControls, setShowGltfControls] = useState(true);
+  const [showCameraPanel, setShowCameraPanel] = useState(false);
+  const [showIotOverlay, setShowIotOverlay] = useState(false);
+  const [showGltfControls, setShowGltfControls] = useState(false);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -45,9 +45,8 @@ const PanelsLayout: FC<PanelsLayoutProps> = ({ projectId }) => {
       : "pt-6"
     : "pt-4";
   const handleClassName = [
-    "group relative flex items-center justify-center bg-transparent transition-colors",
-    "after:content-[''] after:rounded-full after:bg-[var(--viewer-border)] after:transition-colors",
-    "hover:after:bg-[var(--viewer-accent)]",
+    "viewer-resize-handle group relative flex items-center justify-center bg-transparent transition-colors",
+    "after:content-[''] after:rounded-full after:transition-colors",
     isCompact
       ? "h-3 w-full cursor-row-resize after:h-[2px] after:w-16"
       : "h-full w-3 cursor-col-resize after:h-16 after:w-[2px]",
@@ -74,16 +73,16 @@ const PanelsLayout: FC<PanelsLayoutProps> = ({ projectId }) => {
                 <span className="viewer-chip rounded-full px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em]">
                   Live
                 </span>
-                <span className="rounded-full border border-[var(--viewer-border)] px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em]">
+                <span className="rounded-full border viewer-border px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em]">
                   Autosave
                 </span>
-                <span className="viewer-muted hidden rounded-full border border-[var(--viewer-border)] px-3 py-1 text-[10px] font-mono uppercase tracking-[0.12em] sm:inline-flex">
+                <span className="viewer-muted hidden rounded-full border viewer-border px-3 py-1 text-[10px] font-mono uppercase tracking-[0.12em] sm:inline-flex">
                   {projectId ? `ID ${projectId.slice(0, 8)}` : "No Project"}
                 </span>
                 <button
                   type="button"
                   onClick={() => setShowHeader(false)}
-                  className="flex items-center gap-1 rounded-full border border-[var(--viewer-border)] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] transition hover:bg-white/60 dark:hover:bg-white/10"
+                  className="flex items-center gap-1 rounded-full border viewer-border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] transition hover:bg-white/60 dark:hover:bg-white/10"
                 >
                   Hide
                   <ChevronUp className="h-3 w-3" />
