@@ -169,7 +169,7 @@ export const CameraViewerPanel = ({
           maxConstraints={[1200, 800]}
           onResize={(_e, data) => setSize({ width: data.size.width, height: data.size.height })}
           resizeHandles={['se', 'sw', 'ne', 'nw', 'e', 'w', 's', 'n']}
-          className="bg-background/95 backdrop-blur-sm rounded-lg shadow-2xl border overflow-hidden flex flex-col"
+          className="viewer-panel rounded-xl shadow-2xl overflow-hidden flex flex-col"
         >
           {/* Header with tabs */}
           <div className="flex flex-col border-b">

@@ -26,7 +26,7 @@ interface IotLegendProps {
 export const IotLegend = ({ className = "" }: IotLegendProps) => {
   return (
     <div className={`absolute top-6 right-6 z-40 ${className}`}>
-      <div className="bg-background/90 backdrop-blur-sm rounded-lg p-4 shadow-lg border min-w-[200px]">
+      <div className="viewer-panel rounded-xl p-4 shadow-lg min-w-[200px]">
         <h3 className="text-sm font-semibold mb-3 text-foreground">IoT Sensor Status</h3>
         
         {/* CO2 Levels */}
@@ -48,7 +48,7 @@ export const IotLegend = ({ className = "" }: IotLegendProps) => {
         </div>
         
         {/* Info footer */}
-        <div className="mt-4 pt-3 border-t border-border">
+        <div className="mt-4 pt-3 border-t border-[var(--viewer-border)]">
           <p className="text-[10px] text-muted-foreground">
             Real-time monitoring from {mockRooms.length} rooms
           </p>

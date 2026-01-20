@@ -32,7 +32,7 @@ export const CameraListPanel = ({
 
   return (
     <div className={`absolute top-6 left-6 z-50 ${className}`}>
-      <div className="bg-background/90 backdrop-blur-sm rounded-lg shadow-lg border min-w-[280px]">
+      <div className="viewer-panel rounded-xl shadow-lg min-w-[280px]">
         {/* Header */}
         <div className="p-3 border-b">
           <div className="flex items-center justify-between mb-2">

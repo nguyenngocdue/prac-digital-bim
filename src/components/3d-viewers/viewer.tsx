@@ -1,6 +1,6 @@
 "use client";
 import { Canvas } from "@react-three/fiber";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { useBoxContext } from "../../app/contexts/box-context";
 import Scene from "./scene";
 import { CesiumViewer } from "./cesium/cesium-viewer";
@@ -14,9 +14,16 @@ import { CameraData } from "@/types/camera";
 
 interface ViewerProps {
   useCesium?: boolean;
+  showCameraPanel?: boolean;
+  showIotOverlay?: boolean;
+  showGltfControls?: boolean;
 }
 
-const Viewer = ({  }: ViewerProps) => {
+const Viewer = ({
+  showCameraPanel = true,
+  showIotOverlay = true,
+  showGltfControls = true,
+}: ViewerProps) => {
   const [accent, setAccent] = useState<string>("#06b6d4");
   const [mounted, setMounted] = useState(false);
   const [showCesium, setShowCesium] = useState(false);
@@ -26,7 +33,7 @@ const Viewer = ({  }: ViewerProps) => {
   const [gltfUrl, setGltfUrl] = useState<string | null>(null);
   const [resourceMap, setResourceMap] = useState<Map<string, string>>();
   const { boxes, creationMode, setCreationMode, projectId } = useBoxContext();
-  const canvasKey = useRef(`canvas-${projectId || 'default'}`).current;
+  const [canvasKey] = useState(() => `canvas-${projectId || "default"}`);
 
   // Debug: Track component lifecycle
   useEffect(() => {
@@ -38,6 +45,7 @@ const Viewer = ({  }: ViewerProps) => {
 
   // Ensure client-side only rendering
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- hydration gate for client-only canvas
     setMounted(true);
   }, []);
 
@@ -50,7 +58,10 @@ const Viewer = ({  }: ViewerProps) => {
     if (typeof window === "undefined") return;
     const cs = getComputedStyle(document.documentElement);
     const val = cs.getPropertyValue("--accent").trim();
-    if (val) setAccent(val);
+    if (val) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- sync accent with CSS variable
+      setAccent(val);
+    }
 
     // Listen for Escape key to exit creation mode
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -67,14 +78,14 @@ const Viewer = ({  }: ViewerProps) => {
   // Don't render canvas on server or before mounting
   if (!mounted) {
     return (
-      <div className="w-full h-full bg-background/50 flex items-center justify-center">
-        <div className="text-muted-foreground">Loading 3D viewer...</div>
+      <div className="flex h-full w-full items-center justify-center">
+        <div className="viewer-muted text-sm">Loading 3D viewer...</div>
       </div>
     );
   }
 
   return (
-    <div className="w-full h-full bg-background/50 relative">
+    <div className="relative h-full w-full">
       <Canvas 
         key={canvasKey}
         camera={{ position: [5, 5, 5], fov: 50 }}
@@ -89,7 +100,7 @@ const Viewer = ({  }: ViewerProps) => {
           accent={accent} 
           gltfUrl={gltfUrl} 
           resourceMap={resourceMap}
-          showRoomLabels={showRoomLabels}
+          showRoomLabels={showIotOverlay && showRoomLabels}
           cameras={mockCameras}
           showCameras={showCameras}
           onCameraClick={(camera) => setSelectedCamera(camera)}
@@ -98,10 +109,12 @@ const Viewer = ({  }: ViewerProps) => {
       </Canvas>
       
       {/* GLTF Import Controls */}
-      <GltfControls onModelLoad={(url, map) => {
-        setGltfUrl(url);
-        setResourceMap(map);
-      }} />
+      {showGltfControls && (
+        <GltfControls onModelLoad={(url, map) => {
+          setGltfUrl(url);
+          setResourceMap(map);
+        }} />
+      )}
       
       {showCesium && (
         <div className="absolute inset-0 z-10">
@@ -114,22 +127,26 @@ const Viewer = ({  }: ViewerProps) => {
       />
       
       {/* IoT Room Labels Controls */}
-      <IotControls
-        showLabels={showRoomLabels}
-        onToggleLabels={() => setShowRoomLabels(!showRoomLabels)}
-      />
+      {showIotOverlay && (
+        <IotControls
+          showLabels={showRoomLabels}
+          onToggleLabels={() => setShowRoomLabels(!showRoomLabels)}
+        />
+      )}
       
       {/* IoT Legend */}
-      {showRoomLabels && <IotLegend />}
+      {showIotOverlay && showRoomLabels && <IotLegend />}
       
       {/* Camera List Panel */}
-      <CameraListPanel
-        cameras={mockCameras}
-        selectedCameraId={selectedCamera?.id || null}
-        onCameraSelect={(camera) => setSelectedCamera(camera)}
-        showCameras={showCameras}
-        onToggleCameras={() => setShowCameras(!showCameras)}
-      />
+      {showCameraPanel && (
+        <CameraListPanel
+          cameras={mockCameras}
+          selectedCameraId={selectedCamera?.id || null}
+          onCameraSelect={(camera) => setSelectedCamera(camera)}
+          showCameras={showCameras}
+          onToggleCameras={() => setShowCameras(!showCameras)}
+        />
+      )}
       
       {/* Camera Viewer Panel */}
       <CameraViewerPanel

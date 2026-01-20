@@ -16,7 +16,7 @@ export const IotControls = ({
 }: IotControlsProps) => {
   return (
     <div className={`absolute bottom-6 right-6 z-40 ${className}`}>
-      <div className="flex flex-col gap-2 bg-background/90 backdrop-blur-sm rounded-lg p-3 shadow-lg border">
+      <div className="viewer-panel flex flex-col gap-2 rounded-xl p-3 shadow-lg">
         <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
           <Activity className="h-3 w-3" />
           <span>IoT Sensors</span>

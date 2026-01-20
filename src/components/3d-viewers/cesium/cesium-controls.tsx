@@ -11,7 +11,7 @@ interface CesiumControlsProps {
 export const CesiumControls = ({ showCesium, onToggle }: CesiumControlsProps) => {
   return (
     <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 z-50">
-      <div className="flex items-center gap-2 bg-background/90 backdrop-blur-sm rounded-lg p-2 shadow-lg border">
+      <div className="viewer-panel flex items-center gap-2 rounded-xl p-2 shadow-lg">
         <Button
           variant={showCesium ? "default" : "outline"}
           size="sm"

@@ -59,7 +59,7 @@ export const GltfControls = ({ onModelLoad, className = "" }: GltfControlsProps)
 
   return (
     <div className={`absolute top-6 left-6 z-50 ${className}`}>
-      <div className="flex flex-col gap-2 bg-background/90 backdrop-blur-sm rounded-lg p-3 shadow-lg border">
+      <div className="viewer-panel flex flex-col gap-2 rounded-xl p-3 shadow-lg">
         <GltfImportButton 
           onFileSelect={handleFileSelect}
           onFolderSelect={handleFolderSelect}
