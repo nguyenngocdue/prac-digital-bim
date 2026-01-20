@@ -2,7 +2,6 @@
 
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { useEffect, useState, type FC } from "react";
-import { ChevronDown, ChevronUp, Grid2X2 } from "lucide-react";
 import LeftPanel from "./left-panel";
 import MiddlePanel from "./middle-panel";
 import RightPanel from "./right-panel";
@@ -17,7 +16,7 @@ type PanelsLayoutProps = {
  */
 const PanelsLayout: FC<PanelsLayoutProps> = ({ projectId }) => {
   const [isCompact, setIsCompact] = useState(false);
-  const [showHeader, setShowHeader] = useState(true);
+  const [showHeader, _setShowHeader] = useState(true);
   const [showCameraPanel, setShowCameraPanel] = useState(false);
   const [showIotOverlay, setShowIotOverlay] = useState(false);
   const [showGltfControls, setShowGltfControls] = useState(false);
