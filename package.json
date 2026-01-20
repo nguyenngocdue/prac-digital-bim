@@ -38,7 +38,6 @@
     "react-resizable-panels": "^3.0.6",
     "reactflow": "^11.11.4",
     "tailwind-merge": "^3.3.1",
-    "theme": "link:@/types/theme",
     "three": "^0.180.0",
     "three-stdlib": "^2.36.1",
     "web-ifc": "^0.0.74"
