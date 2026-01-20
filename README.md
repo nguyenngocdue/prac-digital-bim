@@ -46,11 +46,8 @@ Open `http://localhost:3000` to view the app.
 - `npm run start`: run production server
 - `npm run lint`: run lint checks
 
-## References
 
-- IFC classify: https://www.ifcclassify.com
-
-## Inspiration
+## Inspiration & References
 
 Inspired by the UI of IFCflow: https://www.ifcflow.com/
 
