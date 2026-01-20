@@ -2,7 +2,7 @@
 
 Web application for BIM workflows, built with Next.js. This project references IFC classification materials to support presentation and lookup.
 Designed for architects and engineers who need a polished interface for managing IFC models and connected workflows.
-Go to my project: https://prac-digital-9esyno29t-nguyenngocdues-projects.vercel.app
+Go to my project: https://workflow-bim.vercel.app
 
 ![UI](UI.png)
 
