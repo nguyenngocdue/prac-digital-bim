@@ -6,6 +6,21 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* Custom animations for Digital Twin BIM */
+@keyframes gradient {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+.animate-gradient {
+  background-size: 200% 200%;
+  animation: gradient 3s ease infinite;
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);

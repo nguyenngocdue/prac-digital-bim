@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "tsc -b && next build",
+    "build": "tsc -b && next build && node scripts/analyze-build.js",
+    "build:analyze": "ANALYZE=true pnpm build",
     "start": "next start",
     "lint": "eslint"
   },
@@ -30,12 +31,12 @@
     "next": "16.1.4",
     "react": "19.2.3",
     "react-dom": "19.2.3",
-    "react-server-dom-parcel": "19.2.3",
-    "react-server-dom-turbopack": "19.2.3",
-    "react-server-dom-webpack": "19.2.3",
     "react-draggable": "^4.5.0",
     "react-resizable": "^3.0.5",
     "react-resizable-panels": "^3.0.6",
+    "react-server-dom-parcel": "19.2.3",
+    "react-server-dom-turbopack": "19.2.3",
+    "react-server-dom-webpack": "19.2.3",
     "reactflow": "^11.11.4",
     "tailwind-merge": "^3.3.1",
     "three": "^0.180.0",
@@ -43,6 +44,7 @@
     "web-ifc": "^0.0.74"
   },
   "devDependencies": {
+    "@next/bundle-analyzer": "^16.1.4",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
