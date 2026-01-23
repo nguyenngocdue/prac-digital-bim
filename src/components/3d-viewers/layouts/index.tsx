@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState, type FC } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type FC } from "react";
+import { Rnd } from "react-rnd";
 import LeftPanel from "./left-panel";
 import MiddlePanel from "./middle-panel";
 import RightPanel from "./right-panel";
@@ -22,6 +23,10 @@ const PanelsLayout: FC<PanelsLayoutProps> = ({ projectId }) => {
   const [showGoogleTiles, setShowGoogleTiles] = useState(false);
   const [showLeftPanel, setShowLeftPanel] = useState(true);
   const [showRightPanel, setShowRightPanel] = useState(true);
+  const panelBoundsRef = useRef<HTMLDivElement | null>(null);
+  const [rightDefaultX, setRightDefaultX] = useState<number | null>(null);
+
+  const panelWidth = 280;
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -35,6 +40,12 @@ const PanelsLayout: FC<PanelsLayoutProps> = ({ projectId }) => {
     mediaQuery.addListener(update);
     return () => mediaQuery.removeListener(update);
   }, []);
+
+  useLayoutEffect(() => {
+    if (!panelBoundsRef.current || rightDefaultX !== null) return;
+    const boundsWidth = panelBoundsRef.current.clientWidth;
+    setRightDefaultX(Math.max(boundsWidth - panelWidth, 0));
+  }, [panelWidth, rightDefaultX]);
 
   const panelPaddingTop = showHeader
     ? isCompact
@@ -113,23 +124,39 @@ const PanelsLayout: FC<PanelsLayoutProps> = ({ projectId }) => {
             </div>
           </div>
 
-          <div className="pointer-events-none absolute inset-0 flex items-start justify-between gap-4">
+          <div ref={panelBoundsRef} className="pointer-events-none absolute inset-0">
             {showLeftPanel && (
-              <div className="pointer-events-auto h-full w-[280px] max-w-[32vw] pl-1 pt-1 pb-1">
-                <div className="viewer-panel viewer-panel-glass viewer-panel-enter h-full min-h-0 overflow-hidden rounded-2xl transition">
-                  <LeftPanel
-                  projectId={projectId}
-                />
+              <Rnd
+                default={{ x: 0, y: 0, width: panelWidth, height: "100%" }}
+                bounds="parent"
+                enableResizing={false}
+                dragHandleClassName="panel-drag-handle"
+                className="pointer-events-auto"
+              >
+                <div className="viewer-panel viewer-panel-glass viewer-panel-enter flex h-full min-h-0 flex-col overflow-hidden rounded-2xl transition">
+                  <div className="panel-drag-handle flex items-center justify-between border-b viewer-border bg-[var(--viewer-panel-strong)] px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.2em] viewer-muted cursor-move" />
+                  <div className="flex-1 min-h-0">
+                    <LeftPanel projectId={projectId} />
+                  </div>
                 </div>
-              </div>
+              </Rnd>
             )}
 
-            {showRightPanel && (
-              <div className="pointer-events-auto h-full w-[280px] max-w-[32vw] pr-1 pt-1 pb-1">
-                <div className="viewer-panel viewer-panel-glass viewer-panel-enter viewer-panel-delay-2 h-full min-h-0 overflow-hidden rounded-2xl transition">
-                  <RightPanel projectId={projectId} />
+            {showRightPanel && rightDefaultX !== null && (
+              <Rnd
+                default={{ x: rightDefaultX, y: 0, width: panelWidth, height: "100%" }}
+                bounds="parent"
+                enableResizing={false}
+                dragHandleClassName="panel-drag-handle"
+                className="pointer-events-auto"
+              >
+                <div className="viewer-panel viewer-panel-glass viewer-panel-enter viewer-panel-delay-2 flex h-full min-h-0 flex-col overflow-hidden rounded-2xl transition">
+                  <div className="panel-drag-handle flex items-center justify-between border-b viewer-border bg-[var(--viewer-panel-strong)] px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.2em] viewer-muted cursor-move" />
+                  <div className="flex-1 min-h-0">
+                    <RightPanel projectId={projectId} />
+                  </div>
                 </div>
-              </div>
+              </Rnd>
             )}
           </div>
         </div>

@@ -3,6 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { Camera, Eye, EyeOff } from "lucide-react";
 import { CameraData } from "@/types/camera";
+import { Rnd } from "react-rnd";
 
 interface CameraListPanelProps {
   cameras: CameraData[];
@@ -31,10 +32,16 @@ export const CameraListPanel = ({
   const offlineCount = cameras.filter(c => c.status === 'offline').length;
 
   return (
-    <div className={`absolute top-6 left-6 z-50 ${className}`}>
+    <Rnd
+      bounds="parent"
+      enableResizing={false}
+      dragHandleClassName="camera-panel-drag-handle"
+      default={{ x: 24, y: 24, width: 300, height: "auto" }}
+      className={`z-50 ${className}`}
+    >
       <div className="viewer-panel rounded-xl shadow-lg min-w-[280px]">
         {/* Header */}
-        <div className="p-3 border-b">
+        <div className="camera-panel-drag-handle cursor-move p-3 border-b">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
               <Camera className="h-4 w-4 text-primary" />
@@ -53,7 +60,7 @@ export const CameraListPanel = ({
               )}
             </Button>
           </div>
-          
+
           {/* Stats */}
           <div className="flex items-center gap-3 text-xs text-muted-foreground">
             <div className="flex items-center gap-1">
@@ -80,7 +87,7 @@ export const CameraListPanel = ({
               >
                 {/* Status indicator */}
                 <div className={`w-2 h-2 rounded-full ${statusColors[camera.status]} shrink-0`} />
-                
+
                 {/* Camera info */}
                 <div className="flex-1 text-left min-w-0">
                   <p className="text-sm font-medium truncate">{camera.name}</p>
@@ -89,7 +96,7 @@ export const CameraListPanel = ({
                     {camera.roomId && ` • Room ${camera.roomId.replace('r', '')}`}
                   </p>
                 </div>
-                
+
                 {/* Type badge */}
                 {camera.type && (
                   <div className="text-xs px-2 py-0.5 rounded bg-primary/10 text-primary capitalize shrink-0">
@@ -108,6 +115,6 @@ export const CameraListPanel = ({
           </p>
         </div>
       </div>
-    </div>
+    </Rnd>
   );
 };
