@@ -22,7 +22,7 @@ const RightPanel: FC<RightPanelProps> = ({ projectId }) => {
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <div className="px-5 pb-4 pt-5">
+      <div className="px-4 pb-3 pt-4">
         <div className="flex items-start justify-between gap-4">
           <div>
             <div className="viewer-muted text-[10px] font-semibold uppercase tracking-[0.3em]">
@@ -35,7 +35,7 @@ const RightPanel: FC<RightPanelProps> = ({ projectId }) => {
           </span>
         </div>
 
-        <div className="mt-4 rounded-xl border viewer-border viewer-panel-strong p-3">
+        <div className="mt-3 rounded-xl border viewer-border viewer-panel-strong p-3">
           <div className="text-sm font-semibold">No selection</div>
           <p className="mt-1 text-[11px] viewer-muted">
             Select a model, camera, or sensor to inspect attributes.
@@ -46,7 +46,7 @@ const RightPanel: FC<RightPanelProps> = ({ projectId }) => {
       <Separator className="viewer-border-bg" />
 
       <ScrollArea className="flex-1 min-h-0">
-        <div className="space-y-6 px-5 py-4">
+        <div className="space-y-5 px-4 py-3">
           <section>
             <h3 className="text-xs font-semibold uppercase tracking-[0.24em] viewer-muted">
               Scene stats

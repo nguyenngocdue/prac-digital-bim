@@ -23,6 +23,7 @@
     "@types/react-resizable": "^3.0.8",
     "@types/three": "^0.180.0",
     "@xyflow/react": "^12.10.0",
+    "3d-tiles-renderer": "^0.4.19",
     "cesium": "^1.135.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",

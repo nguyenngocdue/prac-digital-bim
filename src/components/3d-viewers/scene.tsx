@@ -1,5 +1,5 @@
 "use client";
-import { memo, Suspense } from "react";
+import { memo, Suspense, useEffect, useRef } from "react";
 import { useGltfModel } from "./gltf/use-gltf-model";
 import { GltfModel } from "./gltf/gltf-model";
 import { RoomLabelsLayer } from "./iot/room-labels-layer";
@@ -8,6 +8,8 @@ import { RoomMarkersLayer } from "./iot/room-markers-layer";
 import { CameraMarkersLayer } from "./cameras/camera-markers-layer";
 import { mockRooms } from "@/data/mock-rooms";
 import { CameraData } from "@/types/camera";
+import { GooglePhotorealisticTiles } from "./gis/google-photorealistic-tiles";
+import { useThree } from "@react-three/fiber";
 
 type Box = { position: [number, number, number], color?: string };
 
@@ -22,9 +24,12 @@ interface SceneProps {
   showCameras?: boolean;
   onCameraClick?: (camera: CameraData) => void;
   selectedCameraId?: string | null;
+  showGoogleTiles?: boolean;
 }
 
-const Scene = memo(({ boxes, accent, gltfUrl, resourceMap, showRoomLabels = false, cameras = [], showCameras = false, onCameraClick, selectedCameraId }: SceneProps) => {
+const Scene = memo(({ boxes, accent, gltfUrl, resourceMap, showRoomLabels = false, cameras = [], showCameras = false, onCameraClick, selectedCameraId, showGoogleTiles = false }: SceneProps) => {
+  const controlsRef = useRef<any>(null);
+  const { camera } = useThree();
 
   // Import Three.js components
   const { GizmoHelper, GizmoViewcube, Grid, OrbitControls, Select, Stats } = require("@react-three/drei");
@@ -36,9 +41,24 @@ const Scene = memo(({ boxes, accent, gltfUrl, resourceMap, showRoomLabels = fals
   // Load GLTF model if URL is provided
   const { scene: gltfScene } = useGltfModel({ url: gltfUrl || null, resourceMap });
 
+  useEffect(() => {
+    if (!controlsRef.current) return;
+    controlsRef.current.target.set(0, 0, 0);
+    controlsRef.current.update();
+    camera.updateProjectionMatrix();
+  }, [camera]);
+
   // Three.js scene
   const threeJsScene = (
     <>
+      {showGoogleTiles && (
+        <GooglePhotorealisticTiles
+          lat={1.353285}
+          lon={103.691559}
+          altitude={0}
+          heading={0}
+        />
+      )}
       <RaycastCatcher accent={accent} />
       <ambientLight intensity={0.6} />
       <directionalLight position={[5, 5, 5]} intensity={1} />
@@ -86,7 +106,19 @@ const Scene = memo(({ boxes, accent, gltfUrl, resourceMap, showRoomLabels = fals
         selectedCameraId={selectedCameraId}
       />
 
-      <OrbitControls />
+      <OrbitControls
+        ref={controlsRef}
+        enableDamping
+        dampingFactor={showGoogleTiles ? 0.08 : 0.12}
+        enablePan={showGoogleTiles}
+        enableRotate
+        enableZoom
+        panSpeed={showGoogleTiles ? 0.6 : 1}
+        rotateSpeed={showGoogleTiles ? 0.4 : 0.8}
+        zoomSpeed={showGoogleTiles ? 1.8 : 1.1}
+        minDistance={showGoogleTiles ? 2 : 2}
+        maxDistance={showGoogleTiles ? 1_000_000 : 2000}
+      />
       <AxesWithLabels size={4} fontSize={0.3} labelOffset={4.2} billboard />
       <Grid
         infiniteGrid
@@ -100,7 +132,7 @@ const Scene = memo(({ boxes, accent, gltfUrl, resourceMap, showRoomLabels = fals
       <Stats />
       <GizmoHelper
         alignment="top-right"
-        margin={[90, 90]}
+        margin={[350, 90]}
         onUpdate={() => {}}
         onTarget={() => new THREE.Vector3(0, 0, 0)}
         renderPriority={1}

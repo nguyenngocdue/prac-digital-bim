@@ -5,35 +5,47 @@ type MiddlePanelProps = {
   showCameraPanel: boolean;
   showIotOverlay: boolean;
   showGltfControls: boolean;
+  showGoogleTiles: boolean;
+  onToggleGoogleTiles: () => void;
+  onToggleCameraPanel: () => void;
+  onToggleIotOverlay: () => void;
+  onToggleGltfControls: () => void;
+  onToggleLeftPanel: () => void;
+  onToggleRightPanel: () => void;
+  showLeftPanel: boolean;
+  showRightPanel: boolean;
 };
 
-const MiddlePanel = ({ showCameraPanel, showIotOverlay, showGltfControls }: MiddlePanelProps) => {
+const MiddlePanel = ({
+  showCameraPanel,
+  showIotOverlay,
+  showGltfControls,
+  showGoogleTiles,
+  onToggleGoogleTiles,
+  onToggleCameraPanel,
+  onToggleIotOverlay,
+  onToggleGltfControls,
+  onToggleLeftPanel,
+  onToggleRightPanel,
+  showLeftPanel,
+  showRightPanel,
+}: MiddlePanelProps) => {
   return (
-    <div className="flex h-full min-h-0 flex-col gap-3 p-3 text-foreground">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <div className="viewer-muted text-[10px] font-semibold uppercase tracking-[0.3em]">
-            Viewport
-          </div>
-          <h3 className="text-sm font-semibold">3D workspace</h3>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="viewer-chip rounded-full px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em]">
-            Realtime
-          </span>
-          <span className="rounded-full border viewer-border px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em]">
-            Orbit controls
-          </span>
-        </div>
-      </div>
-      <div className="relative flex-1 min-h-0 overflow-hidden rounded-2xl border viewer-border bg-slate-950/90">
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(120%_120%_at_20%_0%,rgba(16,185,129,0.12),transparent_45%)]" />
+    <div className="flex h-full min-h-0 flex-col gap-2 text-foreground">
         <Viewer
           showCameraPanel={showCameraPanel}
           showIotOverlay={showIotOverlay}
           showGltfControls={showGltfControls}
+          showGoogleTiles={showGoogleTiles}
+          onToggleGoogleTiles={onToggleGoogleTiles}
+          onToggleCameraPanel={onToggleCameraPanel}
+          onToggleIotOverlay={onToggleIotOverlay}
+          onToggleGltfControls={onToggleGltfControls}
+          onToggleLeftPanel={onToggleLeftPanel}
+          onToggleRightPanel={onToggleRightPanel}
+          showLeftPanel={showLeftPanel}
+          showRightPanel={showRightPanel}
         />
-      </div>
     </div>
   );
 }

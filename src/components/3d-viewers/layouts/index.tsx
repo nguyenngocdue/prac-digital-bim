@@ -1,6 +1,5 @@
 "use client";
 
-import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { useEffect, useState, type FC } from "react";
 import LeftPanel from "./left-panel";
 import MiddlePanel from "./middle-panel";
@@ -20,6 +19,9 @@ const PanelsLayout: FC<PanelsLayoutProps> = ({ projectId }) => {
   const [showCameraPanel, setShowCameraPanel] = useState(false);
   const [showIotOverlay, setShowIotOverlay] = useState(false);
   const [showGltfControls, setShowGltfControls] = useState(false);
+  const [showGoogleTiles, setShowGoogleTiles] = useState(false);
+  const [showLeftPanel, setShowLeftPanel] = useState(true);
+  const [showRightPanel, setShowRightPanel] = useState(true);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -34,22 +36,11 @@ const PanelsLayout: FC<PanelsLayoutProps> = ({ projectId }) => {
     return () => mediaQuery.removeListener(update);
   }, []);
 
-  const direction = isCompact ? "vertical" : "horizontal";
-  const sizes = isCompact
-    ? { left: 28, middle: 52, right: 20 }
-    : { left: 22, middle: 56, right: 22 };
   const panelPaddingTop = showHeader
     ? isCompact
-      ? "pt-24"
-      : "pt-6"
-    : "pt-4";
-  const handleClassName = [
-    "viewer-resize-handle group relative flex items-center justify-center bg-transparent transition-colors",
-    "after:content-[''] after:rounded-full after:transition-colors",
-    isCompact
-      ? "h-3 w-full cursor-row-resize after:h-[2px] after:w-16"
-      : "h-full w-3 cursor-col-resize after:h-16 after:w-[2px]",
-  ].join(" ");
+      ? "pt-16"
+      : "pt-3"
+    : "pt-2";
 
   return (
     <BoxProvider projectId={projectId}>
@@ -102,45 +93,45 @@ const PanelsLayout: FC<PanelsLayoutProps> = ({ projectId }) => {
           )}
         </div> */}
 
-        <div className={`flex-1 min-h-0 px-4 pb-4 ${panelPaddingTop}`}>
-          <PanelGroup direction={direction} className="h-full w-full min-h-0">
-            {/* Left Panel - Tools and Controls */}
-            <Panel defaultSize={sizes.left} minSize={isCompact ? 18 : 12}>
-              <div className="viewer-panel viewer-panel-enter h-full min-h-0 overflow-hidden rounded-2xl">
-                <LeftPanel
+        <div className={`relative flex-1 min-h-0 px-2 pb-2 ${panelPaddingTop}`}>
+          <div className="absolute inset-0">
+            <div className="viewer-panel viewer-panel-clear h-full w-full">
+              <MiddlePanel
+                showCameraPanel={showCameraPanel}
+                showIotOverlay={showIotOverlay}
+                showGltfControls={showGltfControls}
+                showGoogleTiles={showGoogleTiles}
+                onToggleGoogleTiles={() => setShowGoogleTiles((prev) => !prev)}
+                onToggleCameraPanel={() => setShowCameraPanel((prev) => !prev)}
+                onToggleIotOverlay={() => setShowIotOverlay((prev) => !prev)}
+                onToggleGltfControls={() => setShowGltfControls((prev) => !prev)}
+                onToggleLeftPanel={() => setShowLeftPanel((prev) => !prev)}
+                onToggleRightPanel={() => setShowRightPanel((prev) => !prev)}
+                showLeftPanel={showLeftPanel}
+                showRightPanel={showRightPanel}
+              />
+            </div>
+          </div>
+
+          <div className="pointer-events-none absolute inset-0 flex items-start justify-between gap-4">
+            {showLeftPanel && (
+              <div className="pointer-events-auto h-full w-[280px] max-w-[32vw] pl-1 pt-1 pb-1">
+                <div className="viewer-panel viewer-panel-glass viewer-panel-enter h-full min-h-0 overflow-hidden rounded-2xl transition">
+                  <LeftPanel
                   projectId={projectId}
-                  showCameraPanel={showCameraPanel}
-                  onToggleCameraPanel={() => setShowCameraPanel((prev) => !prev)}
-                  showIotOverlay={showIotOverlay}
-                  onToggleIotOverlay={() => setShowIotOverlay((prev) => !prev)}
-                  showGltfControls={showGltfControls}
-                  onToggleGltfControls={() => setShowGltfControls((prev) => !prev)}
                 />
+                </div>
               </div>
-            </Panel>
+            )}
 
-            <PanelResizeHandle className={handleClassName} />
-
-            {/* Middle Panel - 3D Viewport */}
-            <Panel defaultSize={sizes.middle} minSize={isCompact ? 35 : 30}>
-              <div className="viewer-panel viewer-panel-enter viewer-panel-delay-1 h-full min-h-0 overflow-hidden rounded-2xl">
-                <MiddlePanel
-                  showCameraPanel={showCameraPanel}
-                  showIotOverlay={showIotOverlay}
-                  showGltfControls={showGltfControls}
-                />
+            {showRightPanel && (
+              <div className="pointer-events-auto h-full w-[280px] max-w-[32vw] pr-1 pt-1 pb-1">
+                <div className="viewer-panel viewer-panel-glass viewer-panel-enter viewer-panel-delay-2 h-full min-h-0 overflow-hidden rounded-2xl transition">
+                  <RightPanel projectId={projectId} />
+                </div>
               </div>
-            </Panel>
-
-            <PanelResizeHandle className={handleClassName} />
-
-            {/* Right Panel - Properties */}
-            <Panel defaultSize={sizes.right} minSize={isCompact ? 16 : 12}>
-              <div className="viewer-panel viewer-panel-enter viewer-panel-delay-2 h-full min-h-0 overflow-hidden rounded-2xl">
-                <RightPanel projectId={projectId} />
-              </div>
-            </Panel>
-          </PanelGroup>
+            )}
+          </div>
         </div>
       </div>
     </BoxProvider>

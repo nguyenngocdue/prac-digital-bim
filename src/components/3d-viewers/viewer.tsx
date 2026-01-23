@@ -3,30 +3,46 @@ import { Canvas } from "@react-three/fiber";
 import { useEffect, useState } from "react";
 import { useBoxContext } from "../../app/contexts/box-context";
 import Scene from "./scene";
-import { CesiumViewer } from "./cesium/cesium-viewer";
-import { CesiumControls } from "./cesium/cesium-controls";
 import { GltfControls } from "./gltf/gltf-controls";
 import { IotControls } from "./iot/iot-controls";
 import { IotLegend } from "./iot/iot-legend";
 import { CameraListPanel, CameraViewerPanel } from "./cameras";
 import { mockCameras } from "@/data/mock-cameras";
 import { CameraData } from "@/types/camera";
+import { Activity, Camera, Map, PanelLeft, PanelRight, Upload } from "lucide-react";
 
 interface ViewerProps {
   useCesium?: boolean;
   showCameraPanel?: boolean;
   showIotOverlay?: boolean;
   showGltfControls?: boolean;
+  showGoogleTiles?: boolean;
+  onToggleGoogleTiles?: () => void;
+  onToggleCameraPanel?: () => void;
+  onToggleIotOverlay?: () => void;
+  onToggleGltfControls?: () => void;
+  onToggleLeftPanel?: () => void;
+  onToggleRightPanel?: () => void;
+  showLeftPanel?: boolean;
+  showRightPanel?: boolean;
 }
 
 const Viewer = ({
   showCameraPanel = true,
   showIotOverlay = true,
   showGltfControls = true,
+  showGoogleTiles = false,
+  onToggleGoogleTiles,
+  onToggleCameraPanel,
+  onToggleIotOverlay,
+  onToggleGltfControls,
+  onToggleLeftPanel,
+  onToggleRightPanel,
+  showLeftPanel = true,
+  showRightPanel = true,
 }: ViewerProps) => {
   const [accent, setAccent] = useState<string>("#06b6d4");
   const [mounted, setMounted] = useState(false);
-  const [showCesium, setShowCesium] = useState(false);
   const [showRoomLabels, setShowRoomLabels] = useState(true);
   const [showCameras, setShowCameras] = useState(true);
   const [selectedCamera, setSelectedCamera] = useState<CameraData | null>(null);
@@ -34,6 +50,50 @@ const Viewer = ({
   const [resourceMap, setResourceMap] = useState<Map<string, string>>();
   const { boxes, creationMode, setCreationMode, projectId } = useBoxContext();
   const [canvasKey] = useState(() => `canvas-${projectId || "default"}`);
+  const overlayActions = [
+    {
+      key: "left-panel",
+      label: "Left panel",
+      active: showLeftPanel,
+      onClick: onToggleLeftPanel,
+      icon: PanelLeft,
+    },
+    {
+      key: "right-panel",
+      label: "Right panel",
+      active: showRightPanel,
+      onClick: onToggleRightPanel,
+      icon: PanelRight,
+    },
+    {
+      key: "google",
+      label: "Google 3D Tiles",
+      active: showGoogleTiles,
+      onClick: onToggleGoogleTiles,
+      icon: Map,
+    },
+    {
+      key: "gltf",
+      label: "Import GLTF",
+      active: showGltfControls,
+      onClick: onToggleGltfControls,
+      icon: Upload,
+    },
+    {
+      key: "iot",
+      label: "IoT Sensors",
+      active: showIotOverlay,
+      onClick: onToggleIotOverlay,
+      icon: Activity,
+    },
+    {
+      key: "camera",
+      label: "Cameras",
+      active: showCameraPanel,
+      onClick: onToggleCameraPanel,
+      icon: Camera,
+    },
+  ].filter((action) => typeof action.onClick === "function");
 
   // Debug: Track component lifecycle
   useEffect(() => {
@@ -105,6 +165,7 @@ const Viewer = ({
           showCameras={showCameras}
           onCameraClick={(camera) => setSelectedCamera(camera)}
           selectedCameraId={selectedCamera?.id || null}
+          showGoogleTiles={showGoogleTiles}
         />
       </Canvas>
       
@@ -115,16 +176,29 @@ const Viewer = ({
           setResourceMap(map);
         }} />
       )}
-      
-      {showCesium && (
-        <div className="absolute inset-0 z-10">
-          <CesiumViewer className="w-full h-full" />
+
+      {overlayActions.length > 0 && (
+        <div className="absolute bottom-2 left-1/2 z-40 -translate-x-1/2">
+          <div className="viewer-panel viewer-panel-strong flex items-center gap-0.5 rounded-lg px-1 py-1 shadow-lg backdrop-blur">
+            {overlayActions.map(({ key, label, active, onClick, icon: Icon }) => (
+              <button
+                key={key}
+                type="button"
+                onClick={onClick}
+                aria-pressed={active}
+                title={label}
+                className={`flex h-8 w-8 items-center justify-center rounded-md text-sm transition ${
+                  active
+                    ? "viewer-chip shadow-sm"
+                    : "bg-white/70 text-slate-700 hover:bg-white dark:bg-slate-900/60 dark:text-slate-100 dark:hover:bg-slate-900"
+                }`}
+              >
+                <Icon className="h-4 w-4" />
+              </button>
+            ))}
+          </div>
         </div>
       )}
-      <CesiumControls 
-        showCesium={showCesium}
-        onToggle={() => setShowCesium(!showCesium)}
-      />
       
       {/* IoT Room Labels Controls */}
       {showIotOverlay && (

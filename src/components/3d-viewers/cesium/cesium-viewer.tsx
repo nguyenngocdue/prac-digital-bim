@@ -3,10 +3,22 @@
 import { useEffect, useRef } from "react";
 import * as Cesium from "cesium";
 
-// Configure Cesium to use local assets
-// Using Cesium's default token - you can replace this with your own from https://ion.cesium.com/
-// Cesium.Ion.defaultAccessToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiJjMWQ5NTE3Yi0zMGQ5LTRiMzYtOTA1Mi03MDdmN2UzOTE2NGIiLCJpZCI6MTkyNDEwLCJpYXQiOjE3MDY0MzA1NTB9.2_XZXj5j0Jq2_ZRdL9xs_1cO0mSwRNxgN6BQY5yca4g';
-Cesium.Ion.defaultAccessToken = process.env.NEXT_PUBLIC_CESIUM_ION_TOKEN || '';
+// Configure Cesium tokens and Google Maps 3D Tiles (photorealistic)
+const cesiumIonToken =
+  process.env.NEXT_PUBLIC_CESIUM_ION_TOKEN ||
+  process.env.VITE_ION_KEY ||
+  "";
+const googleMapsApiKey =
+  process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ||
+  process.env.NEXT_PUBLIC_GOOGLE_MAP_API_KEY ||
+  process.env.VITE_GOOGLE_MAP_API_KEY ||
+  "";
+
+Cesium.Ion.defaultAccessToken = cesiumIonToken;
+
+if (googleMapsApiKey) {
+  Cesium.GoogleMaps.defaultApiKey = googleMapsApiKey;
+}
 
 // Set Cesium base URL for assets
 if (typeof window !== "undefined") {
@@ -115,7 +127,7 @@ export const CesiumViewer = ({ className = "" }: CesiumViewerProps) => {
 
       // Thêm khối box định vị tại TP Hồ Chí Minh
       // Tọa độ: 10.8231° N, 106.6297° E
-      const hcmcPosition = Cesium.Cartesian3.fromDegrees(50, 10.8231, 50); // 50m độ cao
+      const hcmcPosition = Cesium.Cartesian3.fromDegrees(106.6297, 10.8231, 50); // 50m độ cao
       
       // Tạo entity box
       viewer.entities.add({

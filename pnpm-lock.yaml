@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      3d-tiles-renderer:
+        specifier: ^0.4.10
+        version: 0.4.19(@react-three/fiber@9.4.0(@types/react@19.2.2)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(three@0.180.0))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(three@0.180.0)
       '@preact/signals-react':
         specifier: ^3.3.1
         version: 3.3.1(react@19.2.3)
@@ -137,6 +140,21 @@ importers:
         version: 5.9.3
 
 packages:
+
+  3d-tiles-renderer@0.4.19:
+    resolution: {integrity: sha512-emynINuVR+fvop+YN456zFcOdwwzRbKAXIKfvkF3avDIS4Sm3jhuTeGBaO754ghXI/xyjPup0ZSryQ7SUvO8AA==}
+    peerDependencies:
+      '@react-three/fiber': ^8.17.9 || ^9.0.0
+      react: ^18.3.1 || ^19.0.0
+      react-dom: ^18.3.1 || ^19.0.0
+      three: '>=0.167.0'
+    peerDependenciesMeta:
+      '@react-three/fiber':
+        optional: true
+      react:
+        optional: true
+      react-dom:
+        optional: true
 
   '@alloc/quick-lru@5.2.0':
     resolution: {integrity: sha512-UrcABB+4bUrFABwbluTIBErXwvbsU/V7TZWfmbgJfbkwiBuziS9gxdODUyuiecfdGQ85jglMW6juS3+z5TsKLw==}
@@ -3385,6 +3403,14 @@ packages:
         optional: true
 
 snapshots:
+
+  3d-tiles-renderer@0.4.19(@react-three/fiber@9.4.0(@types/react@19.2.2)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(three@0.180.0))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(three@0.180.0):
+    dependencies:
+      three: 0.180.0
+    optionalDependencies:
+      '@react-three/fiber': 9.4.0(@types/react@19.2.2)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(three@0.180.0)
+      react: 19.2.3
+      react-dom: 19.2.3(react@19.2.3)
 
   '@alloc/quick-lru@5.2.0': {}
 

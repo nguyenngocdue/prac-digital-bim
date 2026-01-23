@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import type { FC } from "react";
-import { Activity, Box, Camera, Grid2X2, Map, RefreshCw, Search, Settings, Upload } from "lucide-react";
+import { Box, Grid2X2, Map, RefreshCw, Search, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -11,12 +11,6 @@ import { useBoxContext } from "@/app/contexts/box-context";
 
 type LeftPanelProps = {
   projectId?: string;
-  showCameraPanel: boolean;
-  onToggleCameraPanel: () => void;
-  showIotOverlay: boolean;
-  onToggleIotOverlay: () => void;
-  showGltfControls: boolean;
-  onToggleGltfControls: () => void;
 };
 
 /**
@@ -24,12 +18,6 @@ type LeftPanelProps = {
  */
 const LeftPanel: FC<LeftPanelProps> = ({
   projectId,
-  showCameraPanel,
-  onToggleCameraPanel,
-  showIotOverlay,
-  onToggleIotOverlay,
-  showGltfControls,
-  onToggleGltfControls,
 }) => {
   const router = useRouter();
   const { creationMode, setCreationMode } = useBoxContext();
@@ -58,7 +46,7 @@ const LeftPanel: FC<LeftPanelProps> = ({
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <div className="px-5 pb-4 pt-5">
+      <div className="px-4 pb-3 pt-4">
         <div className="flex items-start justify-between gap-4">
           <div>
             <div className="viewer-muted text-[10px] font-semibold uppercase tracking-[0.3em]">
@@ -93,7 +81,7 @@ const LeftPanel: FC<LeftPanelProps> = ({
       <Separator className="viewer-border-bg" />
 
       <ScrollArea className="flex-1 min-h-0">
-        <div className="space-y-6 px-5 py-4">
+        <div className="space-y-5 px-4 py-3">
           <section>
             <div className="flex items-center justify-between">
               <h3 className="text-xs font-semibold uppercase tracking-[0.24em] viewer-muted">
@@ -182,77 +170,6 @@ const LeftPanel: FC<LeftPanelProps> = ({
                 </div>
                 <p className="mt-1 text-[11px] viewer-muted">Sensors and camera feeds.</p>
               </div>
-            </div>
-          </section>
-
-          <section>
-            <h3 className="text-xs font-semibold uppercase tracking-[0.24em] viewer-muted">
-              Overlays
-            </h3>
-            <div className="mt-3 grid gap-2">
-              <button
-                type="button"
-                onClick={onToggleCameraPanel}
-                className="flex w-full items-center justify-between rounded-xl border viewer-border viewer-panel-strong px-3 py-2 text-xs font-semibold transition hover:bg-white/40 dark:hover:bg-white/10"
-              >
-                <span className="flex items-center gap-2">
-                  <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-700 dark:bg-emerald-400/10 dark:text-emerald-200">
-                    <Camera className="h-3.5 w-3.5" />
-                  </span>
-                  Cameras panel
-                </span>
-                <span
-                  className={`rounded-full px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] ${
-                    showCameraPanel
-                      ? "viewer-chip"
-                      : "border viewer-border viewer-muted"
-                  }`}
-                >
-                  {showCameraPanel ? "On" : "Off"}
-                </span>
-              </button>
-              <button
-                type="button"
-                onClick={onToggleIotOverlay}
-                className="flex w-full items-center justify-between rounded-xl border viewer-border viewer-panel-strong px-3 py-2 text-xs font-semibold transition hover:bg-white/40 dark:hover:bg-white/10"
-              >
-                <span className="flex items-center gap-2">
-                  <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-sky-500/10 text-sky-700 dark:bg-sky-400/10 dark:text-sky-200">
-                    <Activity className="h-3.5 w-3.5" />
-                  </span>
-                  IoT Sensors
-                </span>
-                <span
-                  className={`rounded-full px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] ${
-                    showIotOverlay
-                      ? "viewer-chip"
-                      : "border viewer-border viewer-muted"
-                  }`}
-                >
-                  {showIotOverlay ? "On" : "Off"}
-                </span>
-              </button>
-              <button
-                type="button"
-                onClick={onToggleGltfControls}
-                className="flex w-full items-center justify-between rounded-xl border viewer-border viewer-panel-strong px-3 py-2 text-xs font-semibold transition hover:bg-white/40 dark:hover:bg-white/10"
-              >
-                <span className="flex items-center gap-2">
-                  <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-500/10 text-amber-700 dark:bg-amber-400/10 dark:text-amber-200">
-                    <Upload className="h-3.5 w-3.5" />
-                  </span>
-                  Import GLTF
-                </span>
-                <span
-                  className={`rounded-full px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] ${
-                    showGltfControls
-                      ? "viewer-chip"
-                      : "border viewer-border viewer-muted"
-                  }`}
-                >
-                  {showGltfControls ? "On" : "Off"}
-                </span>
-              </button>
             </div>
           </section>
 
