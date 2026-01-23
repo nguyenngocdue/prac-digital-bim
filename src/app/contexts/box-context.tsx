@@ -1,13 +1,51 @@
 "use client";
 import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from "react";
+import type { BuildingShape } from "@/components/3d-viewers/standards/building-shapes";
 
-export type Box = { position: [number, number, number], color?: string };
+export type Box = {
+  id: string;
+  position: [number, number, number];
+  color?: string;
+  size?: [number, number, number];
+  type?: "box" | "building";
+  rotationY?: number;
+  footprint?: [number, number][];
+  height?: number;
+  thicknessRatio?: number;
+};
+
+export type CreationTool = "box" | "building";
+export type TransformMode = "translate" | "rotate" | "scale";
+
+export type BuildingOptions = {
+  shape: BuildingShape;
+  width: number;
+  depth: number;
+  height: number;
+  thicknessRatio: number;
+  snapToGrid: boolean;
+  gridSize: number;
+  snapToObjects: boolean;
+  snapDistance: number;
+  allowVertical: boolean;
+  drawingMode: boolean;
+};
 
 interface BoxContextType {
   boxes: Box[];
   setBoxes: React.Dispatch<React.SetStateAction<Box[]>>;
   creationMode: boolean;
   setCreationMode: (v: boolean) => void;
+  creationTool: CreationTool;
+  setCreationTool: (tool: CreationTool) => void;
+  buildingOptions: BuildingOptions;
+  setBuildingOptions: React.Dispatch<React.SetStateAction<BuildingOptions>>;
+  selectedId: string | null;
+  setSelectedId: (id: string | null) => void;
+  transformMode: TransformMode;
+  setTransformMode: (mode: TransformMode) => void;
+  drawingPoints: [number, number, number][];
+  setDrawingPoints: React.Dispatch<React.SetStateAction<[number, number, number][]>>;
   projectId?: string;
 }
 
@@ -24,7 +62,39 @@ const getStorageKey = (projectId?: string) => projectId ? `boxes_${projectId}` :
 export const BoxProvider: React.FC<{ children: React.ReactNode; projectId?: string }> = ({ children, projectId }) => {
   const [boxes, setBoxes] = useState<Box[]>([]);
   const [creationMode, setCreationMode] = useState(false);
+  const [creationTool, setCreationTool] = useState<CreationTool>("box");
+  const [buildingOptions, setBuildingOptions] = useState<BuildingOptions>({
+    shape: "rect",
+    width: 40,
+    depth: 25,
+    height: 12,
+    thicknessRatio: 0.3,
+    snapToGrid: true,
+    gridSize: 1,
+    snapToObjects: true,
+    snapDistance: 0.75,
+    allowVertical: true,
+    drawingMode: false,
+  });
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [transformMode, setTransformMode] = useState<TransformMode>("translate");
+  const [drawingPoints, setDrawingPoints] = useState<[number, number, number][]>([]);
   const [isLoading, setIsLoading] = useState(true);
+
+  const ensureDefaults = useCallback((items: Box[]): Box[] => {
+    return items.map((box) => {
+      if (box.id) return box;
+      const id =
+        typeof crypto !== "undefined" && (crypto as any).randomUUID
+          ? (crypto as any).randomUUID()
+          : Math.random().toString(36).slice(2, 10);
+      return {
+        ...box,
+        id,
+        type: box.type || "box",
+      };
+    });
+  }, []);
 
   // Load boxes from localStorage on mount or when projectId changes
   useEffect(() => {
@@ -38,9 +108,10 @@ export const BoxProvider: React.FC<{ children: React.ReactNode; projectId?: stri
         const saved = localStorage.getItem(storageKey);
         console.log("BoxProvider - Storage key:", storageKey, "Saved data:", saved);
         if (saved) {
-          const parsed = JSON.parse(saved);
-          console.log("BoxProvider - Parsed boxes:", parsed);
-          setBoxes(parsed);
+          const parsed = JSON.parse(saved) as Box[];
+          const normalized = ensureDefaults(parsed);
+          console.log("BoxProvider - Parsed boxes:", normalized);
+          setBoxes(normalized);
         } else {
           console.log("BoxProvider - No saved boxes, setting empty array");
           setBoxes([]);
@@ -82,14 +153,39 @@ export const BoxProvider: React.FC<{ children: React.ReactNode; projectId?: stri
     setCreationMode(v);
   }, []);
 
+  const handleSetSelectedId = useCallback((id: string | null) => {
+    setSelectedId(id);
+  }, []);
+
   // Memoize context value to prevent unnecessary re-renders of consumers
   const contextValue = useMemo(() => ({
     boxes,
     setBoxes,
     creationMode,
     setCreationMode: handleSetCreationMode,
+    creationTool,
+    setCreationTool,
+    buildingOptions,
+    setBuildingOptions,
+    selectedId,
+    setSelectedId: handleSetSelectedId,
+    transformMode,
+    setTransformMode,
+    drawingPoints,
+    setDrawingPoints,
     projectId
-  }), [boxes, creationMode, handleSetCreationMode, projectId]);
+  }), [
+    boxes,
+    creationMode,
+    creationTool,
+    buildingOptions,
+    selectedId,
+    transformMode,
+    drawingPoints,
+    handleSetCreationMode,
+    handleSetSelectedId,
+    projectId
+  ]);
 
   return (
     <BoxContext.Provider value={contextValue}>

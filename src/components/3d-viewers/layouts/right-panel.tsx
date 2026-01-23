@@ -13,7 +13,7 @@ type RightPanelProps = {
 };
 
 const RightPanel: FC<RightPanelProps> = ({ projectId }) => {
-  const { boxes, creationMode } = useBoxContext();
+  const { boxes, creationMode, creationTool } = useBoxContext();
   const stats = [
     { label: "Objects", value: boxes.length, icon: Box },
     { label: "Rooms", value: mockRooms.length, icon: Map },
@@ -84,7 +84,7 @@ const RightPanel: FC<RightPanelProps> = ({ projectId }) => {
                       : "border viewer-border viewer-muted"
                   }`}
                 >
-                  {creationMode ? "Active" : "Idle"}
+                  {creationMode ? `Active (${creationTool})` : "Idle"}
                 </span>
               </div>
             </div>

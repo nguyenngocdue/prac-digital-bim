@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import type { FC } from "react";
-import { Box, Grid2X2, Map, RefreshCw, Search, Settings } from "lucide-react";
+import { Box, Building2, Grid2X2, Map, RefreshCw, Search, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -20,7 +20,17 @@ const LeftPanel: FC<LeftPanelProps> = ({
   projectId,
 }) => {
   const router = useRouter();
-  const { creationMode, setCreationMode } = useBoxContext();
+  const {
+    creationMode,
+    setCreationMode,
+    creationTool,
+    setCreationTool,
+    buildingOptions,
+    setBuildingOptions,
+    transformMode,
+    setTransformMode,
+    setDrawingPoints,
+  } = useBoxContext();
   const projectLabel = projectId ? projectId.slice(0, 8) : "Unassigned";
 
   const layers = [
@@ -42,6 +52,16 @@ const LeftPanel: FC<LeftPanelProps> = ({
 
     // Navigate to the project viewer with the new ID
     router.push(`/project/viewer?id=${id}`);
+  };
+
+  const toggleTool = (tool: "box" | "building") => {
+    const isSame = creationMode && creationTool === tool;
+    setCreationTool(tool);
+    setCreationMode(!isSame);
+  };
+
+  const updateBuildingOption = <K extends keyof typeof buildingOptions>(key: K, value: (typeof buildingOptions)[K]) => {
+    setBuildingOptions((prev) => ({ ...prev, [key]: value }));
   };
 
   return (
@@ -97,14 +117,200 @@ const LeftPanel: FC<LeftPanelProps> = ({
                 Open random project
               </Button>
               <Button
-                onClick={() => setCreationMode(!creationMode)}
-                variant={creationMode ? "secondary" : "outline"}
+                onClick={() => toggleTool("box")}
+                variant={creationMode && creationTool === "box" ? "secondary" : "outline"}
                 size="sm"
                 className="justify-start"
               >
                 <Box className="h-4 w-4" />
-                {creationMode ? "Click on canvas to place box" : "Create a box"}
+                {creationMode && creationTool === "box" ? "Click on canvas to place box" : "Create a box"}
               </Button>
+              <Button
+                onClick={() => toggleTool("building")}
+                variant={creationMode && creationTool === "building" ? "secondary" : "outline"}
+                size="sm"
+                className="justify-start"
+              >
+                <Building2 className="h-4 w-4" />
+                {creationMode && creationTool === "building"
+                  ? "Click on canvas to place building"
+                  : "Place a building"}
+              </Button>
+            </div>
+          </section>
+
+          <section>
+            <h3 className="text-xs font-semibold uppercase tracking-[0.24em] viewer-muted">
+              Building tool
+            </h3>
+            <div className="mt-3 grid gap-3 rounded-xl border viewer-border viewer-panel-strong p-3">
+              <div className="grid grid-cols-2 gap-2 text-xs font-semibold">
+                {[
+                  { key: "rect", label: "Rectangle" },
+                  { key: "l", label: "L Shape" },
+                  { key: "u", label: "U Shape" },
+                  { key: "c", label: "C Shape" },
+                  { key: "custom", label: "Custom" },
+                ].map((shape) => (
+                  <button
+                    key={shape.key}
+                    type="button"
+                    onClick={() => {
+                      updateBuildingOption("shape", shape.key as typeof buildingOptions.shape);
+                      if (shape.key === "custom") {
+                        updateBuildingOption("drawingMode", true);
+                      } else {
+                        setDrawingPoints([]);
+                        updateBuildingOption("drawingMode", false);
+                      }
+                      setCreationTool("building");
+                      setCreationMode(true);
+                    }}
+                    className={`rounded-lg border px-2 py-1.5 text-left ${
+                      buildingOptions.shape === shape.key
+                        ? "border-emerald-300 bg-emerald-500/10 text-emerald-700"
+                        : "border-[var(--workflow-border)] bg-[var(--workflow-panel)] text-[var(--workflow-muted)] hover:text-[var(--workflow-ink)]"
+                    }`}
+                  >
+                    {shape.label}
+                  </button>
+                ))}
+              </div>
+
+              <div className="grid grid-cols-3 gap-2 text-[11px]">
+                <label className="flex flex-col gap-1">
+                  Width
+                  <Input
+                    value={buildingOptions.width}
+                    onChange={(e) => updateBuildingOption("width", Math.max(1, Number(e.target.value) || 1))}
+                    className="h-8 text-xs"
+                    type="number"
+                    min={1}
+                  />
+                </label>
+                <label className="flex flex-col gap-1">
+                  Depth
+                  <Input
+                    value={buildingOptions.depth}
+                    onChange={(e) => updateBuildingOption("depth", Math.max(1, Number(e.target.value) || 1))}
+                    className="h-8 text-xs"
+                    type="number"
+                    min={1}
+                  />
+                </label>
+                <label className="flex flex-col gap-1">
+                  Height
+                  <Input
+                    value={buildingOptions.height}
+                    onChange={(e) => updateBuildingOption("height", Math.max(1, Number(e.target.value) || 1))}
+                    className="h-8 text-xs"
+                    type="number"
+                    min={1}
+                  />
+                </label>
+              </div>
+
+              <label className="flex items-center gap-2 text-xs">
+                Thickness
+                <Input
+                  value={buildingOptions.thicknessRatio}
+                  onChange={(e) =>
+                    updateBuildingOption(
+                      "thicknessRatio",
+                      Math.min(0.9, Math.max(0.1, Number(e.target.value) || 0.3))
+                    )
+                  }
+                  className="h-8 w-20 text-xs"
+                  type="number"
+                  step="0.05"
+                  min={0.1}
+                  max={0.9}
+                />
+              </label>
+
+              <div className="grid gap-2 text-[11px]">
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={buildingOptions.snapToGrid}
+                    onChange={(e) => updateBuildingOption("snapToGrid", e.target.checked)}
+                  />
+                  Snap to grid
+                </label>
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={buildingOptions.snapToObjects}
+                    onChange={(e) => updateBuildingOption("snapToObjects", e.target.checked)}
+                  />
+                  Snap to objects
+                </label>
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={buildingOptions.allowVertical}
+                    onChange={(e) => updateBuildingOption("allowVertical", e.target.checked)}
+                  />
+                  Allow vertical planes
+                </label>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 text-[11px]">
+                <label className="flex flex-col gap-1">
+                  Grid size
+                  <Input
+                    value={buildingOptions.gridSize}
+                    onChange={(e) => updateBuildingOption("gridSize", Math.max(0.1, Number(e.target.value) || 1))}
+                    className="h-8 text-xs"
+                    type="number"
+                    step="0.1"
+                    min={0.1}
+                  />
+                </label>
+                <label className="flex flex-col gap-1">
+                  Snap dist
+                  <Input
+                    value={buildingOptions.snapDistance}
+                    onChange={(e) => updateBuildingOption("snapDistance", Math.max(0.1, Number(e.target.value) || 0.5))}
+                    className="h-8 text-xs"
+                    type="number"
+                    step="0.1"
+                    min={0.1}
+                  />
+                </label>
+              </div>
+
+              {buildingOptions.shape === "custom" && (
+                <Button
+                  variant={buildingOptions.drawingMode ? "secondary" : "outline"}
+                  size="sm"
+                  onClick={() => {
+                    if (buildingOptions.drawingMode) {
+                      setDrawingPoints([]);
+                    }
+                    updateBuildingOption("drawingMode", !buildingOptions.drawingMode);
+                  }}
+                >
+                  {buildingOptions.drawingMode ? "Drawing footprint (double click to finish)" : "Draw footprint"}
+                </Button>
+              )}
+
+              <div className="flex flex-wrap gap-2 text-[11px]">
+                {(["translate", "rotate", "scale"] as const).map((mode) => (
+                  <button
+                    key={mode}
+                    type="button"
+                    onClick={() => setTransformMode(mode)}
+                    className={`rounded-full border px-2 py-1 uppercase tracking-[0.18em] ${
+                      transformMode === mode
+                        ? "border-emerald-300 bg-emerald-500/10 text-emerald-700"
+                        : "border-[var(--workflow-border)] text-[var(--workflow-muted)]"
+                    }`}
+                  >
+                    {mode}
+                  </button>
+                ))}
+              </div>
             </div>
           </section>
 

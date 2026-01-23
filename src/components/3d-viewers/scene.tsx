@@ -1,5 +1,6 @@
 "use client";
-import { memo, Suspense, useEffect, useRef } from "react";
+import { memo, Suspense, useEffect, useMemo, useRef, useState } from "react";
+import type { Object3D } from "three";
 import { useGltfModel } from "./gltf/use-gltf-model";
 import { GltfModel } from "./gltf/gltf-model";
 import { RoomLabelsLayer } from "./iot/room-labels-layer";
@@ -10,8 +11,20 @@ import { mockRooms } from "@/data/mock-rooms";
 import { CameraData } from "@/types/camera";
 import { GooglePhotorealisticTiles } from "./gis/google-photorealistic-tiles";
 import { useThree } from "@react-three/fiber";
+import { useBoxContext } from "@/app/contexts/box-context";
+import { BuildingMesh } from "./standards/building-mesh";
 
-type Box = { position: [number, number, number], color?: string };
+type Box = {
+  id: string;
+  position: [number, number, number];
+  color?: string;
+  size?: [number, number, number];
+  type?: "box" | "building";
+  rotationY?: number;
+  footprint?: [number, number][];
+  height?: number;
+  thicknessRatio?: number;
+};
 
 interface SceneProps {
   boxes: Box[];
@@ -29,10 +42,13 @@ interface SceneProps {
 
 const Scene = memo(({ boxes, accent, gltfUrl, resourceMap, showRoomLabels = false, cameras = [], showCameras = false, onCameraClick, selectedCameraId, showGoogleTiles = false }: SceneProps) => {
   const controlsRef = useRef<any>(null);
+  const objectRefs = useRef<Map<string, Object3D>>(new Map());
+  const { setBoxes, selectedId, setSelectedId, transformMode, drawingPoints } = useBoxContext();
+  const [isTransforming, setIsTransforming] = useState(false);
   const { camera } = useThree();
 
   // Import Three.js components
-  const { GizmoHelper, GizmoViewcube, Grid, OrbitControls, Select, Stats } = require("@react-three/drei");
+  const { GizmoHelper, GizmoViewcube, Grid, OrbitControls, Select, Stats, TransformControls, Line } = require("@react-three/drei");
   const { AxesWithLabels } = require("./standards/axes-with-labels");
   const { RaycastCatcher } = require("@/lib/raycast-catcher");
   const THREE = require("three");
@@ -47,6 +63,45 @@ const Scene = memo(({ boxes, accent, gltfUrl, resourceMap, showRoomLabels = fals
     controlsRef.current.update();
     camera.updateProjectionMatrix();
   }, [camera]);
+
+  useEffect(() => {
+    if (!controlsRef.current) return;
+    controlsRef.current.enabled = !isTransforming;
+  }, [isTransforming]);
+
+  const selectedObject = selectedId ? objectRefs.current.get(selectedId) || null : null;
+
+  const handleTransformEnd = () => {
+    if (!selectedId || !selectedObject) return;
+    const { position, rotation, scale } = selectedObject;
+    setBoxes((prev) =>
+      prev.map((box) => {
+        if (box.id !== selectedId) return box;
+        const next = {
+          ...box,
+          position: [position.x, position.y, position.z] as [number, number, number],
+          rotationY: rotation.y,
+        };
+
+        if (scale.x !== 1 || scale.y !== 1 || scale.z !== 1) {
+          if (box.footprint) {
+            next.footprint = box.footprint.map(([x, z]) => [x * scale.x, z * scale.z]);
+            next.height = (box.height || 1) * scale.y;
+          } else if (box.size) {
+            next.size = [box.size[0] * scale.x, box.size[1] * scale.y, box.size[2] * scale.z];
+          }
+          selectedObject.scale.set(1, 1, 1);
+        }
+        return next;
+      })
+    );
+  };
+
+  const drawingLinePoints = useMemo(() => {
+    if (drawingPoints.length < 2) return null;
+    const points = drawingPoints.map((p) => [p[0], p[1] + 0.05, p[2]]);
+    return [...points, points[0]];
+  }, [drawingPoints]);
 
   // Three.js scene
   const threeJsScene = (
@@ -65,18 +120,64 @@ const Scene = memo(({ boxes, accent, gltfUrl, resourceMap, showRoomLabels = fals
       <PlaceholderBox color={accent || "#06b6d4"} />
       <Select box multiple>
         {boxes.map((box, i) => (
-          <PlaceholderBox
-            key={i}
-            color={box.color || accent}
-            position={box.position}
-            onSelectEffect={(selected: boolean) => {
-              if (selected) {
-                console.log("Box selected at", box.position);
+          <group
+            key={box.id || i}
+            ref={(node) => {
+              if (node) {
+                objectRefs.current.set(box.id, node);
+              } else {
+                objectRefs.current.delete(box.id);
               }
             }}
-          />
+            position={box.position}
+            rotation={[0, box.rotationY || 0, 0]}
+            onPointerDown={(event: any) => {
+              event.stopPropagation();
+              setSelectedId(box.id);
+            }}
+          >
+            {box.type === "building" ? (
+              <BuildingMesh
+                color={box.color || accent}
+                height={box.height || 8}
+                footprint={box.footprint}
+                width={box.size?.[0] || 10}
+                depth={box.size?.[2] || 10}
+                thicknessRatio={box.thicknessRatio || 0.3}
+                shape="rect"
+              />
+            ) : (
+              <PlaceholderBox
+                color={box.color || accent}
+                position={[0, 0, 0]}
+                size={box.size}
+                rotationY={0}
+                onSelectEffect={(selected: boolean) => {
+                  if (selected) {
+                    console.log("Box selected at", box.position);
+                  }
+                }}
+              />
+            )}
+          </group>
         ))}
       </Select>
+
+      {selectedObject && (
+        <TransformControls
+          object={selectedObject}
+          mode={transformMode}
+          onMouseDown={() => setIsTransforming(true)}
+          onMouseUp={() => {
+            setIsTransforming(false);
+            handleTransformEnd();
+          }}
+        />
+      )}
+
+      {drawingLinePoints && (
+        <Line points={drawingLinePoints} color={accent} lineWidth={2} dashed={false} />
+      )}
 
       {/* GLTF Model */}
       {gltfScene && (

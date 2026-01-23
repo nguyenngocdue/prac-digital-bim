@@ -48,7 +48,19 @@ const Viewer = ({
   const [selectedCamera, setSelectedCamera] = useState<CameraData | null>(null);
   const [gltfUrl, setGltfUrl] = useState<string | null>(null);
   const [resourceMap, setResourceMap] = useState<Map<string, string>>();
-  const { boxes, creationMode, setCreationMode, projectId } = useBoxContext();
+  const {
+    boxes,
+    setBoxes,
+    creationMode,
+    setCreationMode,
+    creationTool,
+    buildingOptions,
+    drawingPoints,
+    setDrawingPoints,
+    selectedId,
+    setSelectedId,
+    projectId,
+  } = useBoxContext();
   const [canvasKey] = useState(() => `canvas-${projectId || "default"}`);
   const overlayActions = [
     {
@@ -115,6 +127,53 @@ const Viewer = ({
   }, [boxes]);
 
   useEffect(() => {
+    const handleFinishDrawing = (e: KeyboardEvent) => {
+      if (e.key !== "Enter") return;
+      if (!creationMode) return;
+      if (creationTool !== "building") return;
+      if (buildingOptions.shape !== "custom" || !buildingOptions.drawingMode) return;
+      if (drawingPoints.length < 3) return;
+
+      const centerX = drawingPoints.reduce((sum, p) => sum + p[0], 0) / drawingPoints.length;
+      const centerZ = drawingPoints.reduce((sum, p) => sum + p[2], 0) / drawingPoints.length;
+      const basePoint = drawingPoints[0];
+      if (!basePoint) return;
+      const baseY = basePoint[1];
+      const footprint = drawingPoints.map((p) => [p[0] - centerX, p[2] - centerZ]) as [number, number][];
+      const id =
+        typeof crypto !== "undefined" && (crypto as any).randomUUID
+          ? (crypto as any).randomUUID()
+          : Math.random().toString(36).slice(2, 10);
+
+      setBoxes((prev) => [
+        ...prev,
+        {
+          id,
+          position: [centerX, baseY + buildingOptions.height / 2, centerZ],
+          color: accent,
+          type: "building",
+          footprint,
+          height: buildingOptions.height,
+          rotationY: 0,
+          thicknessRatio: buildingOptions.thicknessRatio,
+        },
+      ]);
+      setDrawingPoints([]);
+    };
+
+    window.addEventListener("keydown", handleFinishDrawing);
+    return () => window.removeEventListener("keydown", handleFinishDrawing);
+  }, [
+    accent,
+    buildingOptions,
+    creationMode,
+    creationTool,
+    drawingPoints,
+    setBoxes,
+    setDrawingPoints,
+  ]);
+
+  useEffect(() => {
     if (typeof window === "undefined") return;
     const cs = getComputedStyle(document.documentElement);
     const val = cs.getPropertyValue("--accent").trim();
@@ -123,17 +182,21 @@ const Viewer = ({
       setAccent(val);
     }
 
-    // Listen for Escape key to exit creation mode
+    // Listen for Escape key to exit creation mode and Delete to remove selection
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape" && creationMode) {
         setCreationMode(false);
+      }
+      if ((e.key === "Delete" || e.key === "Backspace") && selectedId) {
+        setBoxes((prev) => prev.filter((box) => box.id !== selectedId));
+        setSelectedId(null);
       }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [creationMode, setCreationMode]);
+  }, [creationMode, selectedId, setBoxes, setCreationMode, setSelectedId]);
 
   // Don't render canvas on server or before mounting
   if (!mounted) {

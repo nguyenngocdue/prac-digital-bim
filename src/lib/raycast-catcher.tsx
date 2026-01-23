@@ -2,10 +2,104 @@
 import * as THREE from "three";
 import { useBoxContext } from "../app/contexts/box-context";
 import { useThree } from "@react-three/fiber";
+import { getFootprintPoints } from "@/components/3d-viewers/standards/building-shapes";
 
 export function RaycastCatcher({ accent }: { accent: string }) {
-  const { setBoxes, creationMode } = useBoxContext();
+  const {
+    boxes,
+    setBoxes,
+    creationMode,
+    creationTool,
+    buildingOptions,
+    setDrawingPoints,
+    drawingPoints,
+    setSelectedId,
+  } = useBoxContext();
   const { camera, scene, gl } = useThree();
+
+  const snapPoint = (point: THREE.Vector3) => {
+    const snapped = point.clone();
+    if (buildingOptions.snapToGrid && buildingOptions.gridSize > 0) {
+      snapped.x = Math.round(snapped.x / buildingOptions.gridSize) * buildingOptions.gridSize;
+      snapped.z = Math.round(snapped.z / buildingOptions.gridSize) * buildingOptions.gridSize;
+    }
+
+    if (buildingOptions.snapToObjects && buildingOptions.snapDistance > 0 && boxes.length > 0) {
+      const candidatesX: number[] = [];
+      const candidatesZ: number[] = [];
+      boxes.forEach((box) => {
+        const rotation = box.rotationY || 0;
+        const cos = Math.cos(rotation);
+        const sin = Math.sin(rotation);
+        const points =
+          box.footprint && box.footprint.length
+            ? box.footprint
+            : box.size
+              ? [
+                  [-box.size[0] / 2, -box.size[2] / 2],
+                  [box.size[0] / 2, -box.size[2] / 2],
+                  [box.size[0] / 2, box.size[2] / 2],
+                  [-box.size[0] / 2, box.size[2] / 2],
+                ]
+              : [];
+
+        points.forEach((point) => {
+          if (point.length < 2) return;
+          const x = point[0];
+          const z = point[1];
+          if (typeof x !== "number" || typeof z !== "number") return;
+          const rx = x * cos - z * sin + box.position[0];
+          const rz = x * sin + z * cos + box.position[2];
+          candidatesX.push(rx);
+          candidatesZ.push(rz);
+        });
+      });
+
+      const snapDistance = buildingOptions.snapDistance;
+      for (const candidate of candidatesX) {
+        if (Math.abs(snapped.x - candidate) <= snapDistance) {
+          snapped.x = candidate;
+          break;
+        }
+      }
+      for (const candidate of candidatesZ) {
+        if (Math.abs(snapped.z - candidate) <= snapDistance) {
+          snapped.z = candidate;
+          break;
+        }
+      }
+    }
+
+    return snapped;
+  };
+
+  const getPlacementPoint = (event: any) => {
+    const rect = gl.domElement.getBoundingClientRect();
+    const x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+    const y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+    const mouse = new THREE.Vector2(x, y);
+    const raycaster = new THREE.Raycaster();
+    raycaster.setFromCamera(mouse, camera);
+    const intersects = raycaster.intersectObjects(scene.children, true);
+    if (!intersects.length) return null;
+
+    const hit = intersects[0];
+    if (!hit) return null;
+    const normal = hit.face
+      ? hit.face.normal.clone().applyMatrix3(new THREE.Matrix3().getNormalMatrix(hit.object.matrixWorld))
+      : null;
+
+    return {
+      point: snapPoint(hit.point),
+      normal,
+    };
+  };
+
+  const buildId = () =>
+    typeof crypto !== "undefined" && (crypto as any).randomUUID
+      ? (crypto as any).randomUUID()
+      : Math.random().toString(36).slice(2, 10);
+
   return (
     <mesh
       position={[0, 0, 0]}
@@ -13,19 +107,86 @@ export function RaycastCatcher({ accent }: { accent: string }) {
       visible={false}
       onPointerDown={(e: any) => {
         if (!creationMode) return;
-        // Get mouse position in normalized device coordinates
-        const rect = gl.domElement.getBoundingClientRect();
-        const x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
-        const y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
-        const mouse = new THREE.Vector2(x, y);
-        const raycaster = new THREE.Raycaster();
-        raycaster.setFromCamera(mouse, camera);
-        // Intersect with all meshes in the scene
-        const intersects = raycaster.intersectObjects(scene.children, true);
-        if (intersects.length > 0 && intersects[0]?.point) {
-          const point = intersects[0].point;
-          setBoxes((prev) => [...prev, { position: [point.x, point.y + 0.75, point.z], color: accent }]);
+        const placement = getPlacementPoint(e);
+        if (!placement) return;
+        const { point, normal } = placement;
+
+        if (creationTool === "building" && buildingOptions.shape === "custom" && buildingOptions.drawingMode) {
+          const nextPoints = [...drawingPoints, [point.x, point.y, point.z] as [number, number, number]];
+          setDrawingPoints(nextPoints);
+          if (e.detail >= 2 && nextPoints.length >= 3) {
+            const centerX = nextPoints.reduce((sum, p) => sum + p[0], 0) / nextPoints.length;
+            const centerZ = nextPoints.reduce((sum, p) => sum + p[2], 0) / nextPoints.length;
+            const basePoint = nextPoints[0];
+            if (!basePoint) return;
+            const baseY = basePoint[1];
+            const footprint = nextPoints.map((p) => [p[0] - centerX, p[2] - centerZ]) as [number, number][];
+            setDrawingPoints([]);
+            setBoxes((prev) => [
+              ...prev,
+              {
+                id: buildId(),
+                position: [centerX, baseY + buildingOptions.height / 2, centerZ],
+                color: accent,
+                type: "building",
+                footprint,
+                height: buildingOptions.height,
+                rotationY: 0,
+                thicknessRatio: buildingOptions.thicknessRatio,
+              },
+            ]);
+            setSelectedId(null);
+          }
+          return;
         }
+
+        if (creationTool === "building") {
+          const footprint = getFootprintPoints(
+            buildingOptions.shape,
+            buildingOptions.width,
+            buildingOptions.depth,
+            buildingOptions.thicknessRatio
+          );
+          const height = buildingOptions.height;
+          const isVerticalCandidate = !!normal && Math.abs(normal.y) < 0.35;
+          if (isVerticalCandidate && !buildingOptions.allowVertical) return;
+          const isVertical = isVerticalCandidate && buildingOptions.allowVertical;
+          const rotationY = isVertical ? Math.atan2(normal!.x, normal!.z) + Math.PI : 0;
+          const offset = isVertical ? buildingOptions.depth / 2 : 0;
+          const posX = point.x + (isVertical ? normal!.x * offset : 0);
+          const posZ = point.z + (isVertical ? normal!.z * offset : 0);
+          const posY = isVertical ? point.y : point.y + height / 2;
+
+          setBoxes((prev) => [
+            ...prev,
+            {
+              id: buildId(),
+              position: [posX, posY, posZ],
+              color: accent,
+              type: "building",
+              footprint,
+              height,
+              rotationY,
+              thicknessRatio: buildingOptions.thicknessRatio,
+            },
+          ]);
+          setSelectedId(null);
+          return;
+        }
+
+        const toolSize = [1.5, 1.5, 1.5] as const;
+        const yOffset = toolSize[1] / 2;
+        setBoxes((prev) => [
+          ...prev,
+          {
+            id: buildId(),
+            position: [point.x, point.y + yOffset, point.z],
+            color: accent,
+            size: [...toolSize],
+            type: creationTool,
+          },
+        ]);
+        setSelectedId(null);
       }}
     >
       <planeGeometry args={[1000, 1000]} />
