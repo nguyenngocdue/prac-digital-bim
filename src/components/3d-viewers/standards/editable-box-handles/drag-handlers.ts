@@ -526,21 +526,13 @@ export const createDragHandlers = (params: DragHandlerParams): DragHandlers => {
       }
       const deltaY = getHeightDeltaFromScreen(clientY);
       const nextHeight = Math.max(MIN_HEIGHT, heightStartRef.current - deltaY);
-      const nextCenterY = heightTopRef.current - nextHeight / 2;
-      translateLastYRef.current = nextCenterY;
       const nextBaseY = heightTopRef.current - nextHeight;
+      translateLastYRef.current = nextBaseY;
       verticesRef.current.forEach((point, index) => {
         const start = dragStartVerticesRef.current?.[index];
         if (!start) return;
         point.set(start.x, nextBaseY, start.z);
       });
-      if (dragStartTopVerticesRef.current && topVerticesRef.current) {
-        topVerticesRef.current.forEach((point, index) => {
-          const start = dragStartTopVerticesRef.current?.[index];
-          if (!start) return;
-          point.copy(start);
-        });
-      }
     } else if (dragIndexRef.current !== null) {
       const index = dragIndexRef.current;
       const nextPoint = intersection.current;
@@ -628,8 +620,9 @@ export const createDragHandlers = (params: DragHandlerParams): DragHandlers => {
           }
         }
         if (dragModeRef.current === "height-bottom" && onHeightChange && heightTopRef.current !== null) {
-          const nextHeight = heightTopRef.current - (translateLastYRef.current ?? heightTopRef.current);
-          const nextCenterY = translateLastYRef.current ?? heightTopRef.current - nextHeight / 2;
+          const baseY = translateLastYRef.current ?? heightTopRef.current;
+          const nextHeight = heightTopRef.current - baseY;
+          const nextCenterY = (heightTopRef.current + baseY) / 2;
           onHeightChange(nextHeight, nextCenterY);
         }
         if (dragModeRef.current === "translate" && onTranslate && translateLastYRef.current !== null) {

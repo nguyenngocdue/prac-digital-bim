@@ -12,7 +12,6 @@ import { mockCameras } from "@/data/mock-cameras";
 import { CameraData } from "@/types/camera";
 import {
   Activity,
-  Box,
   Camera,
   Grid3x3,
   Home,

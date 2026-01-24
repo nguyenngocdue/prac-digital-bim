@@ -10,7 +10,7 @@ import {
   useRef,
   useState,
 } from "react";
-import type { Object3D, Vector3 } from "three";
+import type { Group, Mesh, Object3D, Vector3 } from "three";
 import { useGltfModel } from "./gltf/use-gltf-model";
 import { GltfModel } from "./gltf/gltf-model";
 import { RoomLabelsLayer } from "./iot/room-labels-layer";
@@ -26,7 +26,6 @@ import { BuildingMesh } from "./standards/building-mesh";
 import { EditableBoxHandles } from "./standards/editable-box-handles";
 import { getFootprintPoints } from "./standards/building-shapes";
 import { getWorldFaceNormal, getWorldFacePoint, type FaceArrowState } from "./standards/face-normal-arrow";
-import * as THREE from "three";
 import {
   resetVertexColors,
   selectCoplanarFace,
@@ -80,7 +79,7 @@ const Scene = memo(forwardRef<SceneHandle, SceneProps>(({ boxes, accent, gltfUrl
   const [isTransforming, setIsTransforming] = useState(false);
   const [selectedObjectOverride, setSelectedObjectOverride] = useState<Object3D | null>(null);
   const [faceArrow, setFaceArrow] = useState<FaceArrowState | null>(null);
-  const boxesGroupRef = useRef<THREE.Group | null>(null);
+  const boxesGroupRef = useRef<Group | null>(null);
   const lastFaceRef = useRef<FaceSelection | null>(null);
   const initialCameraRef = useRef<{
     position: Vector3;
@@ -90,12 +89,12 @@ const Scene = memo(forwardRef<SceneHandle, SceneProps>(({ boxes, accent, gltfUrl
   const { camera, raycaster } = useThree();
 
   // Import Three.js components
-  const { Grid, OrbitControls, Select, TransformControls, Line } = require("@react-three/drei");
+  const { Grid, OrbitControls, Select, TransformControls, Line, GizmoHelper, GizmoViewcube } =
+    require("@react-three/drei");
   const { RaycastCatcher } = require("@/lib/raycast-catcher");
-  const THREE = require("three");
   const { PlaceholderBox } = require("./standards/placeholder-box");
   const { RoomBox } = require("./standards/room-box");
-  
+
   // Load GLTF model if URL is provided
   const { scene: gltfScene } = useGltfModel({ url: gltfUrl || null, resourceMap });
 
@@ -143,12 +142,12 @@ const Scene = memo(forwardRef<SceneHandle, SceneProps>(({ boxes, accent, gltfUrl
   const selectedFootprint =
     selectedBox?.type === "building"
       ? selectedBox.footprint ||
-        getFootprintPoints(
-          "rect",
-          selectedBox.width || 10,
-          selectedBox.depth || 10,
-          selectedBox.thicknessRatio || 0.3
-        )
+      getFootprintPoints(
+        "rect",
+        selectedBox.width || 10,
+        selectedBox.depth || 10,
+        selectedBox.thicknessRatio || 0.3
+      )
       : null;
   const selectedTopFootprint =
     selectedBox?.type === "building"
@@ -157,48 +156,48 @@ const Scene = memo(forwardRef<SceneHandle, SceneProps>(({ boxes, accent, gltfUrl
   const selectedFootprintVertices: [number, number, number][] | null =
     selectedBox?.type === "building" && selectedFootprint
       ? selectedFootprint.map(([x, z]) => {
-          const baseY = selectedBox.position[1] - (selectedBox.height || 0) / 2;
-          const [rx, rz] = rotateXZ(x, z, -selectedRotationY);
-          return [
-            rx + selectedBox.position[0],
-            baseY,
-            rz + selectedBox.position[2],
-          ] as [number, number, number];
-        })
+        const baseY = selectedBox.position[1] - (selectedBox.height || 0) / 2;
+        const [rx, rz] = rotateXZ(x, z, -selectedRotationY);
+        return [
+          rx + selectedBox.position[0],
+          baseY,
+          rz + selectedBox.position[2],
+        ] as [number, number, number];
+      })
       : null;
   const selectedRoomVertices: [number, number, number][] | null =
     selectedBox?.type === "room"
       ? selectedBox.vertices?.length
         ? selectedBox.vertices
         : [
-            [-(selectedBox.width || 3.66) / 2, 0, (selectedBox.depth || 3.66) / 2],
-            [(selectedBox.width || 3.66) / 2, 0, (selectedBox.depth || 3.66) / 2],
-            [(selectedBox.width || 3.66) / 2, 0, -(selectedBox.depth || 3.66) / 2],
-            [-(selectedBox.width || 3.66) / 2, 0, -(selectedBox.depth || 3.66) / 2],
-          ]
+          [-(selectedBox.width || 3.66) / 2, 0, (selectedBox.depth || 3.66) / 2],
+          [(selectedBox.width || 3.66) / 2, 0, (selectedBox.depth || 3.66) / 2],
+          [(selectedBox.width || 3.66) / 2, 0, -(selectedBox.depth || 3.66) / 2],
+          [-(selectedBox.width || 3.66) / 2, 0, -(selectedBox.depth || 3.66) / 2],
+        ]
       : null;
   const selectedRoomVerticesWorld: [number, number, number][] | null =
     selectedBox?.type === "room" && selectedRoomVertices
       ? selectedRoomVertices.map(([x, y, z]) => {
-          const [rx, rz] = rotateXZ(x, z, -selectedRotationY);
-          return [
-            rx + selectedBox.position[0],
-            y + selectedBox.position[1],
-            rz + selectedBox.position[2],
-          ] as [number, number, number];
-        })
+        const [rx, rz] = rotateXZ(x, z, -selectedRotationY);
+        return [
+          rx + selectedBox.position[0],
+          y + selectedBox.position[1],
+          rz + selectedBox.position[2],
+        ] as [number, number, number];
+      })
       : null;
   const selectedTopVertices: [number, number, number][] | null =
     selectedBox?.type === "building" && selectedTopFootprint
       ? selectedTopFootprint.map(([x, z]) => {
-          const topY = selectedBox.position[1] + (selectedBox.height || 0) / 2;
-          const [rx, rz] = rotateXZ(x, z, -selectedRotationY);
-          return [
-            rx + selectedBox.position[0],
-            topY,
-            rz + selectedBox.position[2],
-          ] as [number, number, number];
-        })
+        const topY = selectedBox.position[1] + (selectedBox.height || 0) / 2;
+        const [rx, rz] = rotateXZ(x, z, -selectedRotationY);
+        return [
+          rx + selectedBox.position[0],
+          topY,
+          rz + selectedBox.position[2],
+        ] as [number, number, number];
+      })
       : null;
 
   useEffect(() => {
@@ -338,7 +337,7 @@ const Scene = memo(forwardRef<SceneHandle, SceneProps>(({ boxes, accent, gltfUrl
                       setFaceArrow({ origin, direction: normal });
                     }
                     if (hit.faceIndex !== undefined) {
-                      const mesh = hit.object as THREE.Mesh;
+                      const mesh = hit.object as Mesh;
                       if (lastFaceRef.current) {
                         resetVertexColors(
                           lastFaceRef.current.mesh,
@@ -367,11 +366,11 @@ const Scene = memo(forwardRef<SceneHandle, SceneProps>(({ boxes, accent, gltfUrl
                 } else {
                   setSelectedId(box.id);
                 }
-              if (allowMove) {
-                setTransformMode("translate");
-              }
-            }}
-          >
+                if (allowMove) {
+                  setTransformMode("translate");
+                }
+              }}
+            >
               {box.type === "building" ? (
                 <BuildingMesh
                   color={box.color || accent}
@@ -420,10 +419,10 @@ const Scene = memo(forwardRef<SceneHandle, SceneProps>(({ boxes, accent, gltfUrl
       {(selectedObjectOverride || selectedObject) && (() => {
         const isRoomType = selectedBox?.type === "room";
         const isBuildingType = selectedBox?.type === "building";
-        
+
         // Don't show TransformControls for shape-editable types
         if (isRoomType || isBuildingType) return null;
-        
+
         return (
           <TransformControls
             object={selectedObjectOverride || selectedObject}
@@ -547,8 +546,8 @@ const Scene = memo(forwardRef<SceneHandle, SceneProps>(({ boxes, accent, gltfUrl
       {/* GLTF Model */}
       {gltfScene && (
         <Suspense fallback={null}>
-          <GltfModel 
-            scene={gltfScene} 
+          <GltfModel
+            scene={gltfScene}
             position={[0, 0, 0]}
             autoRotate={false}
           />
@@ -557,16 +556,16 @@ const Scene = memo(forwardRef<SceneHandle, SceneProps>(({ boxes, accent, gltfUrl
 
       {/* IoT Room Labels */}
       <RoomLabelsLayer rooms={mockRooms} visible={showRoomLabels} />
-      
+
       {/* IoT Connection Lines */}
       <RoomConnections rooms={mockRooms} visible={showRoomLabels} />
-      
+
       {/* IoT Room Markers on Floor */}
       <RoomMarkersLayer rooms={mockRooms} visible={showRoomLabels} />
 
       {/* Camera Markers */}
-      <CameraMarkersLayer 
-        cameras={cameras} 
+      <CameraMarkersLayer
+        cameras={cameras}
         visible={showCameras}
         onCameraClick={onCameraClick}
         selectedCameraId={selectedCameraId}
@@ -630,6 +629,16 @@ const Scene = memo(forwardRef<SceneHandle, SceneProps>(({ boxes, accent, gltfUrl
           cellThickness={0.3}
         />
       )}
+      <GizmoHelper alignment="top-right" margin={[80, 80]}>
+        <GizmoViewcube
+          faces={["right", "left", "top", "bottom", "front", "back"]}
+          opacity={0.96}
+          color="#9ca3af" // xám đậm hơn (slate-400)
+          strokeColor="#1f2937" // viền rất đậm
+          textColor="#020617" // chữ gần đen → tương phản cao
+          hoverColor="#6b7280" // hover xám đậm hơn
+        />
+      </GizmoHelper>
     </>
   );
 

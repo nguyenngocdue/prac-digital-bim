@@ -424,7 +424,7 @@ export const EditablePolygonHandles = ({
           updateTranslateHoverState(false);
         }
       }}
-      onPointerOut={(event) => {
+      onPointerOut={() => {
         if (isDragging) return;
         updateTranslateHoverState(false);
       }}
