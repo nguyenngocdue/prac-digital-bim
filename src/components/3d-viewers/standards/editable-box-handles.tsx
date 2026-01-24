@@ -3,28 +3,33 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { ThreeEvent, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import { Html } from "@react-three/drei";
-
-interface EditablePolygonHandlesProps {
-  vertices: [number, number, number][];
-  onVerticesChange: (vertices: [number, number, number][]) => void;
-  topVertices?: [number, number, number][];
-  onTopVerticesChange?: (vertices: [number, number, number][]) => void;
-  linkTopToBottom?: boolean;
-  height?: number;
-  onHeightChange?: (nextHeight: number, nextCenterY: number) => void;
-  centerY?: number;
-  onTranslate?: (nextCenterY: number) => void;
-  centerX?: number;
-  centerZ?: number;
-  onTranslateXZ?: (nextCenterX: number, nextCenterZ: number) => void;
-  onTranslateXYZ?: (nextCenterX: number, nextCenterY: number, nextCenterZ: number) => void;
-  color?: string;
-  showFill?: boolean;
-  showEdgeHandles?: boolean;
-  liveUpdate?: boolean;
-  onDragStart?: () => void;
-  onDragEnd?: () => void;
-}
+import {
+  shouldBlockTranslate,
+  updateTranslateHover,
+  updateLineLoop,
+  markAsHandle,
+} from "./editable-box-handles/utils";
+import type { EditablePolygonHandlesProps, DragMode, PendingTranslate } from "./editable-box-handles/types";
+import {
+  DEFAULT_POLYGON_COLOR,
+  MIN_HEIGHT,
+  DRAG_THRESHOLD,
+} from "./editable-box-handles/constants";
+import { createGeometries, disposeGeometries } from "./editable-box-handles/geometries";
+import { createMaterials, disposeMaterials } from "./editable-box-handles/materials";
+import {
+  updateVertexHandles,
+  updateEdgeHandles,
+  updateHeightHandle,
+  updateHandleHover,
+  updateAllHandles,
+} from "./editable-box-handles/mesh-updaters";
+import {
+  calculateArea,
+  calculateCentroid,
+  calculateAverageY,
+  createShapeFromVertices,
+} from "./editable-box-handles/calculations";
 
 export const EditablePolygonHandles = ({
   vertices,
@@ -40,7 +45,7 @@ export const EditablePolygonHandles = ({
   centerZ,
   onTranslateXZ,
   onTranslateXYZ,
-  color = "#3B82F6",
+  color = DEFAULT_POLYGON_COLOR,
   showFill = false,
   showEdgeHandles = true,
   liveUpdate = true,
@@ -49,10 +54,15 @@ export const EditablePolygonHandles = ({
 }: EditablePolygonHandlesProps) => {
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [draggedEdgeIndex, setDraggedEdgeIndex] = useState<number | null>(null);
+  const [isTranslateHover, setIsTranslateHover] = useState(false);
   const { camera, gl } = useThree();
+  
+  // Drag state refs
   const dragPlane = useRef(new THREE.Plane(new THREE.Vector3(0, 1, 0), 0));
   const intersection = useRef(new THREE.Vector3());
   const raycaster = useRef(new THREE.Raycaster());
+  
+  // Mesh refs
   const verticesRef = useRef<THREE.Vector3[]>([]);
   const topVerticesRef = useRef<THREE.Vector3[] | null>(null);
   const lineRef = useRef<THREE.LineLoop>(null);
@@ -69,26 +79,22 @@ export const EditablePolygonHandles = ({
   const heightHitRef = useRef<THREE.Mesh>(null);
   const bottomHeightHandleRef = useRef<THREE.Mesh>(null);
   const bottomHeightHitRef = useRef<THREE.Mesh>(null);
+  
+  // Drag operation refs
   const dragIndexRef = useRef<number | null>(null);
   const dragEdgeRef = useRef<number | null>(null);
   const dragStartRef = useRef<THREE.Vector3 | null>(null);
   const dragStartVerticesRef = useRef<THREE.Vector3[] | null>(null);
   const dragStartTopVerticesRef = useRef<THREE.Vector3[] | null>(null);
-  const dragModeRef = useRef<
-    | "vertex-bottom"
-    | "vertex-top"
-    | "edge-bottom"
-    | "edge-top"
-    | "height"
-    | "translate"
-    | "translate-xz"
-    | "translate-free"
-    | null
-  >(null);
+  const dragModeRef = useRef<DragMode>(null);
   const rafRef = useRef<number | null>(null);
+  
+  // Height drag refs
   const heightBaseRef = useRef<number | null>(null);
   const heightStartRef = useRef<number | null>(null);
   const heightTopRef = useRef<number | null>(null);
+  
+  // Translate refs
   const translateStartYRef = useRef<number | null>(null);
   const translateLastYRef = useRef<number | null>(null);
   const translateStartPointRef = useRef<THREE.Vector3 | null>(null);
@@ -96,50 +102,42 @@ export const EditablePolygonHandles = ({
   const translateLastXZRef = useRef<[number, number] | null>(null);
   const translateStartXYZRef = useRef<[number, number, number] | null>(null);
   const translateLastXYZRef = useRef<[number, number, number] | null>(null);
+  
+  // UI state refs
+  const dragDisposersRef = useRef<(() => void)[]>([]);
+  const hoverHandleRef = useRef<number | null>(null);
+  const hoverTopHandleRef = useRef<number | null>(null);
+  const translateHoverRef = useRef(false);
+  const pendingTranslateRef = useRef<PendingTranslate | null>(null);
 
-  const handleGeometry = useMemo(() => new THREE.SphereGeometry(0.28, 16, 16), []);
-  const hitGeometry = useMemo(() => new THREE.SphereGeometry(0.5, 8, 8), []);
-  const edgeGeometry = useMemo(() => new THREE.SphereGeometry(0.22, 12, 12), []);
-  const edgeHitGeometry = useMemo(() => new THREE.SphereGeometry(0.45, 8, 8), []);
-  const heightGeometry = useMemo(() => new THREE.SphereGeometry(0.24, 12, 12), []);
-  const handleMaterial = useMemo(
-    () =>
-      new THREE.MeshStandardMaterial({
-        color: "#FFD700",
-        emissive: "#FFD700",
-        emissiveIntensity: 0.8,
-      }),
+  const setCursor = (cursor: string) => {
+    gl.domElement.style.cursor = cursor;
+  };
+
+  const updateTranslateHoverState = (isActive: boolean) => {
+    translateHoverRef.current = isActive;
+    updateTranslateHover(isActive, isDragging, setIsTranslateHover, setCursor);
+  };
+
+  // Create geometries and materials using helper functions
+  const { handleGeometry, hitGeometry, edgeGeometry, edgeHitGeometry, heightGeometry } = useMemo(
+    () => createGeometries(),
     []
   );
-  const edgeMaterial = useMemo(
-    () =>
-      new THREE.MeshStandardMaterial({
-        color: "#60A5FA",
-        emissive: "#60A5FA",
-        emissiveIntensity: 0.6,
-      }),
-    []
-  );
-  const hitMaterial = useMemo(
-    () =>
-      new THREE.MeshBasicMaterial({
-        transparent: true,
-        opacity: 0,
-        depthWrite: false,
-      }),
+  
+  const { handleMaterial, edgeMaterial, hitMaterial } = useMemo(
+    () => createMaterials(),
     []
   );
 
   useEffect(() => {
     return () => {
-      handleGeometry.dispose();
-      hitGeometry.dispose();
-      edgeGeometry.dispose();
-      edgeHitGeometry.dispose();
-      heightGeometry.dispose();
-      handleMaterial.dispose();
-      edgeMaterial.dispose();
-      hitMaterial.dispose();
+      if (dragDisposersRef.current.length) {
+        dragDisposersRef.current.forEach((dispose) => dispose());
+        dragDisposersRef.current = [];
+      }
+      disposeGeometries(handleGeometry, hitGeometry, edgeGeometry, edgeHitGeometry, heightGeometry);
+      disposeMaterials(handleMaterial, edgeMaterial, hitMaterial);
       if (rafRef.current !== null) {
         cancelAnimationFrame(rafRef.current);
       }
@@ -155,6 +153,21 @@ export const EditablePolygonHandles = ({
     edgeMaterial,
   ]);
 
+  useEffect(() => {
+    markAsHandle(
+      handlesRef.current,
+      hitRef.current,
+      edgeHandlesRef.current,
+      edgeHitRef.current,
+      topHandlesRef.current,
+      topHitRef.current,
+      topEdgeHandlesRef.current,
+      topEdgeHitRef.current,
+      heightHitRef.current,
+      bottomHeightHitRef.current
+    );
+  }, []);
+
   const syncVertices = (
     next: [number, number, number][],
     nextTop?: [number, number, number][]
@@ -165,86 +178,34 @@ export const EditablePolygonHandles = ({
       : null;
     const points = verticesRef.current;
 
-    if (handlesRef.current && hitRef.current) {
-      const temp = new THREE.Matrix4();
-      points.forEach((point, index) => {
-        temp.makeTranslation(point.x, point.y, point.z);
-        handlesRef.current.setMatrixAt(index, temp);
-        hitRef.current?.setMatrixAt(index, temp);
-      });
-      handlesRef.current.instanceMatrix.needsUpdate = true;
-      hitRef.current.instanceMatrix.needsUpdate = true;
+    // Update bottom handles
+    updateVertexHandles(handlesRef.current, hitRef.current, points);
+
+    // Update top handles
+    if (topVerticesRef.current) {
+      updateVertexHandles(topHandlesRef.current, topHitRef.current, topVerticesRef.current);
     }
 
-    if (topVerticesRef.current && topHandlesRef.current && topHitRef.current) {
-      const temp = new THREE.Matrix4();
-      topVerticesRef.current.forEach((point, index) => {
-        temp.makeTranslation(point.x, point.y, point.z);
-        topHandlesRef.current.setMatrixAt(index, temp);
-        topHitRef.current?.setMatrixAt(index, temp);
-      });
-      topHandlesRef.current.instanceMatrix.needsUpdate = true;
-      topHitRef.current.instanceMatrix.needsUpdate = true;
+    // Update edge handles
+    updateEdgeHandles(edgeHandlesRef.current, edgeHitRef.current, points);
+
+    // Update top edge handles
+    if (topVerticesRef.current) {
+      updateEdgeHandles(topEdgeHandlesRef.current, topEdgeHitRef.current, topVerticesRef.current);
     }
 
-    if (edgeHandlesRef.current && edgeHitRef.current) {
-      const temp = new THREE.Matrix4();
-      const count = points.length;
-      for (let i = 0; i < count; i += 1) {
-        const nextIndex = (i + 1) % count;
-        const mid = new THREE.Vector3()
-          .addVectors(points[i]!, points[nextIndex]!)
-          .multiplyScalar(0.5);
-        temp.makeTranslation(mid.x, mid.y, mid.z);
-        edgeHandlesRef.current.setMatrixAt(i, temp);
-        edgeHitRef.current.setMatrixAt(i, temp);
-      }
-      edgeHandlesRef.current.instanceMatrix.needsUpdate = true;
-      edgeHitRef.current.instanceMatrix.needsUpdate = true;
+    // Update height handles
+    if (topVerticesRef.current) {
+      updateHeightHandle(heightHandleRef.current, heightHitRef.current, topVerticesRef.current);
     }
+    updateHeightHandle(bottomHeightHandleRef.current, bottomHeightHitRef.current, points);
 
-    if (topVerticesRef.current && topEdgeHandlesRef.current && topEdgeHitRef.current) {
-      const temp = new THREE.Matrix4();
-      const count = topVerticesRef.current.length;
-      for (let i = 0; i < count; i += 1) {
-        const nextIndex = (i + 1) % count;
-        const mid = new THREE.Vector3()
-          .addVectors(topVerticesRef.current[i]!, topVerticesRef.current[nextIndex]!)
-          .multiplyScalar(0.5);
-        temp.makeTranslation(mid.x, mid.y, mid.z);
-        topEdgeHandlesRef.current.setMatrixAt(i, temp);
-        topEdgeHitRef.current.setMatrixAt(i, temp);
-      }
-      topEdgeHandlesRef.current.instanceMatrix.needsUpdate = true;
-      topEdgeHitRef.current.instanceMatrix.needsUpdate = true;
-    }
-
-    if (topVerticesRef.current && heightHandleRef.current && heightHitRef.current) {
-      const center = topVerticesRef.current.reduce(
-        (acc, point) => acc.add(point),
-        new THREE.Vector3()
-      );
-      center.multiplyScalar(1 / topVerticesRef.current.length);
-      heightHandleRef.current.position.copy(center);
-      heightHitRef.current.position.copy(center);
-    }
-    if (bottomHeightHandleRef.current && bottomHeightHitRef.current) {
-      const center = points.reduce((acc, point) => acc.add(point), new THREE.Vector3());
-      center.multiplyScalar(1 / points.length);
-      bottomHeightHandleRef.current.position.copy(center);
-      bottomHeightHitRef.current.position.copy(center);
-    }
-
+    // Update line
     if (lineRef.current) {
-      const geometry = lineRef.current.geometry as THREE.BufferGeometry;
-      const position = geometry.getAttribute("position") as THREE.BufferAttribute;
-      points.forEach((point, i) => {
-        position.setXYZ(i, point.x, point.y, point.z);
-      });
-      position.needsUpdate = true;
-      geometry.computeBoundingSphere();
+      updateLineLoop(lineRef.current, points);
     }
 
+    // Update fill
     if (fillRef.current) {
       const shape = new THREE.Shape(points.map((p) => new THREE.Vector2(p.x, p.z)));
       const nextGeometry = new THREE.ShapeGeometry(shape);
@@ -258,13 +219,20 @@ export const EditablePolygonHandles = ({
     syncVertices(vertices, topVertices);
   }, [vertices, topVertices]);
 
+  const disposeDragListeners = () => {
+    if (!dragDisposersRef.current.length) return;
+    dragDisposersRef.current.forEach((dispose) => dispose());
+    dragDisposersRef.current = [];
+  };
+
   const finalizeDrag = (pointerId?: number) => {
     if (
       dragIndexRef.current === null &&
       dragEdgeRef.current === null &&
       dragModeRef.current !== "translate" &&
       dragModeRef.current !== "translate-xz" &&
-      dragModeRef.current !== "translate-free"
+      dragModeRef.current !== "translate-free" &&
+      pendingTranslateRef.current === null
     )
       return;
     setDraggedIndex(null);
@@ -290,6 +258,7 @@ export const EditablePolygonHandles = ({
       gl.domElement.releasePointerCapture(pointerId);
     }
     onDragEnd?.();
+    disposeDragListeners();
     if (lastMode !== "translate-xz" && lastMode !== "translate-free") {
       const nextVertices = verticesRef.current.map((v) => [v.x, v.y, v.z] as [number, number, number]);
       onVerticesChange(nextVertices);
@@ -318,6 +287,7 @@ export const EditablePolygonHandles = ({
       cancelAnimationFrame(rafRef.current);
       rafRef.current = null;
     }
+    pendingTranslateRef.current = null;
   };
 
   const startVertexDrag = (
@@ -340,10 +310,12 @@ export const EditablePolygonHandles = ({
     gl.domElement.style.cursor = "grabbing";
     gl.domElement.setPointerCapture(event.pointerId);
     onDragStart?.();
+    attachDragListeners();
   };
 
   const handlePointerDown = (index: number, event: ThreeEvent<PointerEvent>) => {
     const vertex = vertices[index];
+    if (!vertex) return;
     startVertexDrag(index, vertex[1], event, "vertex-bottom");
   };
 
@@ -374,6 +346,7 @@ export const EditablePolygonHandles = ({
     gl.domElement.style.cursor = "grabbing";
     gl.domElement.setPointerCapture(event.pointerId);
     onDragStart?.();
+    attachDragListeners();
   };
 
   const handleEdgePointerDownTop = (index: number, event: ThreeEvent<PointerEvent>) => {
@@ -396,6 +369,7 @@ export const EditablePolygonHandles = ({
     gl.domElement.style.cursor = "grabbing";
     gl.domElement.setPointerCapture(event.pointerId);
     onDragStart?.();
+    attachDragListeners();
   };
 
   const handlePointerMoveDom = (event: PointerEvent) => {
@@ -406,7 +380,8 @@ export const EditablePolygonHandles = ({
       dragModeRef.current !== "translate" &&
       dragModeRef.current !== "height-bottom" &&
       dragModeRef.current !== "translate-xz" &&
-      dragModeRef.current !== "translate-free"
+      dragModeRef.current !== "translate-free" &&
+      pendingTranslateRef.current === null
     )
       return;
     const rect = gl.domElement.getBoundingClientRect();
@@ -416,6 +391,25 @@ export const EditablePolygonHandles = ({
     raycaster.current.setFromCamera(mouse, camera);
     if (!raycaster.current.ray.intersectPlane(dragPlane.current, intersection.current)) {
       return;
+    }
+    if (pendingTranslateRef.current && dragModeRef.current !== "translate-free") {
+      const dx = event.clientX - pendingTranslateRef.current.startClientX;
+      const dy = event.clientY - pendingTranslateRef.current.startClientY;
+      if (Math.hypot(dx, dy) < DRAG_THRESHOLD) return;
+      dragModeRef.current = "translate-free";
+      dragIndexRef.current = 0;
+      setDraggedIndex(0);
+      const [centerX, centerY, centerZ] = pendingTranslateRef.current.center;
+      dragPlane.current.setFromNormalAndCoplanarPoint(
+        camera.getWorldDirection(new THREE.Vector3()).normalize(),
+        new THREE.Vector3(centerX, centerY, centerZ)
+      );
+      if (raycaster.current.ray.intersectPlane(dragPlane.current, intersection.current)) {
+        translateStartPointRef.current = intersection.current.clone();
+      }
+      translateStartXYZRef.current = [centerX, centerY, centerZ];
+      translateLastXYZRef.current = [centerX, centerY, centerZ];
+      pendingTranslateRef.current = null;
     }
     if (dragModeRef.current === "translate-free") {
       if (!translateStartPointRef.current || !translateStartXYZRef.current) return;
@@ -463,7 +457,7 @@ export const EditablePolygonHandles = ({
         return;
       }
       const deltaY = intersection.current.y - (dragStartRef.current?.y || 0);
-      const nextHeight = Math.max(0.5, heightStartRef.current + deltaY);
+      const nextHeight = Math.max(MIN_HEIGHT, heightStartRef.current + deltaY);
       const baseY = heightBaseRef.current;
       topVerticesRef.current.forEach((point, index) => {
         const start = dragStartTopVerticesRef.current?.[index];
@@ -479,7 +473,7 @@ export const EditablePolygonHandles = ({
         return;
       }
       const deltaY = intersection.current.y - (dragStartRef.current?.y || 0);
-      const nextHeight = Math.max(0.5, heightStartRef.current - deltaY);
+      const nextHeight = Math.max(MIN_HEIGHT, heightStartRef.current - deltaY);
       const nextCenterY = heightTopRef.current - nextHeight / 2;
       translateLastYRef.current = nextCenterY;
     } else if (dragIndexRef.current !== null) {
@@ -508,72 +502,39 @@ export const EditablePolygonHandles = ({
       const delta = new THREE.Vector3().subVectors(intersection.current, dragStartRef.current);
       if (dragModeRef.current === "edge-top" && dragStartTopVerticesRef.current && topVerticesRef.current) {
         const startTop = dragStartTopVerticesRef.current;
-        topVerticesRef.current[edgeIndex].copy(startTop[edgeIndex]!).add(delta);
-        topVerticesRef.current[nextIndex].copy(startTop[nextIndex]!).add(delta);
+        const topEdge = topVerticesRef.current[edgeIndex];
+        const topNext = topVerticesRef.current[nextIndex];
+        if (topEdge && startTop[edgeIndex]) topEdge.copy(startTop[edgeIndex]).add(delta);
+        if (topNext && startTop[nextIndex]) topNext.copy(startTop[nextIndex]).add(delta);
       } else {
         const start = dragStartVerticesRef.current;
-        verticesRef.current[edgeIndex].copy(start[edgeIndex]!).add(delta);
-        verticesRef.current[nextIndex].copy(start[nextIndex]!).add(delta);
+        const bottomEdge = verticesRef.current[edgeIndex];
+        const bottomNext = verticesRef.current[nextIndex];
+        if (bottomEdge && start[edgeIndex]) bottomEdge.copy(start[edgeIndex]).add(delta);
+        if (bottomNext && start[nextIndex]) bottomNext.copy(start[nextIndex]).add(delta);
         if (linkTopToBottom && dragStartTopVerticesRef.current && topVerticesRef.current) {
           const startTop = dragStartTopVerticesRef.current;
-          topVerticesRef.current[edgeIndex].copy(startTop[edgeIndex]!).add(delta);
-          topVerticesRef.current[nextIndex].copy(startTop[nextIndex]!).add(delta);
+          const topEdge = topVerticesRef.current[edgeIndex];
+          const topNext = topVerticesRef.current[nextIndex];
+          if (topEdge && startTop[edgeIndex]) topEdge.copy(startTop[edgeIndex]).add(delta);
+          if (topNext && startTop[nextIndex]) topNext.copy(startTop[nextIndex]).add(delta);
         }
       }
     }
 
     const points = verticesRef.current;
-    if (handlesRef.current && hitRef.current) {
-      const temp = new THREE.Matrix4();
-      points.forEach((p, i) => {
-        temp.makeTranslation(p.x, p.y, p.z);
-        handlesRef.current.setMatrixAt(i, temp);
-        hitRef.current.setMatrixAt(i, temp);
-      });
-      handlesRef.current.instanceMatrix.needsUpdate = true;
-      hitRef.current.instanceMatrix.needsUpdate = true;
-    }
+    
+    // Update all handles during drag
+    updateAllHandles(handlesRef.current, hitRef.current, edgeHandlesRef.current, edgeHitRef.current, points);
 
-    if (topVerticesRef.current && topHandlesRef.current && topHitRef.current) {
-      const temp = new THREE.Matrix4();
-      topVerticesRef.current?.forEach((p, i) => {
-        temp.makeTranslation(p.x, p.y, p.z);
-        topHandlesRef.current.setMatrixAt(i, temp);
-        topHitRef.current.setMatrixAt(i, temp);
-      });
-      topHandlesRef.current.instanceMatrix.needsUpdate = true;
-      topHitRef.current.instanceMatrix.needsUpdate = true;
-    }
-
-    if (topVerticesRef.current && topEdgeHandlesRef.current && topEdgeHitRef.current) {
-      const temp = new THREE.Matrix4();
-      const count = topVerticesRef.current.length;
-      for (let i = 0; i < count; i += 1) {
-        const nextIndex = (i + 1) % count;
-        const mid = new THREE.Vector3()
-          .addVectors(topVerticesRef.current[i]!, topVerticesRef.current[nextIndex]!)
-          .multiplyScalar(0.5);
-        temp.makeTranslation(mid.x, mid.y, mid.z);
-        topEdgeHandlesRef.current.setMatrixAt(i, temp);
-        topEdgeHitRef.current.setMatrixAt(i, temp);
-      }
-      topEdgeHandlesRef.current.instanceMatrix.needsUpdate = true;
-      topEdgeHitRef.current.instanceMatrix.needsUpdate = true;
-    }
-    if (edgeHandlesRef.current && edgeHitRef.current) {
-      const temp = new THREE.Matrix4();
-      const count = points.length;
-      for (let i = 0; i < count; i += 1) {
-        const nextIndex = (i + 1) % count;
-        const mid = new THREE.Vector3()
-          .addVectors(points[i]!, points[nextIndex]!)
-          .multiplyScalar(0.5);
-        temp.makeTranslation(mid.x, mid.y, mid.z);
-        edgeHandlesRef.current.setMatrixAt(i, temp);
-        edgeHitRef.current.setMatrixAt(i, temp);
-      }
-      edgeHandlesRef.current.instanceMatrix.needsUpdate = true;
-      edgeHitRef.current.instanceMatrix.needsUpdate = true;
+    if (topVerticesRef.current) {
+      updateAllHandles(
+        topHandlesRef.current,
+        topHitRef.current,
+        topEdgeHandlesRef.current,
+        topEdgeHitRef.current,
+        topVerticesRef.current
+      );
     }
 
     if (lineRef.current) {
@@ -630,123 +591,101 @@ export const EditablePolygonHandles = ({
     finalizeDrag(event.pointerId);
   };
   
-  // Calculate distances between consecutive vertices
-  const getDistance = (v1: [number, number, number], v2: [number, number, number]) => {
-    const dx = v2[0] - v1[0];
-    const dy = v2[1] - v1[1];
-    const dz = v2[2] - v1[2];
-    return Math.sqrt(dx * dx + dy * dy + dz * dz);
-  };
-  
-  // Calculate polygon area (2D projection on XZ plane)
-  const calculateArea = () => {
-    if (vertices.length < 3) return 0;
-    let area = 0;
-    for (let i = 0; i < vertices.length; i++) {
-      const j = (i + 1) % vertices.length;
-      area += vertices[i][0] * vertices[j][2];
-      area -= vertices[j][0] * vertices[i][2];
-    }
-    return Math.abs(area / 2);
-  };
-  
   const isDragging = draggedIndex !== null || draggedEdgeIndex !== null;
   const hasTop = Boolean(topVertices && topVertices.length === vertices.length);
-  const topFaceShape = useMemo(() => {
-    if (!hasTop || !topVertices) return null;
-    const shape = new THREE.Shape();
-    shape.moveTo(topVertices[0]![0], topVertices[0]![2]);
-    for (let i = 1; i < topVertices.length; i += 1) {
-      shape.lineTo(topVertices[i]![0], topVertices[i]![2]);
-    }
-    shape.closePath();
-    return shape;
-  }, [hasTop, topVertices]);
-  const topFaceY = useMemo(() => {
-    if (!hasTop || !topVertices) return 0;
-    return topVertices.reduce((sum, v) => sum + v[1], 0) / topVertices.length;
-  }, [hasTop, topVertices]);
-  const bottomFaceShape = useMemo(() => {
-    if (vertices.length < 3) return null;
-    const shape = new THREE.Shape();
-    shape.moveTo(vertices[0]![0], vertices[0]![2]);
-    for (let i = 1; i < vertices.length; i += 1) {
-      shape.lineTo(vertices[i]![0], vertices[i]![2]);
-    }
-    shape.closePath();
-    return shape;
-  }, [vertices]);
-  const bottomFaceY = useMemo(() => {
-    if (vertices.length === 0) return 0;
-    return vertices.reduce((sum, v) => sum + v[1], 0) / vertices.length;
-  }, [vertices]);
-  const bottomCentroid = useMemo(() => {
-    if (vertices.length < 3) {
-      return new THREE.Vector3(0, bottomFaceY, 0);
-    }
-    let centroidX = 0;
-    let centroidZ = 0;
-    let signedArea = 0;
-    for (let i = 0; i < vertices.length; i += 1) {
-      const j = (i + 1) % vertices.length;
-      const x0 = vertices[i]![0];
-      const z0 = vertices[i]![2];
-      const x1 = vertices[j]![0];
-      const z1 = vertices[j]![2];
-      const cross = x0 * z1 - x1 * z0;
-      signedArea += cross;
-      centroidX += (x0 + x1) * cross;
-      centroidZ += (z0 + z1) * cross;
-    }
-    signedArea *= 0.5;
-    if (Math.abs(signedArea) > 1e-6) {
-      centroidX /= 6 * signedArea;
-      centroidZ /= 6 * signedArea;
-    } else {
-      centroidX = vertices.reduce((sum, v) => sum + v[0], 0) / vertices.length;
-      centroidZ = vertices.reduce((sum, v) => sum + v[2], 0) / vertices.length;
-    }
-    return new THREE.Vector3(centroidX, bottomFaceY, centroidZ);
-  }, [vertices, bottomFaceY]);
+  
+  // Calculate face shapes and positions
+  const topFaceShape = useMemo(
+    () => hasTop && topVertices ? createShapeFromVertices(topVertices) : null,
+    [hasTop, topVertices]
+  );
+  
+  const topFaceY = useMemo(
+    () => hasTop && topVertices ? calculateAverageY(topVertices) : 0,
+    [hasTop, topVertices]
+  );
+  
+  const bottomFaceShape = useMemo(
+    () => createShapeFromVertices(vertices),
+    [vertices]
+  );
+  
+  const bottomFaceY = useMemo(
+    () => calculateAverageY(vertices),
+    [vertices]
+  );
+  
+  const bottomCentroid = useMemo(
+    () => calculateCentroid(vertices, bottomFaceY),
+    [vertices, bottomFaceY]
+  );
 
   const startTranslateFree = (event: ThreeEvent<PointerEvent>) => {
     if (centerX === undefined || centerY === undefined || centerZ === undefined) return;
+    if (shouldBlockTranslate(event)) return;
     event.stopPropagation();
-    dragModeRef.current = "translate-free";
-    dragIndexRef.current = 0;
-    setDraggedIndex(0);
+    pendingTranslateRef.current = {
+      pointerId: event.pointerId,
+      startClientX: event.clientX,
+      startClientY: event.clientY,
+      center: [centerX, centerY, centerZ],
+    };
     dragStartVerticesRef.current = verticesRef.current.map((v) => v.clone());
     dragStartTopVerticesRef.current = topVerticesRef.current
       ? topVerticesRef.current.map((v) => v.clone())
       : null;
-    dragPlane.current.setFromNormalAndCoplanarPoint(
-      camera.getWorldDirection(new THREE.Vector3()).normalize(),
-      new THREE.Vector3(centerX, centerY, centerZ)
-    );
-    if (event.ray.intersectPlane(dragPlane.current, intersection.current)) {
-      translateStartPointRef.current = intersection.current.clone();
-    }
-    translateStartXYZRef.current = [centerX, centerY, centerZ];
-    translateLastXYZRef.current = [centerX, centerY, centerZ];
-    gl.domElement.style.cursor = "grabbing";
+    setCursor("grabbing");
     gl.domElement.setPointerCapture(event.pointerId);
     onDragStart?.();
+    attachDragListeners();
   };
 
-  useEffect(() => {
-    if (!isDragging) return;
+  const attachDragListeners = () => {
+    if (dragDisposersRef.current.length) return;
     const target = gl.domElement;
-    target.addEventListener("pointermove", handlePointerMoveDom);
     const handlePointerUpDom = () => finalizeDrag();
+    const handleWindowBlur = () => finalizeDrag();
+    target.addEventListener("pointermove", handlePointerMoveDom);
     target.addEventListener("pointerup", handlePointerUpDom);
-    return () => {
-      target.removeEventListener("pointermove", handlePointerMoveDom);
-      target.removeEventListener("pointerup", handlePointerUpDom);
-    };
-  }, [gl.domElement, isDragging]);
+    target.addEventListener("pointercancel", handlePointerUpDom);
+    target.addEventListener("pointerleave", handlePointerUpDom);
+    target.addEventListener("lostpointercapture", handlePointerUpDom);
+    window.addEventListener("pointerup", handlePointerUpDom);
+    window.addEventListener("pointercancel", handlePointerUpDom);
+    window.addEventListener("blur", handleWindowBlur);
+    dragDisposersRef.current = [
+      () => target.removeEventListener("pointermove", handlePointerMoveDom),
+      () => target.removeEventListener("pointerup", handlePointerUpDom),
+      () => target.removeEventListener("pointercancel", handlePointerUpDom),
+      () => target.removeEventListener("pointerleave", handlePointerUpDom),
+      () => target.removeEventListener("lostpointercapture", handlePointerUpDom),
+      () => window.removeEventListener("pointerup", handlePointerUpDom),
+      () => window.removeEventListener("pointercancel", handlePointerUpDom),
+      () => window.removeEventListener("blur", handleWindowBlur),
+    ];
+  };
 
   return (
-    <group>
+    <group
+      onPointerMove={(event) => {
+        if (isDragging) return;
+        const isOverHandle = event.intersections?.some(
+          (hit) => hit.object?.userData?.isHandle
+        );
+        const isOverFace = event.intersections?.some(
+          (hit) => hit.object?.userData?.isTranslateFace
+        );
+        if (!isOverHandle && isOverFace) {
+          updateTranslateHoverState(true);
+        } else if (translateHoverRef.current) {
+          updateTranslateHoverState(false);
+        }
+      }}
+      onPointerOut={() => {
+        if (isDragging) return;
+        updateTranslateHoverState(false);
+      }}
+    >
       {/* Polygon shape */}
       {vertices.length >= 2 && (
         <>
@@ -770,8 +709,8 @@ export const EditablePolygonHandles = ({
             <bufferGeometry>
               <bufferAttribute
                 attach="attributes-position"
+                args={[new Float32Array(vertices.flat()), 3]}
                 count={vertices.length}
-                array={new Float32Array(vertices.flat())}
                 itemSize={3}
               />
             </bufferGeometry>
@@ -795,12 +734,16 @@ export const EditablePolygonHandles = ({
         onPointerUp={handlePointerUp}
         onPointerOver={(event) => {
           event.stopPropagation();
+          if (event.instanceId != null) {
+            updateHandleHover(handlesRef.current, hoverHandleRef, event.instanceId);
+          }
           if (draggedIndex === null) {
-            gl.domElement.style.cursor = "grab";
+            gl.domElement.style.cursor = "pointer";
           }
         }}
         onPointerOut={(event) => {
           event.stopPropagation();
+          updateHandleHover(handlesRef.current, hoverHandleRef, null);
           if (draggedIndex === null) {
             gl.domElement.style.cursor = "auto";
           }
@@ -812,6 +755,7 @@ export const EditablePolygonHandles = ({
             <mesh
               position={[0, topFaceY, 0]}
               rotation={[-Math.PI / 2, 0, 0]}
+              userData={{ isTranslateFace: true }}
               onPointerDown={startTranslateFree}
               onPointerUp={handlePointerUp}
             >
@@ -840,12 +784,16 @@ export const EditablePolygonHandles = ({
             onPointerUp={handlePointerUp}
             onPointerOver={(event) => {
               event.stopPropagation();
+              if (event.instanceId != null) {
+                updateHandleHover(topHandlesRef.current, hoverTopHandleRef, event.instanceId);
+              }
               if (draggedIndex === null) {
-                gl.domElement.style.cursor = "grab";
+                gl.domElement.style.cursor = "pointer";
               }
             }}
             onPointerOut={(event) => {
               event.stopPropagation();
+              updateHandleHover(topHandlesRef.current, hoverTopHandleRef, null);
               if (draggedIndex === null) {
                 gl.domElement.style.cursor = "auto";
               }
@@ -882,6 +830,7 @@ export const EditablePolygonHandles = ({
                   gl.domElement.style.cursor = "grabbing";
                   gl.domElement.setPointerCapture(event.pointerId);
                   onDragStart?.();
+                  attachDragListeners();
                 }}
                 onPointerUp={handlePointerUp}
                 onPointerOver={(event) => {
@@ -903,6 +852,7 @@ export const EditablePolygonHandles = ({
         <mesh
           position={[0, bottomFaceY, 0]}
           rotation={[-Math.PI / 2, 0, 0]}
+          userData={{ isTranslateFace: true }}
           onPointerDown={startTranslateFree}
           onPointerUp={handlePointerUp}
         >
@@ -917,35 +867,15 @@ export const EditablePolygonHandles = ({
           />
         </mesh>
       )}
-      {bottomFaceShape && (
-        <mesh
-          position={[0, bottomFaceY, 0]}
-          rotation={[-Math.PI / 2, 0, 0]}
-          onPointerDown={startTranslateFree}
-          onPointerUp={handlePointerUp}
-          onPointerOver={(event) => {
-            event.stopPropagation();
-            if (!isDragging) {
-              gl.domElement.style.cursor = "grab";
-            }
-          }}
-          onPointerOut={(event) => {
-            event.stopPropagation();
-            if (!isDragging) {
-              gl.domElement.style.cursor = "auto";
-            }
-          }}
-        >
-          <shapeGeometry args={[bottomFaceShape]} />
-          <meshBasicMaterial
-            transparent
-            opacity={0}
-            colorWrite={false}
-            depthTest={false}
-            depthWrite={false}
-            side={THREE.DoubleSide}
-          />
-        </mesh>
+      {bottomFaceShape && isTranslateHover && (
+        <Html position={[bottomCentroid.x, bottomCentroid.y, bottomCentroid.z]} center>
+          <div className="pointer-events-none flex h-7 w-7 items-center justify-center rounded-full border border-white/30 bg-black/60 text-white shadow-md">
+            <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.6">
+              <path d="M12 3v18M3 12h18" strokeLinecap="round" />
+              <path d="M12 3l-2 2M12 3l2 2M12 21l-2-2M12 21l2-2M3 12l2-2M3 12l2 2M21 12l-2-2M21 12l-2 2" strokeLinecap="round" />
+            </svg>
+          </div>
+        </Html>
       )}
         </>
       )}
@@ -1033,6 +963,7 @@ export const EditablePolygonHandles = ({
                   gl.domElement.style.cursor = "grabbing";
                   gl.domElement.setPointerCapture(event.pointerId);
                   onDragStart?.();
+                  attachDragListeners();
                 }}
                 onPointerUp={handlePointerUp}
                 onPointerOver={(event) => {
@@ -1055,33 +986,11 @@ export const EditablePolygonHandles = ({
       
       {/* Area label in center */}
       {vertices.length >= 3 && !isDragging && (() => {
-        const area = calculateArea();
-        let centerX = 0;
-        let centerZ = 0;
-        let signedArea = 0;
-        for (let i = 0; i < vertices.length; i += 1) {
-          const j = (i + 1) % vertices.length;
-          const x0 = vertices[i]![0];
-          const z0 = vertices[i]![2];
-          const x1 = vertices[j]![0];
-          const z1 = vertices[j]![2];
-          const cross = x0 * z1 - x1 * z0;
-          signedArea += cross;
-          centerX += (x0 + x1) * cross;
-          centerZ += (z0 + z1) * cross;
-        }
-        signedArea *= 0.5;
-        if (Math.abs(signedArea) > 1e-6) {
-          centerX /= 6 * signedArea;
-          centerZ /= 6 * signedArea;
-        } else {
-          centerX = vertices.reduce((sum, v) => sum + v[0], 0) / vertices.length;
-          centerZ = vertices.reduce((sum, v) => sum + v[2], 0) / vertices.length;
-        }
-        const centerY = vertices.reduce((sum, v) => sum + v[1], 0) / vertices.length;
+        const area = calculateArea(vertices);
+        const centroid = calculateCentroid(vertices, bottomFaceY);
         
         return (
-          <Html position={[centerX, centerY, centerZ]} center distanceFactor={10}>
+          <Html position={[centroid.x, centroid.y, centroid.z]} center distanceFactor={10}>
             <div className="rounded bg-blue-500 px-3 py-2 text-sm font-bold text-white pointer-events-none shadow-lg">
               {area.toFixed(1)} m²
             </div>

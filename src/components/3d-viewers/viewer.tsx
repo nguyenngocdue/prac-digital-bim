@@ -195,8 +195,13 @@ const Viewer = ({
 
     // Listen for Escape key to exit creation mode and Delete to remove selection
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && creationMode) {
-        setCreationMode(false);
+      if (e.key === "Escape") {
+        if (creationMode) {
+          setCreationMode(false);
+        }
+        if (selectedId) {
+          setSelectedId(null);
+        }
       }
       if ((e.key === "Delete" || e.key === "Backspace") && selectedId) {
         setBoxes((prev) => prev.filter((box) => box.id !== selectedId));
