@@ -6,6 +6,7 @@ import { useState, useEffect, type FC } from "react";
 import { cn } from "@/lib/utils";
 import ThemeToggle from "./theme-toggle";
 import { useLanguage } from "@/contexts/language-context";
+import { motion } from "framer-motion";
 import {
   Home,
   FolderKanban,
@@ -73,7 +74,7 @@ export const UnifiedHeader: FC = () => {
   return (
     <header
       className={cn(
-        "sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 transition-all duration-200",
+        "sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60",
         isScrolled && "shadow-sm"
       )}
     >
@@ -96,7 +97,7 @@ export const UnifiedHeader: FC = () => {
           </Link>
 
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center gap-1">
+          <nav className="hidden md:flex items-center gap-6 border-b border-border/70">
             {NAVIGATION_ITEMS.map((item) => {
               const isActive = isActiveRoute(item.href);
               return (
@@ -104,14 +105,21 @@ export const UnifiedHeader: FC = () => {
                   key={item.href}
                   href={item.href}
                   className={cn(
-                    "flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors",
+                    "relative flex items-center gap-2 px-1 pb-3 pt-2 text-sm font-medium transition-none transform-none",
                     isActive
-                      ? "bg-primary text-primary-foreground"
-                      : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                      ? "text-foreground"
+                      : "text-muted-foreground hover:text-foreground"
                   )}
                 >
                   {item.icon}
                   <span>{t(item.labelKey)}</span>
+                  {isActive && (
+                    <motion.span
+                      layoutId="nav-underline"
+                      className="pointer-events-none absolute bottom-0 left-0 h-0.5 w-full rounded-full bg-linear-to-r from-sky-400/20 via-sky-400 to-sky-400/20 shadow-[0_0_10px_rgba(56,189,248,0.6)]"
+                      transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                    />
+                  )}
                 </Link>
               );
             })}
@@ -122,18 +130,18 @@ export const UnifiedHeader: FC = () => {
             {/* Language Toggle */}
             <button
               onClick={() => setLanguage(language === "en" ? "vi" : "en")}
-              className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+              className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-none transform-none hover:bg-accent hover:text-accent-foreground"
             >
               <Languages className="h-4 w-4" />
               <span className="hidden sm:inline">{language === "en" ? "VI" : "EN"}</span>
             </button>
 
             {/* Theme Toggle */}
-            <ThemeToggle size="icon-sm" />
+            <ThemeToggle size="icon-sm" className="transition-none transform-none" />
 
             {/* Mobile Menu Button */}
             <button
-              className="flex items-center justify-center rounded-lg p-2 text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground md:hidden"
+              className="flex items-center justify-center rounded-lg p-2 text-muted-foreground transition-none transform-none hover:bg-accent hover:text-accent-foreground md:hidden"
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             >
               {isMobileMenuOpen ? (

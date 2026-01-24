@@ -43,8 +43,9 @@ interface SceneProps {
 const Scene = memo(({ boxes, accent, gltfUrl, resourceMap, showRoomLabels = false, cameras = [], showCameras = false, onCameraClick, selectedCameraId, showGoogleTiles = false }: SceneProps) => {
   const controlsRef = useRef<any>(null);
   const objectRefs = useRef<Map<string, Object3D>>(new Map());
-  const { setBoxes, selectedId, setSelectedId, transformMode, drawingPoints } = useBoxContext();
+  const { boxes: contextBoxes, setBoxes, selectedId, setSelectedId, transformMode, setTransformMode, drawingPoints } = useBoxContext();
   const [isTransforming, setIsTransforming] = useState(false);
+  const [selectedObjectOverride, setSelectedObjectOverride] = useState<Object3D | null>(null);
   const { camera } = useThree();
 
   // Import Three.js components
@@ -70,6 +71,31 @@ const Scene = memo(({ boxes, accent, gltfUrl, resourceMap, showRoomLabels = fals
   }, [isTransforming]);
 
   const selectedObject = selectedId ? objectRefs.current.get(selectedId) || null : null;
+
+  useEffect(() => {
+    if (selectedId && selectedObject) {
+      setSelectedObjectOverride(selectedObject);
+    }
+    if (!selectedId) {
+      setSelectedObjectOverride(null);
+    }
+  }, [selectedId, selectedObject]);
+
+  useEffect(() => {
+    if (!contextBoxes.length) return;
+    const needsIds = contextBoxes.some((box) => !box.id);
+    if (!needsIds) return;
+    setBoxes((prev) =>
+      prev.map((box) => {
+        if (box.id) return box;
+        const id =
+          typeof crypto !== "undefined" && (crypto as any).randomUUID
+            ? (crypto as any).randomUUID()
+            : Math.random().toString(36).slice(2, 10);
+        return { ...box, id };
+      })
+    );
+  }, [contextBoxes, setBoxes]);
 
   const handleTransformEnd = () => {
     if (!selectedId || !selectedObject) return;
@@ -133,7 +159,21 @@ const Scene = memo(({ boxes, accent, gltfUrl, resourceMap, showRoomLabels = fals
             rotation={[0, box.rotationY || 0, 0]}
             onPointerDown={(event: any) => {
               event.stopPropagation();
-              setSelectedId(box.id);
+              const target = event.eventObject || event.object;
+              if (target) {
+                setSelectedObjectOverride(target);
+              }
+              if (!box.id) {
+                const id =
+                  typeof crypto !== "undefined" && (crypto as any).randomUUID
+                    ? (crypto as any).randomUUID()
+                    : Math.random().toString(36).slice(2, 10);
+                setBoxes((prev) => prev.map((item) => (item === box ? { ...item, id } : item)));
+                setSelectedId(id);
+              } else {
+                setSelectedId(box.id);
+              }
+              setTransformMode("translate");
             }}
           >
             {box.type === "building" ? (
@@ -163,10 +203,15 @@ const Scene = memo(({ boxes, accent, gltfUrl, resourceMap, showRoomLabels = fals
         ))}
       </Select>
 
-      {selectedObject && (
+      {(selectedObjectOverride || selectedObject) && (
         <TransformControls
-          object={selectedObject}
+          object={selectedObjectOverride || selectedObject}
           mode={transformMode}
+          size={3}
+          space="world"
+          showX
+          showY
+          showZ
           onMouseDown={() => setIsTransforming(true)}
           onMouseUp={() => {
             setIsTransforming(false);

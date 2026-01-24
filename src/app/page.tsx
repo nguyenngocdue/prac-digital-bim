@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import type { FC } from "react";
+import { useState, type FC } from "react";
 import { Box, Building2, Eye, Workflow, Database, Map } from "lucide-react";
 import { useLanguage } from "@/contexts/language-context";
 
@@ -11,6 +11,7 @@ import { useLanguage } from "@/contexts/language-context";
  */
 const Home: FC = () => {
   const {  t } = useLanguage();
+  const [gridOrigin, setGridOrigin] = useState("50% 50%");
 
   const features = [
     {
@@ -48,51 +49,64 @@ const Home: FC = () => {
   return (
     <div className="min-h-screen bg-background font-sans">
       {/* Hero Section */}
-      <section className="relative flex min-h-[85vh] items-center justify-center overflow-hidden">
-        {/* Animated Background */}
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]" />
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-background to-secondary/10" />
-        
-        {/* Decorative Elements */}
-        <div className="absolute left-10 top-20 h-64 w-64 animate-pulse rounded-full bg-primary/5 blur-3xl" />
-        <div className="absolute bottom-20 right-10 h-80 w-80 animate-pulse rounded-full bg-secondary/5 blur-3xl" />
-        
+      <section
+        className="hero-shell group relative flex min-h-screen items-center justify-center overflow-hidden text-foreground"
+        onMouseMove={(event) => {
+          const rect = event.currentTarget.getBoundingClientRect();
+          const x = Math.min(Math.max((event.clientX - rect.left) / rect.width, 0), 1);
+          const y = Math.min(Math.max((event.clientY - rect.top) / rect.height, 0), 1);
+          setGridOrigin(`${(x * 100).toFixed(2)}% ${(y * 100).toFixed(2)}%`);
+        }}
+        onMouseLeave={() => setGridOrigin("50% 50%")}
+      >
+        <div
+          className="theme-grid absolute inset-0 transition-transform duration-700 ease-out group-hover:scale-105"
+          style={{ transformOrigin: gridOrigin }}
+        />
+        <div className="hero-glow absolute inset-0" />
+        <div className="hero-fade absolute inset-0" />
+
         <div className="container relative z-10 mx-auto px-4 text-center">
-          <div className="mx-auto max-w-4xl space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-1000">
-            <div className="space-y-4">
-              <div className="inline-block rounded-lg bg-primary/10 px-3 py-1 text-sm font-medium text-primary">
-                {t("hero.subtitle")}
-              </div>
-              <h1 className="text-5xl font-bold tracking-tight sm:text-6xl md:text-7xl lg:text-8xl">
-                {t("hero.title")}
-                <span className="block bg-gradient-to-r from-primary via-purple-500 to-secondary bg-clip-text text-transparent animate-gradient">
-                  {t("hero.subtitle")}
-                </span>
-              </h1>
+          <div className="mx-auto max-w-3xl space-y-6">
+            <div className="inline-flex items-center justify-center rounded-full border border-border/60 bg-background/70 px-4 py-1 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+              {t("hero.subtitle")}
             </div>
-            
-            <p className="mx-auto max-w-2xl text-lg text-muted-foreground sm:text-xl leading-relaxed">
+            <h1 className="text-5xl font-bold tracking-tight sm:text-6xl lg:text-7xl">
+              {t("hero.title")}
+              <span className="mt-2 block text-primary">
+                {t("hero.subtitle")}
+              </span>
+            </h1>
+            <p className="mx-auto max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-lg">
               {t("hero.description")}
             </p>
-            
-            <div className="flex flex-wrap items-center justify-center gap-4 pt-6">
+            <div className="flex flex-wrap items-center justify-center gap-3 pt-4">
               <Link href="/project">
-                <Button size="lg" className="group h-12 px-8 text-base shadow-lg transition-all hover:scale-105 hover:shadow-xl">
-                  <Building2 className="mr-2 h-5 w-5 transition-transform group-hover:scale-110" />
+                <Button
+                  size="lg"
+                  className="h-12 px-7 text-sm"
+                >
+                  <Building2 className="mr-2 h-5 w-5" />
                   {t("hero.exploreProjects")}
                 </Button>
               </Link>
-              
               <Link href="/project/viewer">
-                <Button size="lg" variant="outline" className="group h-12 px-8 text-base shadow-md transition-all hover:scale-105 hover:shadow-lg">
-                  <Eye className="mr-2 h-5 w-5 transition-transform group-hover:scale-110" />
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="h-12 px-7 text-sm"
+                >
+                  <Eye className="mr-2 h-5 w-5" />
                   {t("hero.viewer")}
                 </Button>
               </Link>
-
               <Link href="/workflow">
-                <Button size="lg" variant="secondary" className="group h-12 px-8 text-base shadow-md transition-all hover:scale-105 hover:shadow-lg">
-                  <Workflow className="mr-2 h-5 w-5 transition-transform group-hover:scale-110" />
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="h-12 px-7 text-sm"
+                >
+                  <Workflow className="mr-2 h-5 w-5" />
                   {t("hero.workflows")}
                 </Button>
               </Link>
