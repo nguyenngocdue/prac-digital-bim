@@ -29,6 +29,7 @@ export type DragMode =
   | "edge-top"
   | "height"
   | "height-bottom"
+  | "rotate"
   | "translate"
   | "translate-xz"
   | "translate-free"
@@ -61,6 +62,8 @@ export interface DragRefs {
   heightHitRef: React.MutableRefObject<THREE.Mesh | null>;
   bottomHeightHandleRef: React.MutableRefObject<THREE.Mesh | null>;
   bottomHeightHitRef: React.MutableRefObject<THREE.Mesh | null>;
+  topFaceRef: React.MutableRefObject<THREE.Mesh | null>;
+  bottomFaceRef: React.MutableRefObject<THREE.Mesh | null>;
   dragIndexRef: React.MutableRefObject<number | null>;
   dragEdgeRef: React.MutableRefObject<number | null>;
   dragStartRef: React.MutableRefObject<THREE.Vector3 | null>;
@@ -78,6 +81,8 @@ export interface DragRefs {
   translateLastXZRef: React.MutableRefObject<[number, number] | null>;
   translateStartXYZRef: React.MutableRefObject<[number, number, number] | null>;
   translateLastXYZRef: React.MutableRefObject<[number, number, number] | null>;
+  rotateStartAngleRef: React.MutableRefObject<number | null>;
+  rotateCenterRef: React.MutableRefObject<THREE.Vector3 | null>;
   dragDisposersRef: React.MutableRefObject<(() => void)[]>;
   hoverHandleRef: React.MutableRefObject<number | null>;
   hoverTopHandleRef: React.MutableRefObject<number | null>;

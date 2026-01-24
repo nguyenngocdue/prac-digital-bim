@@ -26,6 +26,7 @@ type DragHandlerParams = {
   setDraggedIndex: (value: number | null) => void;
   setDraggedEdgeIndex: (value: number | null) => void;
   setCursor: (cursor: string) => void;
+  setRotationAngle?: (angle: number) => void;
 };
 
 export type DragHandlers = {
@@ -37,6 +38,7 @@ export type DragHandlers = {
   startTranslateFree: (event: ThreeEvent<PointerEvent>) => void;
   handleHeightPointerDown: (event: ThreeEvent<PointerEvent>) => void;
   handleBottomHeightPointerDown: (event: ThreeEvent<PointerEvent>) => void;
+  handleRotatePointerDown: (event: ThreeEvent<PointerEvent>) => void;
 };
 
 export const createDragHandlers = (params: DragHandlerParams): DragHandlers => {
@@ -61,6 +63,7 @@ export const createDragHandlers = (params: DragHandlerParams): DragHandlers => {
     setDraggedIndex,
     setDraggedEdgeIndex,
     setCursor,
+    setRotationAngle,
   } = params;
 
   const {
@@ -97,6 +100,8 @@ export const createDragHandlers = (params: DragHandlerParams): DragHandlers => {
     translateLastXZRef,
     translateStartXYZRef,
     translateLastXYZRef,
+    rotateStartAngleRef,
+    rotateCenterRef,
     dragDisposersRef,
     pendingTranslateRef,
   } = dragRefs;
@@ -135,6 +140,14 @@ export const createDragHandlers = (params: DragHandlerParams): DragHandlers => {
     translateLastXZRef.current = null;
     translateStartXYZRef.current = null;
     translateLastXYZRef.current = null;
+    rotateStartAngleRef.current = null;
+    rotateCenterRef.current = null;
+    
+    // Reset rotation angle display
+    if (setRotationAngle) {
+      setRotationAngle(0);
+    }
+    
     setCursor("auto");
     if (pointerId !== undefined) {
       gl.domElement.releasePointerCapture(pointerId);
@@ -321,7 +334,46 @@ export const createDragHandlers = (params: DragHandlerParams): DragHandlers => {
       translateLastXYZRef.current = [centerXValue, centerYValue, centerZValue];
       pendingTranslateRef.current = null;
     }
-    if (dragModeRef.current === "translate-free") {
+    if (dragModeRef.current === "rotate") {
+      if (
+        rotateStartAngleRef.current === null ||
+        !rotateCenterRef.current ||
+        !dragStartVerticesRef.current
+      )
+        return;
+      const center = rotateCenterRef.current;
+      const current = new THREE.Vector2(
+        intersection.current.x - center.x,
+        intersection.current.z - center.z
+      );
+      const angle = Math.atan2(current.y, current.x);
+      const delta = angle - rotateStartAngleRef.current;
+      const angleDegrees = (delta * 180) / Math.PI;
+      
+      // Update rotation angle display
+      if (setRotationAngle) {
+        setRotationAngle(angleDegrees);
+      }
+      
+      const cos = Math.cos(delta);
+      const sin = Math.sin(delta);
+      verticesRef.current.forEach((point, index) => {
+        const startPoint = dragStartVerticesRef.current?.[index];
+        if (!startPoint) return;
+        const dx = startPoint.x - center.x;
+        const dz = startPoint.z - center.z;
+        point.set(center.x + dx * cos - dz * sin, startPoint.y, center.z + dx * sin + dz * cos);
+      });
+      if (topVerticesRef.current && dragStartTopVerticesRef.current) {
+        topVerticesRef.current.forEach((point, index) => {
+          const startPoint = dragStartTopVerticesRef.current?.[index];
+          if (!startPoint) return;
+          const dx = startPoint.x - center.x;
+          const dz = startPoint.z - center.z;
+          point.set(center.x + dx * cos - dz * sin, startPoint.y, center.z + dx * sin + dz * cos);
+        });
+      }
+    } else if (dragModeRef.current === "translate-free") {
       if (!translateStartPointRef.current || !translateStartXYZRef.current) return;
       const delta = new THREE.Vector3().subVectors(intersection.current, translateStartPointRef.current);
       const start = translateStartXYZRef.current;
@@ -566,6 +618,36 @@ export const createDragHandlers = (params: DragHandlerParams): DragHandlers => {
     attachDragListeners();
   };
 
+  const handleRotatePointerDown = (event: ThreeEvent<PointerEvent>) => {
+    event.stopPropagation();
+    if (verticesRef.current.length < 2) return;
+    const center =
+      rotateCenterRef.current?.clone() ||
+      verticesRef.current
+        .reduce((acc, point) => acc.add(point), new THREE.Vector3())
+        .multiplyScalar(1 / verticesRef.current.length);
+    rotateCenterRef.current = center;
+    dragModeRef.current = "rotate";
+    dragIndexRef.current = 0;
+    setDraggedIndex(0);
+    dragStartVerticesRef.current = verticesRef.current.map((v) => v.clone());
+    dragStartTopVerticesRef.current = topVerticesRef.current
+      ? topVerticesRef.current.map((v) => v.clone())
+      : null;
+    dragPlane.current.setFromNormalAndCoplanarPoint(new THREE.Vector3(0, 1, 0), center);
+    if (event.ray.intersectPlane(dragPlane.current, intersection.current)) {
+      const start = new THREE.Vector2(
+        intersection.current.x - center.x,
+        intersection.current.z - center.z
+      );
+      rotateStartAngleRef.current = Math.atan2(start.y, start.x);
+    }
+    setCursor("grabbing");
+    gl.domElement.setPointerCapture(event.pointerId);
+    onDragStart?.();
+    attachDragListeners();
+  };
+
   return {
     handlePointerDown,
     handlePointerDownTop,
@@ -575,5 +657,6 @@ export const createDragHandlers = (params: DragHandlerParams): DragHandlers => {
     startTranslateFree,
     handleHeightPointerDown,
     handleBottomHeightPointerDown,
+    handleRotatePointerDown,
   };
 };

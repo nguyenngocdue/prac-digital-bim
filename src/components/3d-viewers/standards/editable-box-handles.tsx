@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useThree } from "@react-three/fiber";
+import { ThreeEvent, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import { Html } from "@react-three/drei";
 import { updateTranslateHover, updateLineLoop, markAsHandle } from "./editable-box-handles/utils";
@@ -19,13 +19,11 @@ import {
   updateHeightHandle,
   updateHandleHover,
 } from "./editable-box-handles/mesh-updaters";
-import {
-  calculateArea,
-  calculateCentroid,
-  calculateAverageY,
-  createShapeFromVertices,
-} from "./editable-box-handles/calculations";
+import { createShapeFromVertices, calculateCentroid, calculateAverageY } from "./editable-box-handles/calculations";
 import { createDragHandlers } from "./editable-box-handles/drag-handlers";
+import { BoundingBox, BoundingBoxInfo, useBoundingBox } from './editable-box-handles/bounding-box';
+import { RotationHandles } from "./editable-box-handles/rotation-handles";
+import { PolygonDisplay, AreaLabel } from './editable-box-handles/polygon-display';
 
 export const EditablePolygonHandles = ({
   vertices,
@@ -51,6 +49,9 @@ export const EditablePolygonHandles = ({
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [draggedEdgeIndex, setDraggedEdgeIndex] = useState<number | null>(null);
   const [isTranslateHover, setIsTranslateHover] = useState(false);
+  const [showRotateHandles, setShowRotateHandles] = useState(false);
+  const [showBoundingBox, setShowBoundingBox] = useState(false);
+  const [rotationAngle, setRotationAngle] = useState(0);
   const { camera, gl } = useThree();
   
   // Drag state refs
@@ -98,6 +99,8 @@ export const EditablePolygonHandles = ({
   const translateLastXZRef = useRef<[number, number] | null>(null);
   const translateStartXYZRef = useRef<[number, number, number] | null>(null);
   const translateLastXYZRef = useRef<[number, number, number] | null>(null);
+  const rotateStartAngleRef = useRef<number | null>(null);
+  const rotateCenterRef = useRef<THREE.Vector3 | null>(null);
   
   // UI state refs
   const dragDisposersRef = useRef<(() => void)[]>([]);
@@ -113,6 +116,16 @@ export const EditablePolygonHandles = ({
   const updateTranslateHoverState = (isActive: boolean) => {
     translateHoverRef.current = isActive;
     updateTranslateHover(isActive, isDragging, setIsTranslateHover, setCursor);
+  };
+
+  const activateSelection = () => {
+    setShowBoundingBox(true);
+    setShowRotateHandles(true);
+  };
+
+  const handleFacePointerDown = (event: ThreeEvent<PointerEvent>) => {
+    activateSelection();
+    dragHandlers.startTranslateFree(event);
   };
 
   // Create geometries and materials using helper functions
@@ -244,6 +257,13 @@ export const EditablePolygonHandles = ({
     [vertices, bottomFaceY]
   );
 
+  // Use custom hooks for bounding box
+  const boundingBox = useBoundingBox(vertices, topVertices, height);
+
+  if (boundingBox) {
+    rotateCenterRef.current = boundingBox.center.clone();
+  }
+
   const dragRefs: DragRefs = {
     dragPlane,
     intersection,
@@ -281,6 +301,8 @@ export const EditablePolygonHandles = ({
     translateLastXZRef,
     translateStartXYZRef,
     translateLastXYZRef,
+    rotateStartAngleRef,
+    rotateCenterRef,
     dragDisposersRef,
     hoverHandleRef,
     hoverTopHandleRef,
@@ -309,6 +331,7 @@ export const EditablePolygonHandles = ({
     setDraggedIndex,
     setDraggedEdgeIndex,
     setCursor,
+    setRotationAngle,
   });
 
   return (
@@ -331,39 +354,37 @@ export const EditablePolygonHandles = ({
         if (isDragging) return;
         updateTranslateHoverState(false);
       }}
+      onPointerDown={(event) => {
+        if (isDragging) return;
+        setShowBoundingBox(true);
+        const isOverHandle = event.intersections?.some(
+          (hit) => hit.object?.userData?.isHandle
+        );
+        const isOverFace = event.intersections?.some(
+          (hit) => hit.object?.userData?.isTranslateFace
+        );
+        if (!isOverHandle && isOverFace) {
+          setShowRotateHandles(true);
+          setShowBoundingBox(true);
+        }
+      }}
     >
-      {/* Polygon shape */}
-      {vertices.length >= 2 && (
-        <>
-          {/* Fill */}
-          {!isDragging && showFill && vertices.length >= 3 && (
-            <mesh ref={fillRef}>
-              <shapeGeometry
-                args={[new THREE.Shape(vertices.map((v) => new THREE.Vector2(v[0], v[2])))]}
-              />
-              <meshBasicMaterial
-                color={color}
-                transparent
-                opacity={0.3}
-                side={THREE.DoubleSide}
-              />
-            </mesh>
-          )}
-          
-          {/* Edges */}
-          <lineLoop ref={lineRef}>
-            <bufferGeometry>
-              <bufferAttribute
-                attach="attributes-position"
-                args={[new Float32Array(vertices.flat()), 3]}
-                count={vertices.length}
-                itemSize={3}
-              />
-            </bufferGeometry>
-            <lineBasicMaterial color={color} />
-          </lineLoop>
-        </>
-      )}
+      {/* Polygon Display */}
+      <PolygonDisplay
+        vertices={vertices}
+        color={color}
+        showFill={showFill}
+        isDragging={isDragging}
+      />
+
+      {/* Bounding Box */}
+      <BoundingBox
+        vertices={vertices}
+        topVertices={topVertices}
+        height={height}
+        show={showBoundingBox}
+        rotationAngle={rotationAngle}
+      />
       
       {/* Vertex handles */}
       <instancedMesh
@@ -375,6 +396,7 @@ export const EditablePolygonHandles = ({
         args={[hitGeometry, hitMaterial, vertices.length]}
         onPointerDown={(event) => {
           if (event.instanceId == null) return;
+          activateSelection();
           dragHandlers.handlePointerDown(event.instanceId, event);
         }}
         onPointerUp={dragHandlers.handlePointerUp}
@@ -402,7 +424,7 @@ export const EditablePolygonHandles = ({
               position={[0, topFaceY, 0]}
               rotation={[-Math.PI / 2, 0, 0]}
               userData={{ isTranslateFace: true }}
-              onPointerDown={dragHandlers.startTranslateFree}
+              onPointerDown={handleFacePointerDown}
               onPointerUp={dragHandlers.handlePointerUp}
             >
               <shapeGeometry args={[topFaceShape]} />
@@ -425,6 +447,7 @@ export const EditablePolygonHandles = ({
             args={[hitGeometry, hitMaterial, vertices.length]}
             onPointerDown={(event) => {
               if (event.instanceId == null) return;
+              activateSelection();
               dragHandlers.handlePointerDownTop(event.instanceId, event);
             }}
             onPointerUp={dragHandlers.handlePointerUp}
@@ -456,7 +479,10 @@ export const EditablePolygonHandles = ({
                 ref={heightHitRef}
                 geometry={hitGeometry}
                 material={hitMaterial}
-                onPointerDown={dragHandlers.handleHeightPointerDown}
+                onPointerDown={(event) => {
+                  activateSelection();
+                  dragHandlers.handleHeightPointerDown(event);
+                }}
                 onPointerUp={dragHandlers.handlePointerUp}
                 onPointerOver={(event) => {
                   event.stopPropagation();
@@ -478,7 +504,7 @@ export const EditablePolygonHandles = ({
           position={[0, bottomFaceY, 0]}
           rotation={[-Math.PI / 2, 0, 0]}
           userData={{ isTranslateFace: true }}
-          onPointerDown={dragHandlers.startTranslateFree}
+          onPointerDown={handleFacePointerDown}
           onPointerUp={dragHandlers.handlePointerUp}
         >
           <shapeGeometry args={[bottomFaceShape]} />
@@ -515,6 +541,7 @@ export const EditablePolygonHandles = ({
             args={[edgeHitGeometry, hitMaterial, vertices.length]}
             onPointerDown={(event) => {
               if (event.instanceId == null) return;
+              activateSelection();
               dragHandlers.handleEdgePointerDown(event.instanceId, event);
             }}
             onPointerUp={dragHandlers.handlePointerUp}
@@ -542,6 +569,7 @@ export const EditablePolygonHandles = ({
                 args={[edgeHitGeometry, hitMaterial, vertices.length]}
                 onPointerDown={(event) => {
                   if (event.instanceId == null) return;
+                  activateSelection();
                   dragHandlers.handleEdgePointerDownTop(event.instanceId, event);
                 }}
                 onPointerUp={dragHandlers.handlePointerUp}
@@ -567,7 +595,10 @@ export const EditablePolygonHandles = ({
                 ref={bottomHeightHitRef}
                 geometry={hitGeometry}
                 material={hitMaterial}
-                onPointerDown={dragHandlers.handleBottomHeightPointerDown}
+                onPointerDown={(event) => {
+                  activateSelection();
+                  dragHandlers.handleBottomHeightPointerDown(event);
+                }}
                 onPointerUp={dragHandlers.handlePointerUp}
                 onPointerOver={(event) => {
                   event.stopPropagation();
@@ -586,20 +617,28 @@ export const EditablePolygonHandles = ({
           )}
         </>
       )}
-      
-      {/* Area label in center */}
-      {vertices.length >= 3 && !isDragging && (() => {
-        const area = calculateArea(vertices);
-        const centroid = calculateCentroid(vertices, bottomFaceY);
-        
-        return (
-          <Html position={[centroid.x, centroid.y, centroid.z]} center distanceFactor={10}>
-            <div className="rounded bg-blue-500 px-3 py-2 text-sm font-bold text-white pointer-events-none shadow-lg">
-              {area.toFixed(1)} m²
-            </div>
-          </Html>
-        );
-      })()}
+
+      <RotationHandles
+        boundingBox={boundingBox}
+        show={showRotateHandles}
+        isDragging={isDragging}
+        rotationAngle={rotationAngle}
+        onPointerDown={(event) => {
+          activateSelection();
+          dragHandlers.handleRotatePointerDown(event);
+        }}
+        onPointerUp={dragHandlers.handlePointerUp}
+        setCursor={setCursor}
+      />
+      {showBoundingBox && boundingBox && (
+        <BoundingBoxInfo
+          center={boundingBox.center}
+          size={boundingBox.size}
+          maxY={boundingBox.box.max.y}
+          rotationAngle={rotationAngle}
+        />
+      )}
+      {!isDragging && <AreaLabel vertices={vertices} />}
     </group>
   );
 };
