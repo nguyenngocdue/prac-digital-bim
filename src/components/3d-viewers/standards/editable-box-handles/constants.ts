@@ -24,4 +24,4 @@ export const EDGE_EMISSIVE_INTENSITY = 0.6;
 export const MIN_HEIGHT = 0.5;
 
 // Drag threshold
-export const DRAG_THRESHOLD = 4;
+export const DRAG_THRESHOLD = 1;

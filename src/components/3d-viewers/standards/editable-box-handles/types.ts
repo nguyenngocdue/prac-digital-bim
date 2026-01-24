@@ -83,6 +83,9 @@ export interface DragRefs {
   translateLastXYZRef: React.MutableRefObject<[number, number, number] | null>;
   rotateStartAngleRef: React.MutableRefObject<number | null>;
   rotateCenterRef: React.MutableRefObject<THREE.Vector3 | null>;
+  rotateLockedCenterRef: React.MutableRefObject<THREE.Vector3 | null>;
+  dragMoveRafRef: React.MutableRefObject<number | null>;
+  pendingPointerRef: React.MutableRefObject<{ clientX: number; clientY: number } | null>;
   dragDisposersRef: React.MutableRefObject<(() => void)[]>;
   hoverHandleRef: React.MutableRefObject<number | null>;
   hoverTopHandleRef: React.MutableRefObject<number | null>;

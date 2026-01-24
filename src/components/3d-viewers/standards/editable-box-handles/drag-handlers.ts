@@ -2,7 +2,7 @@ import type { ThreeEvent } from "@react-three/fiber";
 import * as THREE from "three";
 import { DRAG_THRESHOLD, MIN_HEIGHT } from "./constants";
 import { updateAllHandles } from "./mesh-updaters";
-import { shouldBlockTranslate, updateLineLoop } from "./utils";
+import { updateLineLoop } from "./utils";
 import type { DragMode, DragRefs } from "./types";
 
 type DragHandlerParams = {
@@ -102,6 +102,9 @@ export const createDragHandlers = (params: DragHandlerParams): DragHandlers => {
     translateLastXYZRef,
     rotateStartAngleRef,
     rotateCenterRef,
+    rotateLockedCenterRef,
+    dragMoveRafRef,
+    pendingPointerRef,
     dragDisposersRef,
     pendingTranslateRef,
   } = dragRefs;
@@ -141,7 +144,12 @@ export const createDragHandlers = (params: DragHandlerParams): DragHandlers => {
     translateStartXYZRef.current = null;
     translateLastXYZRef.current = null;
     rotateStartAngleRef.current = null;
-    rotateCenterRef.current = null;
+    rotateLockedCenterRef.current = null; // Clear locked center
+    if (dragMoveRafRef.current !== null) {
+      cancelAnimationFrame(dragMoveRafRef.current);
+      dragMoveRafRef.current = null;
+    }
+    pendingPointerRef.current = null;
     
     // Reset rotation angle display
     if (setRotationAngle) {
@@ -295,7 +303,7 @@ export const createDragHandlers = (params: DragHandlerParams): DragHandlers => {
     attachDragListeners();
   };
 
-  const handlePointerMoveDom = (event: PointerEvent) => {
+  const applyPointerMove = (clientX: number, clientY: number) => {
     if (
       dragIndexRef.current === null &&
       dragEdgeRef.current === null &&
@@ -307,24 +315,33 @@ export const createDragHandlers = (params: DragHandlerParams): DragHandlers => {
       pendingTranslateRef.current === null
     )
       return;
+    
     const rect = gl.domElement.getBoundingClientRect();
-    const x = (event.clientX - rect.left) / rect.width;
-    const y = (event.clientY - rect.top) / rect.height;
+    const x = (clientX - rect.left) / rect.width;
+    const y = (clientY - rect.top) / rect.height;
     const mouse = new THREE.Vector2(x * 2 - 1, -(y * 2) + 1);
     raycaster.current.setFromCamera(mouse, camera);
+    
+    // Luôn tính intersection với plane, không cần check face
     if (!raycaster.current.ray.intersectPlane(dragPlane.current, intersection.current)) {
       return;
     }
+    
     if (pendingTranslateRef.current && dragModeRef.current !== "translate-free") {
-      const dx = event.clientX - pendingTranslateRef.current.startClientX;
-      const dy = event.clientY - pendingTranslateRef.current.startClientY;
+      const dx = clientX - pendingTranslateRef.current.startClientX;
+      const dy = clientY - pendingTranslateRef.current.startClientY;
+      // Threshold thấp hơn để dễ drag
       if (Math.hypot(dx, dy) < DRAG_THRESHOLD) return;
+      
+      // Chuyển sang mode translate-free (legacy support nếu có pending)
       dragModeRef.current = "translate-free";
       dragIndexRef.current = 0;
       setDraggedIndex(0);
       const [centerXValue, centerYValue, centerZValue] = pendingTranslateRef.current.center;
+      // Sử dụng plane song song với camera để drag mượt hơn
+      const cameraDirection = camera.getWorldDirection(new THREE.Vector3()).normalize();
       dragPlane.current.setFromNormalAndCoplanarPoint(
-        camera.getWorldDirection(new THREE.Vector3()).normalize(),
+        cameraDirection,
         new THREE.Vector3(centerXValue, centerYValue, centerZValue)
       );
       if (raycaster.current.ray.intersectPlane(dragPlane.current, intersection.current)) {
@@ -334,14 +351,20 @@ export const createDragHandlers = (params: DragHandlerParams): DragHandlers => {
       translateLastXYZRef.current = [centerXValue, centerYValue, centerZValue];
       pendingTranslateRef.current = null;
     }
+    
+    
     if (dragModeRef.current === "rotate") {
       if (
         rotateStartAngleRef.current === null ||
-        !rotateCenterRef.current ||
+        !rotateLockedCenterRef.current ||
         !dragStartVerticesRef.current
       )
         return;
-      const center = rotateCenterRef.current;
+      
+      // Lấy LOCKED center - không thay đổi trong quá trình rotate
+      const center = rotateLockedCenterRef.current;
+      
+      // Tính góc hiện tại từ center đến vị trí chuột
       const current = new THREE.Vector2(
         intersection.current.x - center.x,
         intersection.current.z - center.z
@@ -355,22 +378,39 @@ export const createDragHandlers = (params: DragHandlerParams): DragHandlers => {
         setRotationAngle(angleDegrees);
       }
       
+      // Rotation matrix quanh tâm CỐ ĐỊNH
       const cos = Math.cos(delta);
       const sin = Math.sin(delta);
+      
+      // Xoay vertices quanh locked center
       verticesRef.current.forEach((point, index) => {
         const startPoint = dragStartVerticesRef.current?.[index];
         if (!startPoint) return;
+        
+        // Vector từ center đến điểm ban đầu
         const dx = startPoint.x - center.x;
         const dz = startPoint.z - center.z;
-        point.set(center.x + dx * cos - dz * sin, startPoint.y, center.z + dx * sin + dz * cos);
+        
+        // Áp dụng rotation matrix, giữ nguyên Y
+        point.set(
+          center.x + dx * cos - dz * sin,
+          startPoint.y,
+          center.z + dx * sin + dz * cos
+        );
       });
+      
+      // Xoay top vertices nếu có
       if (topVerticesRef.current && dragStartTopVerticesRef.current) {
         topVerticesRef.current.forEach((point, index) => {
           const startPoint = dragStartTopVerticesRef.current?.[index];
           if (!startPoint) return;
           const dx = startPoint.x - center.x;
           const dz = startPoint.z - center.z;
-          point.set(center.x + dx * cos - dz * sin, startPoint.y, center.z + dx * sin + dz * cos);
+          point.set(
+            center.x + dx * cos - dz * sin,
+            startPoint.y,
+            center.z + dx * sin + dz * cos
+          );
         });
       }
     } else if (dragModeRef.current === "translate-free") {
@@ -546,20 +586,46 @@ export const createDragHandlers = (params: DragHandlerParams): DragHandlers => {
     }
   };
 
+  const handlePointerMoveDom = (event: PointerEvent) => {
+    pendingPointerRef.current = { clientX: event.clientX, clientY: event.clientY };
+    if (dragMoveRafRef.current !== null) return;
+    dragMoveRafRef.current = requestAnimationFrame(() => {
+      dragMoveRafRef.current = null;
+      const pending = pendingPointerRef.current;
+      if (!pending) return;
+      applyPointerMove(pending.clientX, pending.clientY);
+    });
+  };
+
   const startTranslateFree = (event: ThreeEvent<PointerEvent>) => {
     if (centerX === undefined || centerY === undefined || centerZ === undefined) return;
-    if (shouldBlockTranslate(event)) return;
+    
     event.stopPropagation();
-    pendingTranslateRef.current = {
-      pointerId: event.pointerId,
-      startClientX: event.clientX,
-      startClientY: event.clientY,
-      center: [centerX, centerY, centerZ],
-    };
+    
+    // Setup drag state ngay lập tức, không pending
+    dragModeRef.current = "translate-free";
+    dragIndexRef.current = 0;
+    setDraggedIndex(0);
+    
+    // Lưu vị trí ban đầu
     dragStartVerticesRef.current = verticesRef.current.map((v) => v.clone());
     dragStartTopVerticesRef.current = topVerticesRef.current
       ? topVerticesRef.current.map((v) => v.clone())
       : null;
+    
+    // Thiết lập plane song song với camera view
+    const cameraDirection = camera.getWorldDirection(new THREE.Vector3()).normalize();
+    const centerPoint = new THREE.Vector3(centerX, centerY, centerZ);
+    dragPlane.current.setFromNormalAndCoplanarPoint(cameraDirection, centerPoint);
+    
+    // Tính điểm bắt đầu
+    if (raycaster.current.ray.intersectPlane(dragPlane.current, intersection.current)) {
+      translateStartPointRef.current = intersection.current.clone();
+    }
+    
+    translateStartXYZRef.current = [centerX, centerY, centerZ];
+    translateLastXYZRef.current = [centerX, centerY, centerZ];
+    
     setCursor("grabbing");
     gl.domElement.setPointerCapture(event.pointerId);
     onDragStart?.();
@@ -621,12 +687,20 @@ export const createDragHandlers = (params: DragHandlerParams): DragHandlers => {
   const handleRotatePointerDown = (event: ThreeEvent<PointerEvent>) => {
     event.stopPropagation();
     if (verticesRef.current.length < 2) return;
-    const center =
-      rotateCenterRef.current?.clone() ||
-      verticesRef.current
+    
+    // Lấy center từ rotateCenterRef (từ bounding box) và LOCK nó lại
+    if (!rotateCenterRef.current) {
+      // Fallback: tính center từ vertices nếu chưa có
+      const center = verticesRef.current
         .reduce((acc, point) => acc.add(point), new THREE.Vector3())
         .multiplyScalar(1 / verticesRef.current.length);
-    rotateCenterRef.current = center;
+      rotateCenterRef.current = center;
+    }
+    
+    // LOCK center - clone để không bị thay đổi bởi bounding box updates
+    const lockedCenter = rotateCenterRef.current.clone();
+    rotateLockedCenterRef.current = lockedCenter;
+    
     dragModeRef.current = "rotate";
     dragIndexRef.current = 0;
     setDraggedIndex(0);
@@ -634,14 +708,18 @@ export const createDragHandlers = (params: DragHandlerParams): DragHandlers => {
     dragStartTopVerticesRef.current = topVerticesRef.current
       ? topVerticesRef.current.map((v) => v.clone())
       : null;
-    dragPlane.current.setFromNormalAndCoplanarPoint(new THREE.Vector3(0, 1, 0), center);
+    
+    // Plane ngang (Y-axis) đi qua locked center để xoay
+    dragPlane.current.setFromNormalAndCoplanarPoint(new THREE.Vector3(0, 1, 0), lockedCenter);
+    
     if (event.ray.intersectPlane(dragPlane.current, intersection.current)) {
       const start = new THREE.Vector2(
-        intersection.current.x - center.x,
-        intersection.current.z - center.z
+        intersection.current.x - lockedCenter.x,
+        intersection.current.z - lockedCenter.z
       );
       rotateStartAngleRef.current = Math.atan2(start.y, start.x);
     }
+    
     setCursor("grabbing");
     gl.domElement.setPointerCapture(event.pointerId);
     onDragStart?.();

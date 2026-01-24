@@ -2,7 +2,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ThreeEvent, useThree } from "@react-three/fiber";
 import * as THREE from "three";
-import { Html } from "@react-three/drei";
 import { updateTranslateHover, updateLineLoop, markAsHandle } from "./editable-box-handles/utils";
 import type {
   EditablePolygonHandlesProps,
@@ -19,7 +18,7 @@ import {
   updateHeightHandle,
   updateHandleHover,
 } from "./editable-box-handles/mesh-updaters";
-import { createShapeFromVertices, calculateCentroid, calculateAverageY } from "./editable-box-handles/calculations";
+import { createShapeFromVertices, calculateAverageY } from "./editable-box-handles/calculations";
 import { createDragHandlers } from "./editable-box-handles/drag-handlers";
 import { BoundingBox, BoundingBoxInfo, useBoundingBox } from './editable-box-handles/bounding-box';
 import { RotationHandles } from "./editable-box-handles/rotation-handles";
@@ -48,7 +47,7 @@ export const EditablePolygonHandles = ({
 }: EditablePolygonHandlesProps) => {
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [draggedEdgeIndex, setDraggedEdgeIndex] = useState<number | null>(null);
-  const [isTranslateHover, setIsTranslateHover] = useState(false);
+  const [, setIsTranslateHover] = useState(false);
   const [showRotateHandles, setShowRotateHandles] = useState(false);
   const [showBoundingBox, setShowBoundingBox] = useState(false);
   const [rotationAngle, setRotationAngle] = useState(0);
@@ -76,6 +75,8 @@ export const EditablePolygonHandles = ({
   const heightHitRef = useRef<THREE.Mesh>(null);
   const bottomHeightHandleRef = useRef<THREE.Mesh>(null);
   const bottomHeightHitRef = useRef<THREE.Mesh>(null);
+  const topFaceRef = useRef<THREE.Mesh>(null);
+  const bottomFaceRef = useRef<THREE.Mesh>(null);
   
   // Drag operation refs
   const dragIndexRef = useRef<number | null>(null);
@@ -101,6 +102,9 @@ export const EditablePolygonHandles = ({
   const translateLastXYZRef = useRef<[number, number, number] | null>(null);
   const rotateStartAngleRef = useRef<number | null>(null);
   const rotateCenterRef = useRef<THREE.Vector3 | null>(null);
+  const rotateLockedCenterRef = useRef<THREE.Vector3 | null>(null);
+  const dragMoveRafRef = useRef<number | null>(null);
+  const pendingPointerRef = useRef<{ clientX: number; clientY: number } | null>(null);
   
   // UI state refs
   const dragDisposersRef = useRef<(() => void)[]>([]);
@@ -252,15 +256,13 @@ export const EditablePolygonHandles = ({
     [vertices]
   );
   
-  const bottomCentroid = useMemo(
-    () => calculateCentroid(vertices, bottomFaceY),
-    [vertices, bottomFaceY]
-  );
 
   // Use custom hooks for bounding box
   const boundingBox = useBoundingBox(vertices, topVertices, height);
 
-  if (boundingBox) {
+  // CHỈ update rotation center khi KHÔNG đang rotate
+  // Nếu đang rotate, giữ nguyên center cũ để geometry xoay quanh điểm cố định
+  if (boundingBox && dragModeRef.current !== "rotate") {
     rotateCenterRef.current = boundingBox.center.clone();
   }
 
@@ -284,6 +286,8 @@ export const EditablePolygonHandles = ({
     heightHitRef,
     bottomHeightHandleRef,
     bottomHeightHitRef,
+    topFaceRef,
+    bottomFaceRef,
     dragIndexRef,
     dragEdgeRef,
     dragStartRef,
@@ -303,6 +307,9 @@ export const EditablePolygonHandles = ({
     translateLastXYZRef,
     rotateStartAngleRef,
     rotateCenterRef,
+    rotateLockedCenterRef,
+    dragMoveRafRef,
+    pendingPointerRef,
     dragDisposersRef,
     hoverHandleRef,
     hoverTopHandleRef,
@@ -341,10 +348,8 @@ export const EditablePolygonHandles = ({
         const isOverHandle = event.intersections?.some(
           (hit) => hit.object?.userData?.isHandle
         );
-        const isOverFace = event.intersections?.some(
-          (hit) => hit.object?.userData?.isTranslateFace
-        );
-        if (!isOverHandle && isOverFace) {
+        // Nếu KHÔNG phải handle, cho phép drag
+        if (!isOverHandle) {
           updateTranslateHoverState(true);
         } else if (translateHoverRef.current) {
           updateTranslateHoverState(false);
@@ -356,16 +361,15 @@ export const EditablePolygonHandles = ({
       }}
       onPointerDown={(event) => {
         if (isDragging) return;
-        setShowBoundingBox(true);
+        
         const isOverHandle = event.intersections?.some(
           (hit) => hit.object?.userData?.isHandle
         );
-        const isOverFace = event.intersections?.some(
-          (hit) => hit.object?.userData?.isTranslateFace
-        );
-        if (!isOverHandle && isOverFace) {
-          setShowRotateHandles(true);
-          setShowBoundingBox(true);
+        
+        // Nếu KHÔNG phải handle (point, edge, rotation) → cho phép drag
+        if (!isOverHandle) {
+          activateSelection();
+          dragHandlers.startTranslateFree(event);
         }
       }}
     >
@@ -421,6 +425,7 @@ export const EditablePolygonHandles = ({
         <>
           {topFaceShape && (
             <mesh
+              ref={topFaceRef}
               position={[0, topFaceY, 0]}
               rotation={[-Math.PI / 2, 0, 0]}
               userData={{ isTranslateFace: true }}
@@ -501,6 +506,7 @@ export const EditablePolygonHandles = ({
       )}
       {bottomFaceShape && (
         <mesh
+          ref={bottomFaceRef}
           position={[0, bottomFaceY, 0]}
           rotation={[-Math.PI / 2, 0, 0]}
           userData={{ isTranslateFace: true }}
@@ -517,16 +523,6 @@ export const EditablePolygonHandles = ({
             side={THREE.DoubleSide}
           />
         </mesh>
-      )}
-      {bottomFaceShape && isTranslateHover && (
-        <Html position={[bottomCentroid.x, bottomCentroid.y, bottomCentroid.z]} center>
-          <div className="pointer-events-none flex h-7 w-7 items-center justify-center rounded-full border border-white/30 bg-black/60 text-white shadow-md">
-            <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.6">
-              <path d="M12 3v18M3 12h18" strokeLinecap="round" />
-              <path d="M12 3l-2 2M12 3l2 2M12 21l-2-2M12 21l2-2M3 12l2-2M3 12l2 2M21 12l-2-2M21 12l-2 2" strokeLinecap="round" />
-            </svg>
-          </div>
-        </Html>
       )}
         </>
       )}
