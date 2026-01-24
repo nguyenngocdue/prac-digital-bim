@@ -402,6 +402,7 @@ const Scene = memo(({ boxes, accent, gltfUrl, resourceMap, showRoomLabels = fals
 
       <OrbitControls
         ref={controlsRef}
+        makeDefault
         enableDamping
         dampingFactor={showGoogleTiles ? 0.08 : 0.12}
         enablePan={true}
