@@ -8,6 +8,7 @@ type BuildingMeshProps = {
   color: string;
   height: number;
   footprint?: [number, number][];
+  topFootprint?: [number, number][];
   width?: number;
   depth?: number;
   thicknessRatio?: number;
@@ -18,6 +19,7 @@ export function BuildingMesh({
   color,
   height,
   footprint,
+  topFootprint,
   width = 10,
   depth = 10,
   thicknessRatio = 0.3,
@@ -30,22 +32,61 @@ export function BuildingMesh({
     if (!points.length) {
       return new THREE.BufferGeometry();
     }
-    const shapePath = new THREE.Shape();
-    shapePath.moveTo(points[0]![0], points[0]![1]);
-    for (let i = 1; i < points.length; i += 1) {
-      shapePath.lineTo(points[i]![0], points[i]![1]);
-    }
-    shapePath.closePath();
+    const heightValue = Math.max(height, 0.1);
+    const halfHeight = heightValue / 2;
+    const topPoints =
+      topFootprint && topFootprint.length === points.length ? topFootprint : points;
 
-    const geom = new THREE.ExtrudeGeometry(shapePath, {
-      depth: Math.max(height, 0.1),
-      bevelEnabled: false,
-      steps: 1,
+    if (!topFootprint || topFootprint.length !== points.length) {
+      const shapePath = new THREE.Shape();
+      shapePath.moveTo(points[0]![0], points[0]![1]);
+      for (let i = 1; i < points.length; i += 1) {
+        shapePath.lineTo(points[i]![0], points[i]![1]);
+      }
+      shapePath.closePath();
+
+      const geom = new THREE.ExtrudeGeometry(shapePath, {
+        depth: heightValue,
+        bevelEnabled: false,
+        steps: 1,
+      });
+      geom.rotateX(Math.PI / 2);
+      geom.translate(0, halfHeight, 0);
+      return geom;
+    }
+
+    const bottomVertices = points.map(([x, z]) => new THREE.Vector3(x, -halfHeight, z));
+    const topVertices = topPoints.map(([x, z]) => new THREE.Vector3(x, halfHeight, z));
+    const positions: number[] = [];
+    bottomVertices.forEach((v) => positions.push(v.x, v.y, v.z));
+    topVertices.forEach((v) => positions.push(v.x, v.y, v.z));
+
+    const shapePoints2d = points.map(([x, z]) => new THREE.Vector2(x, z));
+    const triangles = THREE.ShapeUtils.triangulateShape(shapePoints2d, []);
+    const indices: number[] = [];
+    const count = points.length;
+    triangles.forEach(([a, b, c]) => {
+      indices.push(a, c, b);
     });
-    geom.rotateX(Math.PI / 2);
-    geom.translate(0, height / 2, 0);
+    triangles.forEach(([a, b, c]) => {
+      indices.push(a + count, b + count, c + count);
+    });
+    for (let i = 0; i < count; i += 1) {
+      const next = (i + 1) % count;
+      const bottomA = i;
+      const bottomB = next;
+      const topA = i + count;
+      const topB = next + count;
+      indices.push(bottomA, bottomB, topB);
+      indices.push(bottomA, topB, topA);
+    }
+
+    const geom = new THREE.BufferGeometry();
+    geom.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+    geom.setIndex(indices);
+    geom.computeVertexNormals();
     return geom;
-  }, [depth, footprint, height, shape, thicknessRatio, width]);
+  }, [depth, footprint, height, shape, thicknessRatio, topFootprint, width]);
 
   return (
     <group>

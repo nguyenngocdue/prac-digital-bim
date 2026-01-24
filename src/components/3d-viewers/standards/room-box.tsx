@@ -2,6 +2,7 @@
 import { useRef } from "react";
 import { useSelect } from "@react-three/drei";
 import { MeasurementLines } from "./measurement-lines";
+import { EditableBoxHandles } from "./editable-box-handles";
 import * as THREE from "three";
 
 interface RoomBoxProps {
@@ -12,6 +13,10 @@ interface RoomBoxProps {
   color?: string;
   showMeasurements?: boolean;
   onPointerDown?: (event: any) => void;
+  onResize?: (newWidth: number, newHeight: number, newDepth: number, newPosition: [number, number, number]) => void;
+  vertices?: [number, number, number][];
+  onVerticesChange?: (vertices: [number, number, number][]) => void;
+  onHandleDragChange?: (isDragging: boolean) => void;
 }
 
 export const RoomBox = ({
@@ -22,9 +27,21 @@ export const RoomBox = ({
   color = "#D4A574",
   showMeasurements = true,
   onPointerDown,
+  onResize,
+  vertices,
+  onVerticesChange,
+  onHandleDragChange,
 }: RoomBoxProps) => {
   const selected = !!useSelect();
   const groupRef = useRef<THREE.Group>(null);
+  
+  // Calculate vertices from box dimensions if not provided
+  const boxVertices = vertices || [
+    [-width/2, 0, depth/2],   // front-left
+    [width/2, 0, depth/2],    // front-right
+    [width/2, 0, -depth/2],   // back-right
+    [-width/2, 0, -depth/2],  // back-left
+  ] as [number, number, number][];
 
   // Wall thickness
   const wallThickness = 0.2;
@@ -148,6 +165,29 @@ export const RoomBox = ({
           depth={depth}
           position={[0, 0, 0]}
           color="#3B82F6"
+        />
+      )}
+      
+      {/* Editable handles when selected */}
+      {selected && onVerticesChange && (
+        <EditableBoxHandles
+          vertices={boxVertices.map(v => [
+            v[0] + position[0],
+            v[1] + position[1],
+            v[2] + position[2]
+          ] as [number, number, number])}
+          onVerticesChange={(newVertices) => {
+            // Convert back to relative coordinates
+            const relativeVertices = newVertices.map(v => [
+              v[0] - position[0],
+              v[1] - position[1],
+              v[2] - position[2]
+            ] as [number, number, number]);
+            onVerticesChange(relativeVertices);
+          }}
+          color="#3B82F6"
+          onDragStart={() => onHandleDragChange?.(true)}
+          onDragEnd={() => onHandleDragChange?.(false)}
         />
       )}
     </group>

@@ -1,6 +1,6 @@
 # prac-digital-bim
 
-**Digital Twin BIM Platform** - A comprehensive web application for building information modeling and digital twin management. Built with Next.js, React Three Fiber, and advanced 3D visualization capabilities.
+**Ascend Platform** - A comprehensive web application for building information modeling and digital twin management. Built with Next.js, React Three Fiber, and advanced 3D visualization capabilities.
 
 Transform your building lifecycle management with integrated BIM workflows, real-time monitoring, and intelligent automation.
 
@@ -96,7 +96,7 @@ Open `http://localhost:3000` to view the application.
 
 ## 🏗️ Architecture
 
-This Digital Twin BIM platform integrates multiple technologies:
+This Ascend platform integrates multiple technologies:
 
 - **IFC File Processing**: Import and parse Industry Foundation Classes (IFC) files
 - **3D Visualization**: Real-time rendering of building models with Three.js

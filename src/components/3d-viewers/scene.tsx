@@ -13,6 +13,8 @@ import { GooglePhotorealisticTiles } from "./gis/google-photorealistic-tiles";
 import { useThree } from "@react-three/fiber";
 import { useBoxContext } from "@/app/contexts/box-context";
 import { BuildingMesh } from "./standards/building-mesh";
+import { EditableBoxHandles } from "./standards/editable-box-handles";
+import { getFootprintPoints } from "./standards/building-shapes";
 
 type Box = {
   id: string;
@@ -27,6 +29,7 @@ type Box = {
   width?: number;
   depth?: number;
   showMeasurements?: boolean;
+  topFootprint?: [number, number][];
 };
 
 interface SceneProps {
@@ -46,7 +49,7 @@ interface SceneProps {
 const Scene = memo(({ boxes, accent, gltfUrl, resourceMap, showRoomLabels = false, cameras = [], showCameras = false, onCameraClick, selectedCameraId, showGoogleTiles = false }: SceneProps) => {
   const controlsRef = useRef<any>(null);
   const objectRefs = useRef<Map<string, Object3D>>(new Map());
-  const { boxes: contextBoxes, setBoxes, selectedId, setSelectedId, transformMode, setTransformMode, drawingPoints } = useBoxContext();
+  const { boxes: contextBoxes, setBoxes, selectedId, setSelectedId, transformMode, setTransformMode, drawingPoints, updateBoxVertices } = useBoxContext();
   const [isTransforming, setIsTransforming] = useState(false);
   const [selectedObjectOverride, setSelectedObjectOverride] = useState<Object3D | null>(null);
   const { camera } = useThree();
@@ -75,6 +78,35 @@ const Scene = memo(({ boxes, accent, gltfUrl, resourceMap, showRoomLabels = fals
   }, [isTransforming]);
 
   const selectedObject = selectedId ? objectRefs.current.get(selectedId) || null : null;
+  const selectedBox = selectedId ? contextBoxes.find((box) => box.id === selectedId) : undefined;
+  const selectedFootprint =
+    selectedBox?.type === "building"
+      ? selectedBox.footprint ||
+        getFootprintPoints(
+          "rect",
+          selectedBox.width || 10,
+          selectedBox.depth || 10,
+          selectedBox.thicknessRatio || 0.3
+        )
+      : null;
+  const selectedTopFootprint =
+    selectedBox?.type === "building"
+      ? selectedBox.topFootprint || selectedFootprint
+      : null;
+  const selectedFootprintVertices =
+    selectedBox?.type === "building" && selectedFootprint
+      ? selectedFootprint.map(([x, z]) => {
+          const baseY = selectedBox.position[1] - (selectedBox.height || 0) / 2;
+          return [x + selectedBox.position[0], baseY, z + selectedBox.position[2]];
+        })
+      : null;
+  const selectedTopVertices =
+    selectedBox?.type === "building" && selectedTopFootprint
+      ? selectedTopFootprint.map(([x, z]) => {
+          const topY = selectedBox.position[1] + (selectedBox.height || 0) / 2;
+          return [x + selectedBox.position[0], topY, z + selectedBox.position[2]];
+        })
+      : null;
 
   useEffect(() => {
     if (selectedId && selectedObject) {
@@ -185,6 +217,7 @@ const Scene = memo(({ boxes, accent, gltfUrl, resourceMap, showRoomLabels = fals
                 color={box.color || accent}
                 height={box.height || 8}
                 footprint={box.footprint}
+                topFootprint={box.topFootprint}
                 width={box.size?.[0] || 10}
                 depth={box.size?.[2] || 10}
                 thicknessRatio={box.thicknessRatio || 0.3}
@@ -198,6 +231,11 @@ const Scene = memo(({ boxes, accent, gltfUrl, resourceMap, showRoomLabels = fals
                 position={[0, 0, 0]}
                 color={box.color || "#D4A574"}
                 showMeasurements={box.showMeasurements !== false}
+                vertices={box.vertices}
+                onVerticesChange={(newVertices) => {
+                  updateBoxVertices(box.id, newVertices);
+                }}
+                onHandleDragChange={(isDragging) => setIsTransforming(isDragging)}
               />
             ) : (
               <PlaceholderBox
@@ -216,28 +254,113 @@ const Scene = memo(({ boxes, accent, gltfUrl, resourceMap, showRoomLabels = fals
         ))}
       </Select>
 
-      {(selectedObjectOverride || selectedObject) && (
-        <TransformControls
-          object={selectedObjectOverride || selectedObject}
-          mode={transformMode}
-          size={1.5}
-          space="world"
-          showX
-          showY
-          showZ
-          translationSnap={0.1}
-          rotationSnap={Math.PI / 18}
-          scaleSnap={0.1}
-          onMouseDown={() => setIsTransforming(true)}
-          onMouseUp={() => {
-            setIsTransforming(false);
-            handleTransformEnd();
-          }}
-        />
-      )}
+      {/* TransformControls - disabled for room type to use EditableBoxHandles instead */}
+      {(selectedObjectOverride || selectedObject) && (() => {
+        const isRoomType = selectedBox?.type === "room";
+        const isBuildingType = selectedBox?.type === "building";
+        
+        // Don't show TransformControls for shape-editable types
+        if (isRoomType || isBuildingType) return null;
+        
+        return (
+          <TransformControls
+            object={selectedObjectOverride || selectedObject}
+            mode={transformMode}
+            size={1.5}
+            space="world"
+            showX
+            showY
+            showZ
+            translationSnap={0.1}
+            rotationSnap={Math.PI / 18}
+            scaleSnap={0.1}
+            onMouseDown={() => setIsTransforming(true)}
+            onMouseUp={() => {
+              setIsTransforming(false);
+              handleTransformEnd();
+            }}
+          />
+        );
+      })()}
 
       {drawingLinePoints && (
         <Line points={drawingLinePoints} color={accent} lineWidth={2} dashed={false} />
+      )}
+
+      {selectedBox?.type === "building" && selectedFootprintVertices && (
+        <EditableBoxHandles
+          vertices={selectedFootprintVertices}
+          topVertices={selectedTopVertices || undefined}
+          onTopVerticesChange={(newVertices) => {
+            const originX = selectedBox.position[0];
+            const originZ = selectedBox.position[2];
+            const topFootprint = newVertices.map((vertex) => [
+              vertex[0] - originX,
+              vertex[2] - originZ,
+            ]) as [number, number][];
+            setBoxes((prev) =>
+              prev.map((box) =>
+                box.id === selectedBox.id ? { ...box, topFootprint } : box
+              )
+            );
+          }}
+          onVerticesChange={(newVertices) => {
+            const originX = selectedBox.position[0];
+            const originZ = selectedBox.position[2];
+            const footprint = newVertices.map((vertex) => [
+              vertex[0] - originX,
+              vertex[2] - originZ,
+            ]) as [number, number][];
+            setBoxes((prev) =>
+              prev.map((box) =>
+                box.id === selectedBox.id ? { ...box, footprint } : box
+              )
+            );
+          }}
+          color="#3B82F6"
+          height={selectedBox.height || 0}
+          onHeightChange={(nextHeight, nextCenterY) => {
+            setBoxes((prev) =>
+              prev.map((box) =>
+                box.id === selectedBox.id
+                  ? { ...box, height: nextHeight, position: [box.position[0], nextCenterY, box.position[2]] }
+                  : box
+              )
+            );
+          }}
+          centerY={selectedBox.position[1]}
+          onTranslate={(nextCenterY) => {
+            setBoxes((prev) =>
+              prev.map((box) =>
+                box.id === selectedBox.id
+                  ? { ...box, position: [box.position[0], nextCenterY, box.position[2]] }
+                  : box
+              )
+            );
+          }}
+          centerX={selectedBox.position[0]}
+          centerZ={selectedBox.position[2]}
+          onTranslateXZ={(nextCenterX, nextCenterZ) => {
+            setBoxes((prev) =>
+              prev.map((box) =>
+                box.id === selectedBox.id
+                  ? { ...box, position: [nextCenterX, box.position[1], nextCenterZ] }
+                  : box
+              )
+            );
+          }}
+          onTranslateXYZ={(nextCenterX, nextCenterY, nextCenterZ) => {
+            setBoxes((prev) =>
+              prev.map((box) =>
+                box.id === selectedBox.id
+                  ? { ...box, position: [nextCenterX, nextCenterY, nextCenterZ] }
+                  : box
+              )
+            );
+          }}
+          onDragStart={() => setIsTransforming(true)}
+          onDragEnd={() => setIsTransforming(false)}
+        />
       )}
 
       {/* GLTF Model */}

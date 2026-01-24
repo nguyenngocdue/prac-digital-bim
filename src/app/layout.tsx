@@ -6,8 +6,8 @@ import ClientProviders from "@/providers/client-providers";
 import { LanguageProvider } from "@/contexts/language-context";
 
 export const metadata: Metadata = {
-  title: "Digital Twin BIM Platform",
-  description: "Advanced Digital Twin BIM solution for building lifecycle management",
+  title: "Ascend Platform",
+  description: "Advanced building information modeling and digital twin solution for lifecycle management",
 };
 
 const plexSans = IBM_Plex_Sans({

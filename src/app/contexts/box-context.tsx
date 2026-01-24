@@ -15,6 +15,8 @@ export type Box = {
   width?: number;
   depth?: number;
   showMeasurements?: boolean;
+  vertices?: [number, number, number][];
+  topFootprint?: [number, number][];
 };
 
 export type CreationTool = "box" | "building" | "room";
@@ -51,6 +53,7 @@ interface BoxContextType {
   setDrawingPoints: React.Dispatch<React.SetStateAction<[number, number, number][]>>;
   projectId?: string;
   createRoom: () => void;
+  updateBoxVertices: (id: string, vertices: [number, number, number][]) => void;
 }
 
 const BoxContext = createContext<BoxContextType | undefined>(undefined);
@@ -158,6 +161,16 @@ export const BoxProvider: React.FC<{ children: React.ReactNode; projectId?: stri
     setCreationTool("room");
   }, [setCreationMode, setCreationTool]);
 
+  // Update vertices for a box (used for polygon editing)
+  const updateBoxVertices = useCallback((id: string, vertices: [number, number, number][]) => {
+    setBoxes((prev) => {
+      const updated = prev.map((box) => (box.id === id ? { ...box, vertices } : box));
+      const storageKey = getStorageKey(projectId);
+      localStorage.setItem(storageKey, JSON.stringify(updated));
+      return updated;
+    });
+  }, [projectId]);
+
   // Memoize setCreationMode to prevent unnecessary re-renders
   const handleSetCreationMode = useCallback((v: boolean) => {
     setCreationMode(v);
@@ -184,7 +197,8 @@ export const BoxProvider: React.FC<{ children: React.ReactNode; projectId?: stri
     drawingPoints,
     setDrawingPoints,
     projectId,
-    createRoom
+    createRoom,
+    updateBoxVertices
   }), [
     boxes,
     creationMode,
@@ -196,7 +210,8 @@ export const BoxProvider: React.FC<{ children: React.ReactNode; projectId?: stri
     handleSetCreationMode,
     handleSetSelectedId,
     projectId,
-    createRoom
+    createRoom,
+    updateBoxVertices
   ]);
 
   return (

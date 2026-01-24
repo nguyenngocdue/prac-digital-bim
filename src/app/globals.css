@@ -6,7 +6,7 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/* Custom animations for Digital Twin BIM */
+/* Custom animations for Ascend Platform */
 @keyframes gradient {
   0%, 100% {
     background-position: 0% 50%;

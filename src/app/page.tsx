@@ -7,7 +7,7 @@ import { Box, Building2, Eye, Workflow, Database, Map } from "lucide-react";
 import { useLanguage } from "@/contexts/language-context";
 
 /**
- * Home page - Digital Twin BIM Landing Page
+ * Home page - Ascend Platform Landing Page
  */
 const Home: FC = () => {
   const {  t } = useLanguage();

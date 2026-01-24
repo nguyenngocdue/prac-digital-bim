@@ -44,7 +44,7 @@ const translations = {
     
     // CTA
     "cta.title": "Ready to Get Started?",
-    "cta.description": "Transform your building data into actionable insights with our Digital Twin BIM platform",
+    "cta.description": "Transform your building data into actionable insights with our Ascend platform",
     "cta.button": "Start Your First Project",
   },
   vi: {
@@ -55,9 +55,9 @@ const translations = {
     "nav.viewer": "Xem 3D",
     
     // Hero
-    "hero.title": "Digital Twin BIM",
+    "hero.title": "Ascend",
     "hero.subtitle": "Nền tảng",
-    "hero.description": "Cách mạng hóa quản lý vòng đời công trình với giải pháp Digital Twin BIM tiên tiến. Tích hợp, trực quan hóa và tối ưu hóa môi trường xây dựng của bạn.",
+    "hero.description": "Cách mạng hóa quản lý vòng đời công trình với giải pháp digital twin tiên tiến. Tích hợp, trực quan hóa và tối ưu hóa môi trường xây dựng của bạn.",
     "hero.exploreProjects": "Khám Phá Dự Án",
     "hero.viewer": "Demo Xem 3D",
     "hero.workflows": "Quy Trình",
@@ -80,7 +80,7 @@ const translations = {
     
     // CTA
     "cta.title": "Sẵn Sàng Bắt Đầu?",
-    "cta.description": "Chuyển đổi dữ liệu công trình thành thông tin hữu ích với nền tảng Digital Twin BIM",
+    "cta.description": "Chuyển đổi dữ liệu công trình thành thông tin hữu ích với nền tảng Ascend",
     "cta.button": "Bắt Đầu Dự Án Đầu Tiên",
   },
 };

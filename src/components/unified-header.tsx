@@ -50,7 +50,7 @@ const NAVIGATION_ITEMS: NavigationItem[] = [
 ];
 
 /**
- * UnifiedHeader - Clean and modern header for Digital Twin BIM
+ * UnifiedHeader - Clean and modern header for Ascend Platform
  */
 export const UnifiedHeader: FC = () => {
   const pathname = usePathname();
@@ -100,7 +100,7 @@ export const UnifiedHeader: FC = () => {
               <Building2 className="h-6 w-6 text-primary-foreground" />
             </div>
             <div className="hidden sm:flex flex-col leading-tight">
-              <span className="text-sm font-bold">Digital Twin BIM</span>
+              <span className="text-sm font-bold">Ascend</span>
               <span className="text-xs text-muted-foreground">
                 {language === "en" ? "Platform" : "Nền tảng"}
               </span>
