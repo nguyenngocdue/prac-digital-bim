@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { use, useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { Html } from "@react-three/drei";
 import { useThree } from "@react-three/fiber";
@@ -108,13 +108,23 @@ export const BoundingBox = ({
 }: BoundingBoxProps) => {
   const boundingBox = useBoundingBox(vertices, topVertices, height);
   const boundingLines = useBoundingBoxLines(boundingBox);
+  const lineRef = useRef<THREE.LineSegments | null>(null);
+
+  useEffect(() => {
+    if (!lineRef.current) return;
+    lineRef.current.computeLineDistances();
+  }, [boundingLines]);
 
   if (!show || !boundingBox || !boundingLines) return null;
-
+ 
   return (
     <>
       {/* Bounding lines */}
-      <lineSegments frustumCulled={false} renderOrder={10}>
+      <lineSegments
+        ref={lineRef}
+        frustumCulled={false}
+        renderOrder={10}
+      >
         <bufferGeometry>
           <bufferAttribute
             attach="attributes-position"
@@ -123,13 +133,15 @@ export const BoundingBox = ({
             itemSize={3}
           />
         </bufferGeometry>
-        <lineBasicMaterial
-          color="#60a5fa"
+
+        <lineDashedMaterial
+          color="#7e00fc"
+          dashSize={0.25}
+          gapSize={0.15}
           transparent
           opacity={0.9}
           depthTest={false}
           depthWrite={false}
-          linewidth={2}
         />
       </lineSegments>
 
@@ -141,7 +153,7 @@ export const BoundingBox = ({
       >
         <boxGeometry args={[boundingBox.size.x, boundingBox.size.y, boundingBox.size.z]} />
         <meshBasicMaterial
-          color="#3b82f6"
+          color="#7e00fc"
           wireframe
           transparent
           opacity={0}
@@ -195,29 +207,29 @@ export const BoundingBoxInfo = ({
           bottom: "16px",
         }}
       >
-      <div className="min-w-[172px] rounded-lg border border-cyan-300/40 bg-slate-950/90 px-3 py-2 text-[11px] text-slate-100 shadow-[0_0_0_1px_rgba(15,23,42,0.6),0_8px_24px_rgba(15,23,42,0.6),0_0_24px_rgba(34,211,238,0.25)] backdrop-blur">
-        <div className="flex items-center justify-between gap-3 border-b border-cyan-300/20 pb-1.5">
-          <div className="flex items-center gap-2">
-            <span className="h-2 w-2 rounded-sm bg-cyan-300 shadow-[0_0_8px_rgba(34,211,238,0.8)]" />
-            <span className="text-[9px] font-semibold uppercase tracking-[0.2em] text-cyan-200">
-              Bounds
-            </span>
+        <div className="min-w-[172px] rounded-lg border border-cyan-300/40 bg-slate-950/90 px-3 py-2 text-[11px] text-slate-100 shadow-[0_0_0_1px_rgba(15,23,42,0.6),0_8px_24px_rgba(15,23,42,0.6),0_0_24px_rgba(34,211,238,0.25)] backdrop-blur">
+          <div className="flex items-center justify-between gap-3 border-b border-cyan-300/20 pb-1.5">
+            <div className="flex items-center gap-2">
+              <span className="h-2 w-2 rounded-sm bg-cyan-300 shadow-[0_0_8px_rgba(34,211,238,0.8)]" />
+              <span className="text-[9px] font-semibold uppercase tracking-[0.2em] text-cyan-200">
+                Bounds
+              </span>
+            </div>
+            {rotationAngle !== 0 && (
+              <span className="text-[9px] font-semibold text-cyan-200">
+                {rotationAngle.toFixed(1)}&deg;
+              </span>
+            )}
           </div>
-          {rotationAngle !== 0 && (
-            <span className="text-[9px] font-semibold text-cyan-200">
-              {rotationAngle.toFixed(1)}&deg;
-            </span>
-          )}
+          <div className="mt-1.5 grid grid-cols-2 gap-x-4 gap-y-1 font-mono tabular-nums">
+            <span className="text-[9px] uppercase tracking-[0.16em] text-cyan-200/70">W</span>
+            <span className="text-right text-[12px] font-semibold text-slate-100">{size.x.toFixed(2)} m</span>
+            <span className="text-[9px] uppercase tracking-[0.16em] text-cyan-200/70">H</span>
+            <span className="text-right text-[12px] font-semibold text-slate-100">{size.y.toFixed(2)} m</span>
+            <span className="text-[9px] uppercase tracking-[0.16em] text-cyan-200/70">D</span>
+            <span className="text-right text-[12px] font-semibold text-slate-100">{size.z.toFixed(2)} m</span>
+          </div>
         </div>
-        <div className="mt-1.5 grid grid-cols-2 gap-x-4 gap-y-1 font-mono tabular-nums">
-          <span className="text-[9px] uppercase tracking-[0.16em] text-cyan-200/70">W</span>
-          <span className="text-right text-[12px] font-semibold text-slate-100">{size.x.toFixed(2)} m</span>
-          <span className="text-[9px] uppercase tracking-[0.16em] text-cyan-200/70">H</span>
-          <span className="text-right text-[12px] font-semibold text-slate-100">{size.y.toFixed(2)} m</span>
-          <span className="text-[9px] uppercase tracking-[0.16em] text-cyan-200/70">D</span>
-          <span className="text-right text-[12px] font-semibold text-slate-100">{size.z.toFixed(2)} m</span>
-        </div>
-      </div>
       </div>
     </Html>
   );
