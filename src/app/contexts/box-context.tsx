@@ -72,9 +72,9 @@ export const BoxProvider: React.FC<{ children: React.ReactNode; projectId?: stri
   const [creationTool, setCreationTool] = useState<CreationTool>("box");
   const [buildingOptions, setBuildingOptions] = useState<BuildingOptions>({
     shape: "rect",
-    width: 40,
-    depth: 25,
-    height: 12,
+    width: 6,
+    depth: 4,
+    height: 3,
     thicknessRatio: 0.3,
     snapToGrid: true,
     gridSize: 1,

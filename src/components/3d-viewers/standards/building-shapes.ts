@@ -1,4 +1,4 @@
-export type BuildingShape = "rect" | "l" | "u" | "c" | "custom";
+export type BuildingShape = "rect" | "l" | "u" | "c" | "h" | "v" | "m" | "custom";
 
 type Point2D = [number, number];
 
@@ -44,10 +44,54 @@ export function getFootprintPoints(
     return [
       [-hw, -hd],
       [hw, -hd],
+      [hw, -hd + t],
+      [-hw + t, -hd + t],
+      [-hw + t, hd - t],
+      [hw, hd - t],
       [hw, hd],
+      [-hw, hd],
+    ];
+  }
+
+  if (shape === "h") {
+    const tH = Math.min(t, d / 3);
+    const halfT = tH / 2;
+    return [
+      [-hw, hd],
+      [-hw + tH, hd],
+      [-hw + tH, halfT],
+      [hw - tH, halfT],
+      [hw - tH, hd],
+      [hw, hd],
+      [hw, -hd],
+      [hw - tH, -hd],
+      [hw - tH, -halfT],
+      [-hw + tH, -halfT],
+      [-hw + tH, -hd],
+      [-hw, -hd],
+    ];
+  }
+
+  if (shape === "v") {
+    return [
+      [-hw, hd],
+      [0, -hd],
+      [hw, hd],
+    ];
+  }
+
+  if (shape === "m") {
+    const midY = 0;
+    return [
+      [-hw, -hd],
+      [-hw, hd],
+      [-hw + t, hd],
+      [-t, midY],
+      [0, hd],
+      [t, midY],
       [hw - t, hd],
-      [hw - t, -hd + t],
-      [-hw, -hd + t],
+      [hw, hd],
+      [hw, -hd],
     ];
   }
 

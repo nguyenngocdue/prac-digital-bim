@@ -2,8 +2,8 @@ import * as THREE from "three";
 import { useMemo } from "react";
 
 type ProArrowProps = {
-  origin: THREE.Vector3;
-  direction: THREE.Vector3; // normalized
+  origin: THREE.Vector3 | [number, number, number];
+  direction: THREE.Vector3 | [number, number, number]; // normalized
   length?: number;
   radius?: number;
   headLength?: number;
@@ -20,7 +20,18 @@ export function ProArrow({
   headRadius = 0.10,
   color = 0x22c55e,
 }: ProArrowProps) {
-  const dir = useMemo(() => direction.clone().normalize(), [direction]);
+  const dir = useMemo(() => {
+    if (Array.isArray(direction)) {
+      return new THREE.Vector3(direction[0], direction[1], direction[2]).normalize();
+    }
+    return direction.clone().normalize();
+  }, [direction]);
+  const originPos = useMemo<[number, number, number]>(() => {
+    if (Array.isArray(origin)) {
+      return [origin[0], origin[1], origin[2]];
+    }
+    return [origin.x, origin.y, origin.z];
+  }, [origin]);
   const quat = useMemo(() => {
     const q = new THREE.Quaternion();
     // default arrow points +Y, rotate to direction
@@ -38,7 +49,7 @@ export function ProArrow({
   );
 
   return (
-    <group position={origin} quaternion={quat} renderOrder={999}>
+    <group position={originPos} quaternion={quat} renderOrder={999}>
       {/* Shaft */}
       <mesh position={shaftPos} frustumCulled={false}>
         <cylinderGeometry args={[radius, radius, shaftLen, 20, 1, true]} />

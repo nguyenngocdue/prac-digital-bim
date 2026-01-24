@@ -150,6 +150,9 @@ const LeftPanel: FC<LeftPanelProps> = ({
                   { key: "l", label: "L Shape" },
                   { key: "u", label: "U Shape" },
                   { key: "c", label: "C Shape" },
+                  { key: "h", label: "H Shape" },
+                  { key: "v", label: "V Shape" },
+                  { key: "m", label: "M Shape" },
                   { key: "custom", label: "Custom" },
                 ].map((shape) => (
                   <button

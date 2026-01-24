@@ -23,6 +23,7 @@ import { createDragHandlers } from "./editable-box-handles/drag-handlers";
 import { BoundingBox, BoundingBoxInfo, useBoundingBox } from './editable-box-handles/bounding-box';
 import { RotationHandles } from "./editable-box-handles/rotation-handles";
 import { PolygonDisplay, AreaLabel } from './editable-box-handles/polygon-display';
+import { ProArrow } from "@/components/pro-arrow";
 
 export const EditablePolygonHandles = ({
   vertices,
@@ -52,6 +53,10 @@ export const EditablePolygonHandles = ({
   const [showBoundingBox, setShowBoundingBox] = useState(false);
   const [rotationAngle, setRotationAngle] = useState(0);
   const [isRotating, setIsRotating] = useState(false);
+  const [heightCenters, setHeightCenters] = useState<{
+    top?: [number, number, number];
+    bottom?: [number, number, number];
+  }>({});
   const { camera, gl } = useThree();
   
   // Drag state refs
@@ -135,7 +140,7 @@ export const EditablePolygonHandles = ({
   };
 
   // Create geometries and materials using helper functions
-  const { handleGeometry, hitGeometry, edgeGeometry, edgeHitGeometry, heightGeometry } = useMemo(
+  const { handleGeometry, hitGeometry, edgeGeometry, edgeHitGeometry, heightGeometry, heightHitGeometry } = useMemo(
     () => createGeometries(),
     []
   );
@@ -151,7 +156,7 @@ export const EditablePolygonHandles = ({
         dragDisposersRef.current.forEach((dispose) => dispose());
         dragDisposersRef.current = [];
       }
-      disposeGeometries(handleGeometry, hitGeometry, edgeGeometry, edgeHitGeometry, heightGeometry);
+      disposeGeometries(handleGeometry, hitGeometry, edgeGeometry, edgeHitGeometry, heightGeometry, heightHitGeometry);
       disposeMaterials(handleMaterial, edgeMaterial, hitMaterial);
       if (rafRef.current !== null) {
         cancelAnimationFrame(rafRef.current);
@@ -182,6 +187,13 @@ export const EditablePolygonHandles = ({
       bottomHeightHitRef.current
     );
   }, []);
+
+  const getCenterPoint = (points: THREE.Vector3[]) => {
+    if (!points.length) return null;
+    const center = points.reduce((acc, point) => acc.add(point), new THREE.Vector3());
+    center.multiplyScalar(1 / points.length);
+    return [center.x, center.y, center.z] as [number, number, number];
+  };
 
   const syncVertices = (
     next: [number, number, number][],
@@ -214,6 +226,10 @@ export const EditablePolygonHandles = ({
       updateHeightHandle(heightHandleRef.current, heightHitRef.current, topVerticesRef.current);
     }
     updateHeightHandle(bottomHeightHandleRef.current, bottomHeightHitRef.current, points);
+    setHeightCenters({
+      top: topVerticesRef.current ? getCenterPoint(topVerticesRef.current) ?? undefined : undefined,
+      bottom: getCenterPoint(points) ?? undefined,
+    });
 
     // Update line
     if (lineRef.current) {
@@ -499,10 +515,11 @@ export const EditablePolygonHandles = ({
                 ref={heightHandleRef}
                 geometry={heightGeometry}
                 material={handleMaterial}
+                visible={false}
               />
               <mesh
                 ref={heightHitRef}
-                geometry={hitGeometry}
+                geometry={heightHitGeometry}
                 material={hitMaterial}
                 onPointerDown={(event) => {
                   activateSelection();
@@ -522,6 +539,17 @@ export const EditablePolygonHandles = ({
                   }
                 }}
           />
+              {heightCenters.top && (
+                <ProArrow
+                  origin={heightCenters.top}
+                  direction={[0, 1, 0]}
+                  length={0.7}
+                  headLength={0.25}
+                  headRadius={0.08}
+                  radius={0.03}
+                  color={0x38bdf8}
+                />
+              )}
         </>
       )}
       {bottomFaceShape && (
@@ -606,10 +634,11 @@ export const EditablePolygonHandles = ({
                 ref={bottomHeightHandleRef}
                 geometry={heightGeometry}
                 material={handleMaterial}
+                visible={false}
               />
               <mesh
                 ref={bottomHeightHitRef}
-                geometry={hitGeometry}
+                geometry={heightHitGeometry}
                 material={hitMaterial}
                 onPointerDown={(event) => {
                   activateSelection();
@@ -629,6 +658,17 @@ export const EditablePolygonHandles = ({
                   }
                 }}
               />
+              {heightCenters.bottom && (
+                <ProArrow
+                  origin={heightCenters.bottom}
+                  direction={[0, -1, 0]}
+                  length={0.7}
+                  headLength={0.25}
+                  headRadius={0.08}
+                  radius={0.03}
+                  color={0xf97316}
+                />
+              )}
             </>
           )}
         </>

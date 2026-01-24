@@ -63,13 +63,16 @@ interface SceneProps {
   onCameraClick?: (camera: CameraData) => void;
   selectedCameraId?: string | null;
   showGoogleTiles?: boolean;
+  showAxes?: boolean;
+  showGrid?: boolean;
 }
 
 export type SceneHandle = {
   resetView: () => void;
+  clearFaceSelection: () => void;
 };
 
-const Scene = memo(forwardRef<SceneHandle, SceneProps>(({ boxes, accent, gltfUrl, resourceMap, showRoomLabels = false, cameras = [], showCameras = false, onCameraClick, selectedCameraId, showGoogleTiles = false }, ref) => {
+const Scene = memo(forwardRef<SceneHandle, SceneProps>(({ boxes, accent, gltfUrl, resourceMap, showRoomLabels = false, cameras = [], showCameras = false, onCameraClick, selectedCameraId, showGoogleTiles = false, showAxes = true, showGrid = true }, ref) => {
   const controlsRef = useRef<any>(null);
   const objectRefs = useRef<Map<string, Object3D>>(new Map());
   const { boxes: contextBoxes, setBoxes, selectedId, setSelectedId, transformMode, setTransformMode, drawingPoints, updateBoxVertices } = useBoxContext();
@@ -86,8 +89,7 @@ const Scene = memo(forwardRef<SceneHandle, SceneProps>(({ boxes, accent, gltfUrl
   const { camera, raycaster } = useThree();
 
   // Import Three.js components
-  const { GizmoHelper, GizmoViewcube, Grid, OrbitControls, Select, Stats, TransformControls, Line } = require("@react-three/drei");
-  const { AxesWithLabels } = require("./standards/axes-with-labels");
+  const { Grid, OrbitControls, Select, TransformControls, Line } = require("@react-three/drei");
   const { RaycastCatcher } = require("@/lib/raycast-catcher");
   const THREE = require("three");
   const { PlaceholderBox } = require("./standards/placeholder-box");
@@ -114,6 +116,20 @@ const Scene = memo(forwardRef<SceneHandle, SceneProps>(({ boxes, accent, gltfUrl
     if (!controlsRef.current) return;
     controlsRef.current.enabled = !isTransforming;
   }, [isTransforming]);
+
+  useEffect(() => {
+    const handlePointerEnd = () => {
+      setIsTransforming(false);
+    };
+    window.addEventListener("pointerup", handlePointerEnd);
+    window.addEventListener("pointercancel", handlePointerEnd);
+    window.addEventListener("blur", handlePointerEnd);
+    return () => {
+      window.removeEventListener("pointerup", handlePointerEnd);
+      window.removeEventListener("pointercancel", handlePointerEnd);
+      window.removeEventListener("blur", handlePointerEnd);
+    };
+  }, []);
 
   const selectedObject = selectedId ? objectRefs.current.get(selectedId) || null : null;
   const selectedBox = selectedId ? contextBoxes.find((box) => box.id === selectedId) : undefined;
@@ -221,7 +237,19 @@ const Scene = memo(forwardRef<SceneHandle, SceneProps>(({ boxes, accent, gltfUrl
     camera.updateProjectionMatrix();
   }, [camera]);
 
-  useImperativeHandle(ref, () => ({ resetView: handleResetView }), [handleResetView]);
+  const clearFaceSelection = useCallback(() => {
+    if (lastFaceRef.current) {
+      resetVertexColors(lastFaceRef.current.mesh, lastFaceRef.current.indices);
+      lastFaceRef.current = null;
+    }
+    setFaceArrow(null);
+  }, []);
+
+  useImperativeHandle(
+    ref,
+    () => ({ resetView: handleResetView, clearFaceSelection }),
+    [clearFaceSelection, handleResetView]
+  );
 
   // Three.js scene
   const threeJsScene = (
@@ -505,31 +533,50 @@ const Scene = memo(forwardRef<SceneHandle, SceneProps>(({ boxes, accent, gltfUrl
         minDistance={showGoogleTiles ? 2 : 2}
         maxDistance={showGoogleTiles ? 1_000_000 : 2000}
       />
-      <AxesWithLabels size={4} fontSize={0.3} labelOffset={4.2} billboard />
-      <Grid
-        infiniteGrid
-        sectionColor="#444"
-        cellColor="#666"
-        fadeDistance={60}
-        fadeStrength={1}
-        sectionThickness={0.5}
-        cellThickness={0.3}
-      />
-      <Stats />
-      <GizmoHelper
-        alignment="top-right"
-        margin={[50, 90]}
-        onUpdate={() => {}}
-        onTarget={() => new THREE.Vector3(0, 0, 0)}
-        renderPriority={1}
-      >
-        <GizmoViewcube
-          color="#9eacb8"
-          strokeColor="#1a1a1a"
-          textColor="#141523"
-          hoverColor="#90a4ae"
+      {showAxes && (
+        <group>
+          <ProArrow
+            origin={[0, 0, 0]}
+            direction={[1, 0, 0]}
+            length={3.5}
+            headLength={0.6}
+            headRadius={0.18}
+            radius={0.05}
+            color={0xef4444}
+          />
+          <ProArrow
+            origin={[0, 0, 0]}
+            direction={[0, 1, 0]}
+            length={3.5}
+            headLength={0.6}
+            headRadius={0.18}
+            radius={0.05}
+            color={0x22c55e}
+          />
+          <ProArrow
+            origin={[0, 0, 0]}
+            direction={[0, 0, 1]}
+            length={3.5}
+            headLength={0.6}
+            headRadius={0.18}
+            radius={0.05}
+            color={0x3b82f6}
+          />
+        </group>
+      )}
+      {showGrid && (
+        <Grid
+          infiniteGrid
+          sectionColor="#444"
+          cellColor="#666"
+          cellSize={0.25}
+          sectionSize={2.5}
+          fadeDistance={100000}
+          fadeStrength={0}
+          sectionThickness={0.5}
+          cellThickness={0.3}
         />
-      </GizmoHelper>
+      )}
     </>
   );
 

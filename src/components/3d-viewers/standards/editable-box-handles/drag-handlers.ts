@@ -1,6 +1,6 @@
 import type { ThreeEvent } from "@react-three/fiber";
 import * as THREE from "three";
-import { DRAG_THRESHOLD, MIN_HEIGHT } from "./constants";
+import { DRAG_SENSITIVITY, DRAG_THRESHOLD, MIN_HEIGHT } from "./constants";
 import { updateAllHandles } from "./mesh-updaters";
 import { updateLineLoop } from "./utils";
 import type { DragMode, DragRefs } from "./types";
@@ -420,7 +420,9 @@ export const createDragHandlers = (params: DragHandlerParams): DragHandlers => {
       }
     } else if (dragModeRef.current === "translate-free") {
       if (!translateStartPointRef.current || !translateStartXYZRef.current) return;
-      const delta = new THREE.Vector3().subVectors(intersection.current, translateStartPointRef.current);
+      const delta = new THREE.Vector3()
+        .subVectors(intersection.current, translateStartPointRef.current)
+        .multiplyScalar(DRAG_SENSITIVITY);
       const start = translateStartXYZRef.current;
       translateLastXYZRef.current = [start[0] + delta.x, start[1] + delta.y, start[2] + delta.z];
       verticesRef.current.forEach((point, index) => {
@@ -437,8 +439,8 @@ export const createDragHandlers = (params: DragHandlerParams): DragHandlers => {
       }
     } else if (dragModeRef.current === "translate-xz") {
       if (!translateStartPointRef.current || !translateStartXZRef.current) return;
-      const deltaX = intersection.current.x - translateStartPointRef.current.x;
-      const deltaZ = intersection.current.z - translateStartPointRef.current.z;
+      const deltaX = (intersection.current.x - translateStartPointRef.current.x) * DRAG_SENSITIVITY;
+      const deltaZ = (intersection.current.z - translateStartPointRef.current.z) * DRAG_SENSITIVITY;
       const start = translateStartXZRef.current;
       translateLastXZRef.current = [start[0] + deltaX, start[1] + deltaZ];
       const delta = new THREE.Vector3(deltaX, 0, deltaZ);
@@ -456,14 +458,14 @@ export const createDragHandlers = (params: DragHandlerParams): DragHandlers => {
       }
     } else if (dragModeRef.current === "translate") {
       if (translateStartYRef.current === null || !translateStartPointRef.current) return;
-      const deltaY = intersection.current.y - translateStartPointRef.current.y;
+      const deltaY = (intersection.current.y - translateStartPointRef.current.y) * DRAG_SENSITIVITY;
       const nextCenterY = translateStartYRef.current + deltaY;
       translateLastYRef.current = nextCenterY;
     } else if (dragModeRef.current === "height") {
       if (!topVerticesRef.current || heightBaseRef.current === null || heightStartRef.current === null) {
         return;
       }
-      const deltaY = intersection.current.y - (dragStartRef.current?.y || 0);
+      const deltaY = (intersection.current.y - (dragStartRef.current?.y || 0)) * DRAG_SENSITIVITY;
       const nextHeight = Math.max(MIN_HEIGHT, heightStartRef.current + deltaY);
       const baseY = heightBaseRef.current;
       topVerticesRef.current.forEach((point, index) => {
@@ -475,14 +477,28 @@ export const createDragHandlers = (params: DragHandlerParams): DragHandlers => {
       if (
         heightStartRef.current === null ||
         heightTopRef.current === null ||
-        heightBaseRef.current === null
+        heightBaseRef.current === null ||
+        !dragStartVerticesRef.current
       ) {
         return;
       }
-      const deltaY = intersection.current.y - (dragStartRef.current?.y || 0);
+      const deltaY = (intersection.current.y - (dragStartRef.current?.y || 0)) * DRAG_SENSITIVITY;
       const nextHeight = Math.max(MIN_HEIGHT, heightStartRef.current - deltaY);
       const nextCenterY = heightTopRef.current - nextHeight / 2;
       translateLastYRef.current = nextCenterY;
+      const nextBaseY = heightTopRef.current - nextHeight;
+      verticesRef.current.forEach((point, index) => {
+        const start = dragStartVerticesRef.current?.[index];
+        if (!start) return;
+        point.set(start.x, nextBaseY, start.z);
+      });
+      if (dragStartTopVerticesRef.current && topVerticesRef.current) {
+        topVerticesRef.current.forEach((point, index) => {
+          const start = dragStartTopVerticesRef.current?.[index];
+          if (!start) return;
+          point.copy(start);
+        });
+      }
     } else if (dragIndexRef.current !== null) {
       const index = dragIndexRef.current;
       const nextPoint = intersection.current;
@@ -673,6 +689,10 @@ export const createDragHandlers = (params: DragHandlerParams): DragHandlers => {
     dragIndexRef.current = 0;
     setDraggedIndex(0);
     dragStartRef.current = intersection.current.clone();
+    dragStartVerticesRef.current = verticesRef.current.map((v) => v.clone());
+    dragStartTopVerticesRef.current = topVerticesRef.current
+      ? topVerticesRef.current.map((v) => v.clone())
+      : null;
     heightStartRef.current = height;
     heightTopRef.current = topY;
     heightBaseRef.current = verticesRef.current[0]?.y ?? 0;

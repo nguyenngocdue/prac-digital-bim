@@ -1,9 +1,10 @@
 // Handle sizes
-export const HANDLE_SIZE = 0.28;
-export const HANDLE_HIT_SIZE = 0.5;
-export const EDGE_SIZE = 0.22;
-export const EDGE_HIT_SIZE = 0.45;
-export const HEIGHT_SIZE = 0.24;
+export const HANDLE_SIZE = 0.08;
+export const HANDLE_HIT_SIZE = 0.175;
+export const EDGE_SIZE = 0.07;
+export const EDGE_HIT_SIZE = 0.16;
+export const HEIGHT_SIZE = 0.08;
+export const HEIGHT_HIT_SIZE = 0.28;
 
 // Geometry detail
 export const HANDLE_SEGMENTS = 16;
@@ -25,3 +26,4 @@ export const MIN_HEIGHT = 0.5;
 
 // Drag threshold
 export const DRAG_THRESHOLD = 1;
+export const DRAG_SENSITIVITY = 0.4;

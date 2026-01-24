@@ -10,7 +10,18 @@ import { TransformModePanel } from "./transform-mode-panel";
 import { CameraListPanel, CameraViewerPanel } from "./cameras";
 import { mockCameras } from "@/data/mock-cameras";
 import { CameraData } from "@/types/camera";
-import { Activity, Box, Camera, Home, Map, PanelLeft, PanelRight, Upload } from "lucide-react";
+import {
+  Activity,
+  Box,
+  Camera,
+  Grid3x3,
+  Home,
+  Map,
+  PanelLeft,
+  PanelRight,
+  Upload,
+  Axis3d,
+} from "lucide-react";
 
 interface ViewerProps {
   useCesium?: boolean;
@@ -46,6 +57,8 @@ const Viewer = ({
   const [mounted, setMounted] = useState(false);
   const [showRoomLabels, setShowRoomLabels] = useState(true);
   const [showCameras, setShowCameras] = useState(true);
+  const [showAxes, setShowAxes] = useState(true);
+  const [showGrid, setShowGrid] = useState(true);
   const [selectedCamera, setSelectedCamera] = useState<CameraData | null>(null);
   const [gltfUrl, setGltfUrl] = useState<string | null>(null);
   const [resourceMap, setResourceMap] = useState<Map<string, string>>();
@@ -69,11 +82,25 @@ const Viewer = ({
   const [canvasKey] = useState(() => `canvas-${projectId || "default"}`);
   const overlayActions = [
     {
+      key: "axes",
+      label: "Axes",
+      active: showAxes,
+      onClick: () => setShowAxes((prev) => !prev),
+      icon: Axis3d,
+    },
+    {
+      key: "grid",
+      label: "Grid",
+      active: showGrid,
+      onClick: () => setShowGrid((prev) => !prev),
+      icon: Grid3x3,
+    },
+    {
       key: "create-room",
       label: "Create Room",
       active: false,
       onClick: createRoom,
-      icon: Box,
+      icon: Home,
     },
     {
       key: "left-panel",
@@ -207,6 +234,7 @@ const Viewer = ({
       if ((e.key === "Delete" || e.key === "Backspace") && selectedId) {
         setBoxes((prev) => prev.filter((box) => box.id !== selectedId));
         setSelectedId(null);
+        sceneRef.current?.clearFaceSelection();
       }
       // Transform mode shortcuts when object is selected
       if (selectedId) {
@@ -277,6 +305,8 @@ const Viewer = ({
           onCameraClick={(camera) => setSelectedCamera(camera)}
           selectedCameraId={selectedCamera?.id || null}
           showGoogleTiles={showGoogleTiles}
+          showAxes={showAxes}
+          showGrid={showGrid}
         />
       </Canvas>
       <div className="pointer-events-auto absolute right-3 top-40 z-50">
