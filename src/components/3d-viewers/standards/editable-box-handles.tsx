@@ -51,6 +51,7 @@ export const EditablePolygonHandles = ({
   const [showRotateHandles, setShowRotateHandles] = useState(false);
   const [showBoundingBox, setShowBoundingBox] = useState(false);
   const [rotationAngle, setRotationAngle] = useState(0);
+  const [isRotating, setIsRotating] = useState(false);
   const { camera, gl } = useThree();
   
   // Drag state refs
@@ -105,6 +106,7 @@ export const EditablePolygonHandles = ({
   const rotateLockedCenterRef = useRef<THREE.Vector3 | null>(null);
   const dragMoveRafRef = useRef<number | null>(null);
   const pendingPointerRef = useRef<{ clientX: number; clientY: number } | null>(null);
+  const rotationAngleRef = useRef(0);
   
   // UI state refs
   const dragDisposersRef = useRef<(() => void)[]>([]);
@@ -338,8 +340,26 @@ export const EditablePolygonHandles = ({
     setDraggedIndex,
     setDraggedEdgeIndex,
     setCursor,
-    setRotationAngle,
+    setRotationAngle: (angle) => {
+      if (angle === 0 || Math.abs(angle - rotationAngleRef.current) >= 0.1) {
+        rotationAngleRef.current = angle;
+        setRotationAngle(angle);
+      }
+    },
+    setIsRotating,
   });
+
+  const rotateAxis = useMemo(() => {
+    if (!isRotating || !boundingBox) return null;
+    const center = rotateLockedCenterRef.current ?? boundingBox.center;
+    const minY = boundingBox.box.min.y;
+    const maxY = boundingBox.box.max.y;
+    const margin = 0.2;
+    return new Float32Array([
+      center.x, minY - margin, center.z,
+      center.x, maxY + margin, center.z,
+    ]);
+  }, [boundingBox, isRotating]);
 
   return (
     <group
@@ -626,7 +646,27 @@ export const EditablePolygonHandles = ({
         onPointerUp={dragHandlers.handlePointerUp}
         setCursor={setCursor}
       />
-      {showBoundingBox && boundingBox && (
+      {rotateAxis && (
+        <lineSegments frustumCulled={false} renderOrder={11}>
+          <bufferGeometry>
+            <bufferAttribute
+              attach="attributes-position"
+              args={[rotateAxis, 3]}
+              count={rotateAxis.length / 3}
+              itemSize={3}
+            />
+          </bufferGeometry>
+          <lineBasicMaterial
+            color="#f59e0b"
+            transparent
+            opacity={0.9}
+            depthTest={false}
+            depthWrite={false}
+            linewidth={2}
+          />
+        </lineSegments>
+      )}
+      {showBoundingBox && boundingBox && isRotating && (
         <BoundingBoxInfo
           center={boundingBox.center}
           size={boundingBox.size}

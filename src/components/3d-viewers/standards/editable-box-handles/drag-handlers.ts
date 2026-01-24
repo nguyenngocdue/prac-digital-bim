@@ -27,6 +27,7 @@ type DragHandlerParams = {
   setDraggedEdgeIndex: (value: number | null) => void;
   setCursor: (cursor: string) => void;
   setRotationAngle?: (angle: number) => void;
+  setIsRotating?: (value: boolean) => void;
 };
 
 export type DragHandlers = {
@@ -64,6 +65,7 @@ export const createDragHandlers = (params: DragHandlerParams): DragHandlers => {
     setDraggedEdgeIndex,
     setCursor,
     setRotationAngle,
+    setIsRotating,
   } = params;
 
   const {
@@ -154,6 +156,9 @@ export const createDragHandlers = (params: DragHandlerParams): DragHandlers => {
     // Reset rotation angle display
     if (setRotationAngle) {
       setRotationAngle(0);
+    }
+    if (setIsRotating) {
+      setIsRotating(false);
     }
     
     setCursor("auto");
@@ -702,6 +707,9 @@ export const createDragHandlers = (params: DragHandlerParams): DragHandlers => {
     rotateLockedCenterRef.current = lockedCenter;
     
     dragModeRef.current = "rotate";
+    if (setIsRotating) {
+      setIsRotating(true);
+    }
     dragIndexRef.current = 0;
     setDraggedIndex(0);
     dragStartVerticesRef.current = verticesRef.current.map((v) => v.clone());

@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import * as THREE from "three";
 import { Html } from "@react-three/drei";
+import { useThree } from "@react-three/fiber";
 
 interface BoundingBoxProps {
   vertices: [number, number, number][];
@@ -91,13 +92,7 @@ export const useBoundingBoxLines = (
       return new Float32Array(positions);
     };
 
-    const inner = makeLines(min, max);
-    const margin = 0.08;
-    const outerMin = min.clone().addScalar(-margin);
-    const outerMax = max.clone().addScalar(margin);
-    const outer = makeLines(outerMin, outerMax);
-
-    return { inner, outer };
+    return makeLines(min, max);
   }, [boundingBox]);
 };
 
@@ -118,43 +113,23 @@ export const BoundingBox = ({
 
   return (
     <>
-      {/* Outer lines - Đậm và rõ ràng */}
+      {/* Bounding lines */}
       <lineSegments frustumCulled={false} renderOrder={10}>
         <bufferGeometry>
           <bufferAttribute
             attach="attributes-position"
-            args={[boundingLines.outer, 3]}
-            count={boundingLines.outer.length / 3}
-            itemSize={3}
-          />
-        </bufferGeometry>
-        <lineBasicMaterial
-          color="#3b82f6"
-          transparent
-          opacity={0.9}
-          depthTest={false}
-          depthWrite={false}
-          linewidth={2}
-        />
-      </lineSegments>
-
-      {/* Inner lines - Đậm hơn */}
-      <lineSegments frustumCulled={false} renderOrder={10}>
-        <bufferGeometry>
-          <bufferAttribute
-            attach="attributes-position"
-            args={[boundingLines.inner, 3]}
-            count={boundingLines.inner.length / 3}
+            args={[boundingLines, 3]}
+            count={boundingLines.length / 3}
             itemSize={3}
           />
         </bufferGeometry>
         <lineBasicMaterial
           color="#60a5fa"
           transparent
-          opacity={0.75}
+          opacity={0.9}
           depthTest={false}
           depthWrite={false}
-          linewidth={1.5}
+          linewidth={2}
         />
       </lineSegments>
 
@@ -197,56 +172,52 @@ interface BoundingBoxInfoProps {
 }
 
 export const BoundingBoxInfo = ({
-  center,
   size,
-  maxY,
   rotationAngle,
 }: BoundingBoxInfoProps) => {
+  const { size: viewportSize } = useThree();
+  const position = useMemo(
+    () => [viewportSize.width / 2, viewportSize.height / 2] as [number, number],
+    [viewportSize.height, viewportSize.width]
+  );
+
   return (
-    <Html position={[center.x, maxY + 0.3, center.z]} center>
-      <div className="pointer-events-none space-y-1">
-        <div className="rounded bg-blue-600/90 px-3 py-1.5 text-xs font-semibold text-white shadow-lg">
+    <Html
+      fullscreen
+      transform={false}
+      calculatePosition={() => position}
+    >
+      <div
+        className="pointer-events-none select-none"
+        style={{
+          position: "absolute",
+          right: "16px",
+          bottom: "16px",
+        }}
+      >
+      <div className="min-w-[172px] rounded-lg border border-cyan-300/40 bg-slate-950/90 px-3 py-2 text-[11px] text-slate-100 shadow-[0_0_0_1px_rgba(15,23,42,0.6),0_8px_24px_rgba(15,23,42,0.6),0_0_24px_rgba(34,211,238,0.25)] backdrop-blur">
+        <div className="flex items-center justify-between gap-3 border-b border-cyan-300/20 pb-1.5">
           <div className="flex items-center gap-2">
-            <svg
-              className="h-3.5 w-3.5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"
-              />
-            </svg>
-            <span>Bounding Box</span>
+            <span className="h-2 w-2 rounded-sm bg-cyan-300 shadow-[0_0_8px_rgba(34,211,238,0.8)]" />
+            <span className="text-[9px] font-semibold uppercase tracking-[0.2em] text-cyan-200">
+              Bounds
+            </span>
           </div>
+          {rotationAngle !== 0 && (
+            <span className="text-[9px] font-semibold text-cyan-200">
+              {rotationAngle.toFixed(1)}&deg;
+            </span>
+          )}
         </div>
-        <div className="rounded bg-black/80 px-3 py-2 text-[11px] text-white/90 shadow-lg">
-          <div className="space-y-0.5 font-mono">
-            <div className="flex justify-between gap-3">
-              <span className="text-blue-300">W:</span>
-              <span className="font-semibold">{size.x.toFixed(2)} m</span>
-            </div>
-            <div className="flex justify-between gap-3">
-              <span className="text-green-300">H:</span>
-              <span className="font-semibold">{size.y.toFixed(2)} m</span>
-            </div>
-            <div className="flex justify-between gap-3">
-              <span className="text-yellow-300">D:</span>
-              <span className="font-semibold">{size.z.toFixed(2)} m</span>
-            </div>
-            {rotationAngle !== 0 && (
-              <div className="mt-1 border-t border-white/20 pt-1">
-                <div className="flex justify-between gap-3">
-                  <span className="text-purple-300">Rot:</span>
-                  <span className="font-semibold">{rotationAngle.toFixed(1)}°</span>
-                </div>
-              </div>
-            )}
-          </div>
+        <div className="mt-1.5 grid grid-cols-2 gap-x-4 gap-y-1 font-mono tabular-nums">
+          <span className="text-[9px] uppercase tracking-[0.16em] text-cyan-200/70">W</span>
+          <span className="text-right text-[12px] font-semibold text-slate-100">{size.x.toFixed(2)} m</span>
+          <span className="text-[9px] uppercase tracking-[0.16em] text-cyan-200/70">H</span>
+          <span className="text-right text-[12px] font-semibold text-slate-100">{size.y.toFixed(2)} m</span>
+          <span className="text-[9px] uppercase tracking-[0.16em] text-cyan-200/70">D</span>
+          <span className="text-right text-[12px] font-semibold text-slate-100">{size.z.toFixed(2)} m</span>
         </div>
+      </div>
       </div>
     </Html>
   );
