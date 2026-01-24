@@ -6,10 +6,11 @@ import Scene from "./scene";
 import { GltfControls } from "./gltf/gltf-controls";
 import { IotControls } from "./iot/iot-controls";
 import { IotLegend } from "./iot/iot-legend";
+import { TransformModePanel } from "./transform-mode-panel";
 import { CameraListPanel, CameraViewerPanel } from "./cameras";
 import { mockCameras } from "@/data/mock-cameras";
 import { CameraData } from "@/types/camera";
-import { Activity, Camera, Map, PanelLeft, PanelRight, Upload } from "lucide-react";
+import { Activity, Box, Camera, Map, PanelLeft, PanelRight, Upload } from "lucide-react";
 
 interface ViewerProps {
   useCesium?: boolean;
@@ -60,9 +61,19 @@ const Viewer = ({
     selectedId,
     setSelectedId,
     projectId,
+    createRoom,
+    transformMode,
+    setTransformMode,
   } = useBoxContext();
   const [canvasKey] = useState(() => `canvas-${projectId || "default"}`);
   const overlayActions = [
+    {
+      key: "create-room",
+      label: "Create Room",
+      active: false,
+      onClick: createRoom,
+      icon: Box,
+    },
     {
       key: "left-panel",
       label: "Left panel",
@@ -191,12 +202,27 @@ const Viewer = ({
         setBoxes((prev) => prev.filter((box) => box.id !== selectedId));
         setSelectedId(null);
       }
+      // Transform mode shortcuts when object is selected
+      if (selectedId) {
+        if (e.key === "g" || e.key === "G") {
+          e.preventDefault();
+          setTransformMode("translate");
+        }
+        if (e.key === "r" || e.key === "R") {
+          e.preventDefault();
+          setTransformMode("rotate");
+        }
+        if (e.key === "s" || e.key === "S") {
+          e.preventDefault();
+          setTransformMode("scale");
+        }
+      }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [creationMode, selectedId, setBoxes, setCreationMode, setSelectedId]);
+  }, [creationMode, selectedId, setBoxes, setCreationMode, setSelectedId, setTransformMode]);
 
   // Don't render canvas on server or before mounting
   if (!mounted) {
@@ -209,6 +235,21 @@ const Viewer = ({
 
   return (
     <div className="relative h-full w-full">
+      {/* Creation Mode Indicator */}
+      {creationMode && (
+        <div className="absolute top-20 left-1/2 z-40 -translate-x-1/2">
+          <div className="viewer-panel viewer-panel-strong flex items-center gap-2 rounded-lg px-4 py-2 shadow-lg backdrop-blur">
+            <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
+            <span className="text-sm font-medium">
+              {creationTool === "room" ? "Click to place Room" : 
+               creationTool === "building" ? "Click to place Building" : 
+               "Click to place Box"}
+            </span>
+            <span className="text-xs text-muted-foreground ml-2">(ESC to exit)</span>
+          </div>
+        </div>
+      )}
+      
       <Canvas 
         key={canvasKey}
         camera={{ position: [5, 5, 5], fov: 50 }}
@@ -239,6 +280,13 @@ const Viewer = ({
           setResourceMap(map);
         }} />
       )}
+
+      {/* Transform Mode Panel */}
+      <TransformModePanel
+        mode={transformMode}
+        onModeChange={setTransformMode}
+        selectedId={selectedId}
+      />
 
       {overlayActions.length > 0 && (
         <div className="absolute bottom-2 left-1/2 z-40 -translate-x-1/2">

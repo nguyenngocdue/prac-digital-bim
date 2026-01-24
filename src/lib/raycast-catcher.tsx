@@ -3,6 +3,7 @@ import * as THREE from "three";
 import { useBoxContext } from "../app/contexts/box-context";
 import { useThree } from "@react-three/fiber";
 import { getFootprintPoints } from "@/components/3d-viewers/standards/building-shapes";
+import { useRef } from "react";
 
 export function RaycastCatcher({ accent }: { accent: string }) {
   const {
@@ -16,6 +17,10 @@ export function RaycastCatcher({ accent }: { accent: string }) {
     setSelectedId,
   } = useBoxContext();
   const { camera, scene, gl } = useThree();
+  
+  // Track mouse movement to distinguish click from drag
+  const mouseDownPos = useRef<{ x: number; y: number } | null>(null);
+  const isDragging = useRef(false);
 
   const snapPoint = (point: THREE.Vector3) => {
     const snapped = point.clone();
@@ -106,9 +111,38 @@ export function RaycastCatcher({ accent }: { accent: string }) {
       rotation={[-Math.PI / 2, 0, 0]}
       visible={false}
       onPointerDown={(e: any) => {
-        if (!creationMode) return;
+        mouseDownPos.current = { x: e.clientX, y: e.clientY };
+        isDragging.current = false;
+      }}
+      onPointerMove={(e: any) => {
+        if (mouseDownPos.current) {
+          const dx = e.clientX - mouseDownPos.current.x;
+          const dy = e.clientY - mouseDownPos.current.y;
+          const distance = Math.sqrt(dx * dx + dy * dy);
+          // If mouse moved more than 5 pixels, consider it a drag
+          if (distance > 5) {
+            isDragging.current = true;
+          }
+        }
+      }}
+      onPointerUp={(e: any) => {
+        // Only place object if it was a click, not a drag
+        if (isDragging.current) {
+          mouseDownPos.current = null;
+          isDragging.current = false;
+          return;
+        }
+        
+        if (!creationMode) {
+          mouseDownPos.current = null;
+          return;
+        }
+        
         const placement = getPlacementPoint(e);
-        if (!placement) return;
+        if (!placement) {
+          mouseDownPos.current = null;
+          return;
+        }
         const { point, normal } = placement;
 
         if (creationTool === "building" && buildingOptions.shape === "custom" && buildingOptions.drawingMode) {
@@ -137,6 +171,7 @@ export function RaycastCatcher({ accent }: { accent: string }) {
             ]);
             setSelectedId(null);
           }
+          mouseDownPos.current = null;
           return;
         }
 
@@ -171,6 +206,28 @@ export function RaycastCatcher({ accent }: { accent: string }) {
             },
           ]);
           setSelectedId(null);
+          mouseDownPos.current = null;
+          return;
+        }
+
+        if (creationTool === "room") {
+          const roomHeight = 3;
+          setBoxes((prev) => [
+            ...prev,
+            {
+              id: buildId(),
+              position: [point.x, point.y + roomHeight / 2, point.z],
+              color: "#D4A574",
+              type: "room",
+              width: 3.66,
+              height: roomHeight,
+              depth: 3.66,
+              showMeasurements: true,
+              rotationY: 0,
+            },
+          ]);
+          setSelectedId(null);
+          mouseDownPos.current = null;
           return;
         }
 
@@ -187,6 +244,7 @@ export function RaycastCatcher({ accent }: { accent: string }) {
           },
         ]);
         setSelectedId(null);
+        mouseDownPos.current = null;
       }}
     >
       <planeGeometry args={[1000, 1000]} />

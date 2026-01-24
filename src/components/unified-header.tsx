@@ -6,6 +6,7 @@ import { useState, useEffect, type FC } from "react";
 import { cn } from "@/lib/utils";
 import ThemeToggle from "./theme-toggle";
 import { useLanguage } from "@/contexts/language-context";
+import { useBoxContext } from "@/app/contexts/box-context";
 import { motion } from "framer-motion";
 import {
   Home,
@@ -16,6 +17,7 @@ import {
   X,
   Building2,
   Languages,
+  Plus,
 } from "lucide-react";
 
 type NavigationItem = {
@@ -55,6 +57,15 @@ export const UnifiedHeader: FC = () => {
   const { language, setLanguage, t } = useLanguage();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  
+  // Try to get box context, but handle if not available
+  let createRoom: (() => void) | null = null;
+  try {
+    const boxContext = useBoxContext();
+    createRoom = boxContext.createRoom;
+  } catch {
+    // Context not available (not in a page with BoxProvider)
+  }
 
   useEffect(() => {
     const handleScroll = () => {
@@ -127,6 +138,20 @@ export const UnifiedHeader: FC = () => {
 
           {/* Actions */}
           <div className="flex items-center gap-2">
+            {/* Create Room Button - Only show on viewer page */}
+            {createRoom && pathname.includes("/viewer") && (
+              <button
+                onClick={createRoom}
+                className="flex items-center gap-2 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
+                title={language === "en" ? "Create Room" : "Tạo phòng"}
+              >
+                <Plus className="h-4 w-4" />
+                <span className="hidden sm:inline">
+                  {language === "en" ? "Create Room" : "Tạo phòng"}
+                </span>
+              </button>
+            )}
+            
             {/* Language Toggle */}
             <button
               onClick={() => setLanguage(language === "en" ? "vi" : "en")}

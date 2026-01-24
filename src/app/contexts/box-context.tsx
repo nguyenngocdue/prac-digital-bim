@@ -7,14 +7,17 @@ export type Box = {
   position: [number, number, number];
   color?: string;
   size?: [number, number, number];
-  type?: "box" | "building";
+  type?: "box" | "building" | "room";
   rotationY?: number;
   footprint?: [number, number][];
   height?: number;
   thicknessRatio?: number;
+  width?: number;
+  depth?: number;
+  showMeasurements?: boolean;
 };
 
-export type CreationTool = "box" | "building";
+export type CreationTool = "box" | "building" | "room";
 export type TransformMode = "translate" | "rotate" | "scale";
 
 export type BuildingOptions = {
@@ -47,6 +50,7 @@ interface BoxContextType {
   drawingPoints: [number, number, number][];
   setDrawingPoints: React.Dispatch<React.SetStateAction<[number, number, number][]>>;
   projectId?: string;
+  createRoom: () => void;
 }
 
 const BoxContext = createContext<BoxContextType | undefined>(undefined);
@@ -148,6 +152,12 @@ export const BoxProvider: React.FC<{ children: React.ReactNode; projectId?: stri
     return () => clearTimeout(timeoutId);
   }, [boxes, projectId, isLoading]);
 
+  // Create room helper function
+  const createRoom = useCallback(() => {
+    setCreationMode(true);
+    setCreationTool("room");
+  }, [setCreationMode, setCreationTool]);
+
   // Memoize setCreationMode to prevent unnecessary re-renders
   const handleSetCreationMode = useCallback((v: boolean) => {
     setCreationMode(v);
@@ -173,7 +183,8 @@ export const BoxProvider: React.FC<{ children: React.ReactNode; projectId?: stri
     setTransformMode,
     drawingPoints,
     setDrawingPoints,
-    projectId
+    projectId,
+    createRoom
   }), [
     boxes,
     creationMode,
@@ -184,7 +195,8 @@ export const BoxProvider: React.FC<{ children: React.ReactNode; projectId?: stri
     drawingPoints,
     handleSetCreationMode,
     handleSetSelectedId,
-    projectId
+    projectId,
+    createRoom
   ]);
 
   return (

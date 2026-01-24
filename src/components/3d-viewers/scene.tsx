@@ -19,11 +19,14 @@ type Box = {
   position: [number, number, number];
   color?: string;
   size?: [number, number, number];
-  type?: "box" | "building";
+  type?: "box" | "building" | "room";
   rotationY?: number;
   footprint?: [number, number][];
   height?: number;
   thicknessRatio?: number;
+  width?: number;
+  depth?: number;
+  showMeasurements?: boolean;
 };
 
 interface SceneProps {
@@ -54,6 +57,7 @@ const Scene = memo(({ boxes, accent, gltfUrl, resourceMap, showRoomLabels = fals
   const { RaycastCatcher } = require("@/lib/raycast-catcher");
   const THREE = require("three");
   const { PlaceholderBox } = require("./standards/placeholder-box");
+  const { RoomBox } = require("./standards/room-box");
   
   // Load GLTF model if URL is provided
   const { scene: gltfScene } = useGltfModel({ url: gltfUrl || null, resourceMap });
@@ -186,6 +190,15 @@ const Scene = memo(({ boxes, accent, gltfUrl, resourceMap, showRoomLabels = fals
                 thicknessRatio={box.thicknessRatio || 0.3}
                 shape="rect"
               />
+            ) : box.type === "room" ? (
+              <RoomBox
+                width={box.width || 3.66}
+                height={box.height || 3}
+                depth={box.depth || 3.66}
+                position={[0, 0, 0]}
+                color={box.color || "#D4A574"}
+                showMeasurements={box.showMeasurements !== false}
+              />
             ) : (
               <PlaceholderBox
                 color={box.color || accent}
@@ -207,11 +220,14 @@ const Scene = memo(({ boxes, accent, gltfUrl, resourceMap, showRoomLabels = fals
         <TransformControls
           object={selectedObjectOverride || selectedObject}
           mode={transformMode}
-          size={3}
+          size={1.5}
           space="world"
           showX
           showY
           showZ
+          translationSnap={0.1}
+          rotationSnap={Math.PI / 18}
+          scaleSnap={0.1}
           onMouseDown={() => setIsTransforming(true)}
           onMouseUp={() => {
             setIsTransforming(false);
@@ -256,7 +272,7 @@ const Scene = memo(({ boxes, accent, gltfUrl, resourceMap, showRoomLabels = fals
         ref={controlsRef}
         enableDamping
         dampingFactor={showGoogleTiles ? 0.08 : 0.12}
-        enablePan={showGoogleTiles}
+        enablePan={true}
         enableRotate
         enableZoom
         panSpeed={showGoogleTiles ? 0.6 : 1}
