@@ -26,6 +26,13 @@ import { BuildingMesh } from "./standards/building-mesh";
 import { EditableBoxHandles } from "./standards/editable-box-handles";
 import { getFootprintPoints } from "./standards/building-shapes";
 import { getWorldFaceNormal, getWorldFacePoint, type FaceArrowState } from "./standards/face-normal-arrow";
+import * as THREE from "three";
+import {
+  resetVertexColors,
+  selectCoplanarFace,
+  type FaceSelection,
+} from "./standards/face-selection";
+import { ProArrow } from "@/components/pro-arrow";
 
 type Box = {
   id: string;
@@ -70,6 +77,7 @@ const Scene = memo(forwardRef<SceneHandle, SceneProps>(({ boxes, accent, gltfUrl
   const [selectedObjectOverride, setSelectedObjectOverride] = useState<Object3D | null>(null);
   const [faceArrow, setFaceArrow] = useState<FaceArrowState | null>(null);
   const boxesGroupRef = useRef<THREE.Group | null>(null);
+  const lastFaceRef = useRef<FaceSelection | null>(null);
   const initialCameraRef = useRef<{
     position: Vector3;
     target: Vector3;
@@ -203,24 +211,6 @@ const Scene = memo(forwardRef<SceneHandle, SceneProps>(({ boxes, accent, gltfUrl
     return [...points, points[0]];
   }, [drawingPoints]);
 
-  const faceArrowHelper = useMemo(
-    () =>
-      new THREE.ArrowHelper(
-        new THREE.Vector3(0, 1, 0),
-        new THREE.Vector3(0, 0, 0),
-        1,
-        0x22c55e
-      ),
-    []
-  );
-
-  useEffect(() => {
-    if (!faceArrow) return;
-    faceArrowHelper.position.copy(faceArrow.origin);
-    faceArrowHelper.setDirection(faceArrow.direction);
-    faceArrowHelper.setLength(1, 0.25, 0.15);
-  }, [faceArrow, faceArrowHelper]);
-
   const handleResetView = useCallback(() => {
     if (!controlsRef.current || !initialCameraRef.current) return;
     const { position, target, up } = initialCameraRef.current;
@@ -248,7 +238,17 @@ const Scene = memo(forwardRef<SceneHandle, SceneProps>(({ boxes, accent, gltfUrl
       <ambientLight intensity={0.6} />
       <directionalLight position={[5, 5, 5]} intensity={1} />
       <PlaceholderBox color={accent || "#06b6d4"} />
-      {faceArrow && <primitive object={faceArrowHelper} />}
+      {faceArrow && (
+        <ProArrow
+          origin={faceArrow.origin}
+          direction={faceArrow.direction}
+          length={1}
+          headLength={0.25}
+          headRadius={0.12}
+          radius={0.04}
+          color={0x22c55e}
+        />
+      )}
       <group ref={boxesGroupRef}>
         <Select box multiple>
           {boxes.map((box, i) => (
@@ -271,8 +271,25 @@ const Scene = memo(forwardRef<SceneHandle, SceneProps>(({ boxes, accent, gltfUrl
                     const normal = getWorldFaceNormal(hit);
                     if (normal) {
                       const origin = getWorldFacePoint(hit);
+                      const toCamera = camera.position.clone().sub(origin);
+                      if (normal.dot(toCamera) < 0) {
+                        normal.negate();
+                      }
                       origin.addScaledVector(normal, 0.01);
                       setFaceArrow({ origin, direction: normal });
+                    }
+                    if (hit.faceIndex !== undefined) {
+                      const mesh = hit.object as THREE.Mesh;
+                      if (lastFaceRef.current) {
+                        resetVertexColors(
+                          lastFaceRef.current.mesh,
+                          lastFaceRef.current.indices
+                        );
+                      }
+                      const selection = selectCoplanarFace(mesh, hit, "#f59e0b", 0.01, 0.02);
+                      if (selection) {
+                        lastFaceRef.current = selection;
+                      }
                     }
                   }
                 }

@@ -1,4 +1,4 @@
-import { use, useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { Html } from "@react-three/drei";
 import { useThree } from "@react-three/fiber";
