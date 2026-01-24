@@ -65,10 +65,14 @@ export function BuildingMesh({
     const triangles = THREE.ShapeUtils.triangulateShape(shapePoints2d, []);
     const indices: number[] = [];
     const count = points.length;
-    triangles.forEach(([a, b, c]) => {
+    triangles.forEach((triangle) => {
+      const [a, b, c] = triangle;
+      if (a === undefined || b === undefined || c === undefined) return;
       indices.push(a, c, b);
     });
-    triangles.forEach(([a, b, c]) => {
+    triangles.forEach((triangle) => {
+      const [a, b, c] = triangle;
+      if (a === undefined || b === undefined || c === undefined) return;
       indices.push(a + count, b + count, c + count);
     });
     for (let i = 0; i < count; i += 1) {

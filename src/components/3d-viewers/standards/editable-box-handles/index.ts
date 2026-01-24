@@ -65,3 +65,6 @@ export {
   updateLineLoop,
   markAsHandle,
 } from "./utils";
+
+// Re-export drag handler helpers
+export { createDragHandlers } from "./drag-handlers";

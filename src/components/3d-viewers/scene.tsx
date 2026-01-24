@@ -24,6 +24,7 @@ type Box = {
   type?: "box" | "building" | "room";
   rotationY?: number;
   footprint?: [number, number][];
+  vertices?: [number, number, number][];
   height?: number;
   thicknessRatio?: number;
   width?: number;
@@ -93,18 +94,26 @@ const Scene = memo(({ boxes, accent, gltfUrl, resourceMap, showRoomLabels = fals
     selectedBox?.type === "building"
       ? selectedBox.topFootprint || selectedFootprint
       : null;
-  const selectedFootprintVertices =
+  const selectedFootprintVertices: [number, number, number][] | null =
     selectedBox?.type === "building" && selectedFootprint
       ? selectedFootprint.map(([x, z]) => {
           const baseY = selectedBox.position[1] - (selectedBox.height || 0) / 2;
-          return [x + selectedBox.position[0], baseY, z + selectedBox.position[2]];
+          return [x + selectedBox.position[0], baseY, z + selectedBox.position[2]] as [
+            number,
+            number,
+            number
+          ];
         })
       : null;
-  const selectedTopVertices =
+  const selectedTopVertices: [number, number, number][] | null =
     selectedBox?.type === "building" && selectedTopFootprint
       ? selectedTopFootprint.map(([x, z]) => {
           const topY = selectedBox.position[1] + (selectedBox.height || 0) / 2;
-          return [x + selectedBox.position[0], topY, z + selectedBox.position[2]];
+          return [x + selectedBox.position[0], topY, z + selectedBox.position[2]] as [
+            number,
+            number,
+            number
+          ];
         })
       : null;
 
@@ -232,10 +241,10 @@ const Scene = memo(({ boxes, accent, gltfUrl, resourceMap, showRoomLabels = fals
                 color={box.color || "#D4A574"}
                 showMeasurements={box.showMeasurements !== false}
                 vertices={box.vertices}
-                onVerticesChange={(newVertices) => {
+                onVerticesChange={(newVertices: [number, number, number][]) => {
                   updateBoxVertices(box.id, newVertices);
                 }}
-                onHandleDragChange={(isDragging) => setIsTransforming(isDragging)}
+                onHandleDragChange={(isDragging: boolean) => setIsTransforming(isDragging)}
               />
             ) : (
               <PlaceholderBox

@@ -13,7 +13,6 @@ interface RoomBoxProps {
   color?: string;
   showMeasurements?: boolean;
   onPointerDown?: (event: any) => void;
-  onResize?: (newWidth: number, newHeight: number, newDepth: number, newPosition: [number, number, number]) => void;
   vertices?: [number, number, number][];
   onVerticesChange?: (vertices: [number, number, number][]) => void;
   onHandleDragChange?: (isDragging: boolean) => void;
@@ -27,7 +26,6 @@ export const RoomBox = ({
   color = "#D4A574",
   showMeasurements = true,
   onPointerDown,
-  onResize,
   vertices,
   onVerticesChange,
   onHandleDragChange,
