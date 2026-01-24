@@ -16,6 +16,7 @@ import {
   Grid3x3,
   Home,
   Map,
+  Maximize2,
   Move3d,
   PanelLeft,
   PanelRight,
@@ -318,14 +319,28 @@ const Viewer = ({
           allowMove={allowMove}
         />
       </Canvas>
-      <div className="pointer-events-auto absolute right-3 top-40 z-50">
+      <div className="pointer-events-auto absolute right-3 top-40 z-50 flex flex-col gap-2">
         <button
           type="button"
           onClick={() => sceneRef.current?.resetView()}
           aria-label="Reset view"
-          className="viewer-chip flex h-7 w-7 items-center justify-center rounded-full cursor-pointer"
+          className="group relative viewer-chip flex h-8 w-8 items-center justify-center rounded-full cursor-pointer"
         >
-          <Home className="h-3.5 w-3.5" />
+          <span className="pointer-events-none absolute right-10 top-1/2 -translate-y-1/2 whitespace-nowrap rounded-md bg-slate-900 px-2 py-1 text-[11px] font-semibold text-white opacity-0 shadow-md transition-opacity group-hover:opacity-100">
+            Reset view
+          </span>
+          <Home className="h-4 w-4" />
+        </button>
+        <button
+          type="button"
+          onClick={() => sceneRef.current?.zoomToFit()}
+          aria-label="Zoom to fit project"
+          className="group relative viewer-chip flex h-8 w-8 items-center justify-center rounded-full cursor-pointer"
+        >
+          <span className="pointer-events-none absolute right-10 top-1/2 -translate-y-1/2 whitespace-nowrap rounded-md bg-slate-900 px-2 py-1 text-[11px] font-semibold text-white opacity-0 shadow-md transition-opacity group-hover:opacity-100">
+            Zoom to fit project
+          </span>
+          <Maximize2 className="h-4 w-4" />
         </button>
       </div>
       

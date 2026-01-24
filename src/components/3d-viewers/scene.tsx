@@ -10,7 +10,8 @@ import {
   useRef,
   useState,
 } from "react";
-import type { Group, Mesh, Object3D, Vector3 } from "three";
+import { Box3, Vector3 } from "three";
+import type { Group, Mesh, Object3D } from "three";
 import { useGltfModel } from "./gltf/use-gltf-model";
 import { GltfModel } from "./gltf/gltf-model";
 import { RoomLabelsLayer } from "./iot/room-labels-layer";
@@ -69,6 +70,7 @@ interface SceneProps {
 
 export type SceneHandle = {
   resetView: () => void;
+  zoomToFit: () => void;
   clearFaceSelection: () => void;
 };
 
@@ -267,6 +269,24 @@ const Scene = memo(forwardRef<SceneHandle, SceneProps>(({ boxes, accent, gltfUrl
     camera.updateProjectionMatrix();
   }, [camera]);
 
+  const handleZoomToFit = useCallback(() => {
+    if (!controlsRef.current || !boxesGroupRef.current) return;
+    const box = new Box3().setFromObject(boxesGroupRef.current);
+    if (box.isEmpty()) return;
+    const center = box.getCenter(new Vector3());
+    const size = box.getSize(new Vector3());
+    const maxSize = Math.max(size.x, size.y, size.z);
+    const fitOffset = 1.3;
+    const fitHeightDistance = maxSize / (2 * Math.tan((camera.fov * Math.PI) / 360));
+    const fitWidthDistance = fitHeightDistance / camera.aspect;
+    const distance = fitOffset * Math.max(fitHeightDistance, fitWidthDistance);
+    const direction = camera.position.clone().sub(controlsRef.current.target).normalize();
+    camera.position.copy(direction.multiplyScalar(distance).add(center));
+    controlsRef.current.target.copy(center);
+    controlsRef.current.update();
+    camera.updateProjectionMatrix();
+  }, [camera]);
+
   const clearFaceSelection = useCallback(() => {
     if (lastFaceRef.current) {
       resetVertexColors(lastFaceRef.current.mesh, lastFaceRef.current.indices);
@@ -277,8 +297,8 @@ const Scene = memo(forwardRef<SceneHandle, SceneProps>(({ boxes, accent, gltfUrl
 
   useImperativeHandle(
     ref,
-    () => ({ resetView: handleResetView, clearFaceSelection }),
-    [clearFaceSelection, handleResetView]
+    () => ({ resetView: handleResetView, zoomToFit: handleZoomToFit, clearFaceSelection }),
+    [clearFaceSelection, handleResetView, handleZoomToFit]
   );
 
   // Three.js scene
@@ -633,10 +653,10 @@ const Scene = memo(forwardRef<SceneHandle, SceneProps>(({ boxes, accent, gltfUrl
         <GizmoViewcube
           faces={["right", "left", "top", "bottom", "front", "back"]}
           opacity={0.96}
-          color="#9ca3af" // xám đậm hơn (slate-400)
-          strokeColor="#1f2937" // viền rất đậm
-          textColor="#020617" // chữ gần đen → tương phản cao
-          hoverColor="#6b7280" // hover xám đậm hơn
+          color="#9ca3af" // (slate-400)
+          strokeColor="#1f2937" // frame color (slate-800)
+          textColor="#020617" // text color (slate-900)
+          hoverColor="#6b7280" // hover color (slate-500)
         />
       </GizmoHelper>
     </>
