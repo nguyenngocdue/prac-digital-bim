@@ -164,7 +164,28 @@ export const BoxProvider: React.FC<{ children: React.ReactNode; projectId?: stri
   // Update vertices for a box (used for polygon editing)
   const updateBoxVertices = useCallback((id: string, vertices: [number, number, number][]) => {
     setBoxes((prev) => {
-      const updated = prev.map((box) => (box.id === id ? { ...box, vertices } : box));
+      const updated = prev.map((box) => {
+        if (box.id !== id) return box;
+        if (box.type !== "room" || vertices.length === 0) {
+          return { ...box, vertices };
+        }
+        let minX = vertices[0]![0];
+        let maxX = vertices[0]![0];
+        let minZ = vertices[0]![2];
+        let maxZ = vertices[0]![2];
+        vertices.forEach(([x, , z]) => {
+          if (x < minX) minX = x;
+          if (x > maxX) maxX = x;
+          if (z < minZ) minZ = z;
+          if (z > maxZ) maxZ = z;
+        });
+        return {
+          ...box,
+          width: Math.max(0.1, maxX - minX),
+          depth: Math.max(0.1, maxZ - minZ),
+          vertices,
+        };
+      });
       const storageKey = getStorageKey(projectId);
       localStorage.setItem(storageKey, JSON.stringify(updated));
       return updated;

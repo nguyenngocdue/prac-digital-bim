@@ -17,6 +17,7 @@ import {
   Grid3x3,
   Home,
   Map,
+  Move3d,
   PanelLeft,
   PanelRight,
   Upload,
@@ -59,6 +60,7 @@ const Viewer = ({
   const [showCameras, setShowCameras] = useState(true);
   const [showAxes, setShowAxes] = useState(true);
   const [showGrid, setShowGrid] = useState(true);
+  const [allowMove, setAllowMove] = useState(true);
   const [selectedCamera, setSelectedCamera] = useState<CameraData | null>(null);
   const [gltfUrl, setGltfUrl] = useState<string | null>(null);
   const [resourceMap, setResourceMap] = useState<Map<string, string>>();
@@ -81,6 +83,13 @@ const Viewer = ({
   } = useBoxContext();
   const [canvasKey] = useState(() => `canvas-${projectId || "default"}`);
   const overlayActions = [
+    {
+      key: "move",
+      label: "Move",
+      active: allowMove,
+      onClick: () => setAllowMove((prev) => !prev),
+      icon: Move3d,
+    },
     {
       key: "axes",
       label: "Axes",
@@ -307,6 +316,7 @@ const Viewer = ({
           showGoogleTiles={showGoogleTiles}
           showAxes={showAxes}
           showGrid={showGrid}
+          allowMove={allowMove}
         />
       </Canvas>
       <div className="pointer-events-auto absolute right-3 top-40 z-50">

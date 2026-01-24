@@ -1,6 +1,12 @@
 import type { ThreeEvent } from "@react-three/fiber";
 import * as THREE from "three";
-import { DRAG_SENSITIVITY, DRAG_THRESHOLD, MIN_HEIGHT } from "./constants";
+import {
+  DRAG_SENSITIVITY,
+  DRAG_SMOOTHING,
+  DRAG_THRESHOLD,
+  HEIGHT_DRAG_SENSITIVITY,
+  MIN_HEIGHT,
+} from "./constants";
 import { updateAllHandles } from "./mesh-updaters";
 import { updateLineLoop } from "./utils";
 import type { DragMode, DragRefs } from "./types";
@@ -43,6 +49,8 @@ export type DragHandlers = {
 };
 
 export const createDragHandlers = (params: DragHandlerParams): DragHandlers => {
+  const smoothedIntersection = new THREE.Vector3();
+  let hasSmoothIntersection = false;
   const {
     dragRefs,
     gl,
@@ -95,6 +103,7 @@ export const createDragHandlers = (params: DragHandlerParams): DragHandlers => {
     heightBaseRef,
     heightStartRef,
     heightTopRef,
+    heightStartClientYRef,
     translateStartYRef,
     translateLastYRef,
     translateStartPointRef,
@@ -139,6 +148,7 @@ export const createDragHandlers = (params: DragHandlerParams): DragHandlers => {
     heightBaseRef.current = null;
     heightStartRef.current = null;
     heightTopRef.current = null;
+    heightStartClientYRef.current = null;
     translateStartYRef.current = null;
     translateStartPointRef.current = null;
     translateStartXZRef.current = null;
@@ -152,6 +162,7 @@ export const createDragHandlers = (params: DragHandlerParams): DragHandlers => {
       dragMoveRafRef.current = null;
     }
     pendingPointerRef.current = null;
+    hasSmoothIntersection = false;
     
     // Reset rotation angle display
     if (setRotationAngle) {
@@ -308,6 +319,28 @@ export const createDragHandlers = (params: DragHandlerParams): DragHandlers => {
     attachDragListeners();
   };
 
+  const getHeightDeltaFromScreen = (clientY: number) => {
+    if (heightStartClientYRef.current === null) return 0;
+    const targetPosition =
+      dragModeRef.current === "height"
+        ? heightHandleRef.current?.position
+        : bottomHeightHandleRef.current?.position;
+    const targetDistance = targetPosition
+      ? targetPosition.distanceTo(camera.position)
+      : camera.position.length();
+    let worldPerPixel = 0.001;
+    if ("isPerspectiveCamera" in camera && camera.isPerspectiveCamera) {
+      const perspective = camera as THREE.PerspectiveCamera;
+      const vFov = THREE.MathUtils.degToRad(perspective.fov);
+      worldPerPixel = (2 * Math.tan(vFov / 2) * targetDistance) / gl.domElement.clientHeight;
+    } else if ("isOrthographicCamera" in camera && camera.isOrthographicCamera) {
+      const orthographic = camera as THREE.OrthographicCamera;
+      worldPerPixel = (orthographic.top - orthographic.bottom) / gl.domElement.clientHeight;
+    }
+    const deltaPixels = heightStartClientYRef.current - clientY;
+    return deltaPixels * worldPerPixel * HEIGHT_DRAG_SENSITIVITY;
+  };
+
   const applyPointerMove = (clientX: number, clientY: number) => {
     if (
       dragIndexRef.current === null &&
@@ -329,8 +362,17 @@ export const createDragHandlers = (params: DragHandlerParams): DragHandlers => {
     
     // Luôn tính intersection với plane, không cần check face
     if (!raycaster.current.ray.intersectPlane(dragPlane.current, intersection.current)) {
-      return;
+      if (dragModeRef.current !== "height" && dragModeRef.current !== "height-bottom") {
+        return;
+      }
     }
+    if (!hasSmoothIntersection) {
+      smoothedIntersection.copy(intersection.current);
+      hasSmoothIntersection = true;
+    } else {
+      smoothedIntersection.lerp(intersection.current, DRAG_SMOOTHING);
+    }
+    intersection.current.copy(smoothedIntersection);
     
     if (pendingTranslateRef.current && dragModeRef.current !== "translate-free") {
       const dx = clientX - pendingTranslateRef.current.startClientX;
@@ -465,7 +507,7 @@ export const createDragHandlers = (params: DragHandlerParams): DragHandlers => {
       if (!topVerticesRef.current || heightBaseRef.current === null || heightStartRef.current === null) {
         return;
       }
-      const deltaY = (intersection.current.y - (dragStartRef.current?.y || 0)) * DRAG_SENSITIVITY;
+      const deltaY = getHeightDeltaFromScreen(clientY);
       const nextHeight = Math.max(MIN_HEIGHT, heightStartRef.current + deltaY);
       const baseY = heightBaseRef.current;
       topVerticesRef.current.forEach((point, index) => {
@@ -482,7 +524,7 @@ export const createDragHandlers = (params: DragHandlerParams): DragHandlers => {
       ) {
         return;
       }
-      const deltaY = (intersection.current.y - (dragStartRef.current?.y || 0)) * DRAG_SENSITIVITY;
+      const deltaY = getHeightDeltaFromScreen(clientY);
       const nextHeight = Math.max(MIN_HEIGHT, heightStartRef.current - deltaY);
       const nextCenterY = heightTopRef.current - nextHeight / 2;
       translateLastYRef.current = nextCenterY;
@@ -663,6 +705,7 @@ export const createDragHandlers = (params: DragHandlerParams): DragHandlers => {
     dragModeRef.current = "height";
     dragIndexRef.current = 0;
     setDraggedIndex(0);
+    heightStartClientYRef.current = event.clientY;
     dragStartRef.current = intersection.current.clone();
     dragStartTopVerticesRef.current = topVerticesRef.current.map((v) => v.clone());
     const baseY = verticesRef.current[0]?.y ?? 0;
@@ -688,6 +731,7 @@ export const createDragHandlers = (params: DragHandlerParams): DragHandlers => {
     dragModeRef.current = "height-bottom";
     dragIndexRef.current = 0;
     setDraggedIndex(0);
+    heightStartClientYRef.current = event.clientY;
     dragStartRef.current = intersection.current.clone();
     dragStartVerticesRef.current = verticesRef.current.map((v) => v.clone());
     dragStartTopVerticesRef.current = topVerticesRef.current

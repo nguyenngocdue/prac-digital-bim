@@ -9,6 +9,10 @@ type ProArrowProps = {
   headLength?: number;
   headRadius?: number;
   color?: number;
+  onPointerDown?: (event: any) => void;
+  onPointerOver?: (event: any) => void;
+  onPointerOut?: (event: any) => void;
+  onClick?: (event: any) => void;
 };
 
 export function ProArrow({
@@ -19,6 +23,10 @@ export function ProArrow({
   headLength = 0.55,
   headRadius = 0.10,
   color = 0x22c55e,
+  onPointerDown,
+  onPointerOver,
+  onPointerOut,
+  onClick,
 }: ProArrowProps) {
   const dir = useMemo(() => {
     if (Array.isArray(direction)) {
@@ -49,7 +57,15 @@ export function ProArrow({
   );
 
   return (
-    <group position={originPos} quaternion={quat} renderOrder={999}>
+    <group
+      position={originPos}
+      quaternion={quat}
+      renderOrder={999}
+      onPointerDown={onPointerDown}
+      onPointerOver={onPointerOver}
+      onPointerOut={onPointerOut}
+      onClick={onClick}
+    >
       {/* Shaft */}
       <mesh position={shaftPos} frustumCulled={false}>
         <cylinderGeometry args={[radius, radius, shaftLen, 20, 1, true]} />

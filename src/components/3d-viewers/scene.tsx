@@ -65,6 +65,7 @@ interface SceneProps {
   showGoogleTiles?: boolean;
   showAxes?: boolean;
   showGrid?: boolean;
+  allowMove?: boolean;
 }
 
 export type SceneHandle = {
@@ -72,7 +73,7 @@ export type SceneHandle = {
   clearFaceSelection: () => void;
 };
 
-const Scene = memo(forwardRef<SceneHandle, SceneProps>(({ boxes, accent, gltfUrl, resourceMap, showRoomLabels = false, cameras = [], showCameras = false, onCameraClick, selectedCameraId, showGoogleTiles = false, showAxes = true, showGrid = true }, ref) => {
+const Scene = memo(forwardRef<SceneHandle, SceneProps>(({ boxes, accent, gltfUrl, resourceMap, showRoomLabels = false, cameras = [], showCameras = false, onCameraClick, selectedCameraId, showGoogleTiles = false, showAxes = true, showGrid = true, allowMove = true }, ref) => {
   const controlsRef = useRef<any>(null);
   const objectRefs = useRef<Map<string, Object3D>>(new Map());
   const { boxes: contextBoxes, setBoxes, selectedId, setSelectedId, transformMode, setTransformMode, drawingPoints, updateBoxVertices } = useBoxContext();
@@ -133,6 +134,12 @@ const Scene = memo(forwardRef<SceneHandle, SceneProps>(({ boxes, accent, gltfUrl
 
   const selectedObject = selectedId ? objectRefs.current.get(selectedId) || null : null;
   const selectedBox = selectedId ? contextBoxes.find((box) => box.id === selectedId) : undefined;
+  const rotateXZ = (x: number, z: number, angle: number) => {
+    const cos = Math.cos(angle);
+    const sin = Math.sin(angle);
+    return [x * cos - z * sin, x * sin + z * cos] as [number, number];
+  };
+  const selectedRotationY = selectedBox?.rotationY || 0;
   const selectedFootprint =
     selectedBox?.type === "building"
       ? selectedBox.footprint ||
@@ -151,22 +158,46 @@ const Scene = memo(forwardRef<SceneHandle, SceneProps>(({ boxes, accent, gltfUrl
     selectedBox?.type === "building" && selectedFootprint
       ? selectedFootprint.map(([x, z]) => {
           const baseY = selectedBox.position[1] - (selectedBox.height || 0) / 2;
-          return [x + selectedBox.position[0], baseY, z + selectedBox.position[2]] as [
-            number,
-            number,
-            number
-          ];
+          const [rx, rz] = rotateXZ(x, z, -selectedRotationY);
+          return [
+            rx + selectedBox.position[0],
+            baseY,
+            rz + selectedBox.position[2],
+          ] as [number, number, number];
+        })
+      : null;
+  const selectedRoomVertices: [number, number, number][] | null =
+    selectedBox?.type === "room"
+      ? selectedBox.vertices?.length
+        ? selectedBox.vertices
+        : [
+            [-(selectedBox.width || 3.66) / 2, 0, (selectedBox.depth || 3.66) / 2],
+            [(selectedBox.width || 3.66) / 2, 0, (selectedBox.depth || 3.66) / 2],
+            [(selectedBox.width || 3.66) / 2, 0, -(selectedBox.depth || 3.66) / 2],
+            [-(selectedBox.width || 3.66) / 2, 0, -(selectedBox.depth || 3.66) / 2],
+          ]
+      : null;
+  const selectedRoomVerticesWorld: [number, number, number][] | null =
+    selectedBox?.type === "room" && selectedRoomVertices
+      ? selectedRoomVertices.map(([x, y, z]) => {
+          const [rx, rz] = rotateXZ(x, z, -selectedRotationY);
+          return [
+            rx + selectedBox.position[0],
+            y + selectedBox.position[1],
+            rz + selectedBox.position[2],
+          ] as [number, number, number];
         })
       : null;
   const selectedTopVertices: [number, number, number][] | null =
     selectedBox?.type === "building" && selectedTopFootprint
       ? selectedTopFootprint.map(([x, z]) => {
           const topY = selectedBox.position[1] + (selectedBox.height || 0) / 2;
-          return [x + selectedBox.position[0], topY, z + selectedBox.position[2]] as [
-            number,
-            number,
-            number
-          ];
+          const [rx, rz] = rotateXZ(x, z, -selectedRotationY);
+          return [
+            rx + selectedBox.position[0],
+            topY,
+            rz + selectedBox.position[2],
+          ] as [number, number, number];
         })
       : null;
 
@@ -336,9 +367,11 @@ const Scene = memo(forwardRef<SceneHandle, SceneProps>(({ boxes, accent, gltfUrl
                 } else {
                   setSelectedId(box.id);
                 }
+              if (allowMove) {
                 setTransformMode("translate");
-              }}
-            >
+              }
+            }}
+          >
               {box.type === "building" ? (
                 <BuildingMesh
                   color={box.color || accent}
@@ -358,6 +391,7 @@ const Scene = memo(forwardRef<SceneHandle, SceneProps>(({ boxes, accent, gltfUrl
                   position={[0, 0, 0]}
                   color={box.color || "#D4A574"}
                   showMeasurements={box.showMeasurements !== false}
+                  showHandles={false}
                   vertices={box.vertices}
                   onVerticesChange={(newVertices: [number, number, number][]) => {
                     updateBoxVertices(box.id, newVertices);
@@ -402,6 +436,7 @@ const Scene = memo(forwardRef<SceneHandle, SceneProps>(({ boxes, accent, gltfUrl
             translationSnap={0.1}
             rotationSnap={Math.PI / 18}
             scaleSnap={0.1}
+            enabled={allowMove || transformMode !== "translate"}
             onMouseDown={() => setIsTransforming(true)}
             onMouseUp={() => {
               setIsTransforming(false);
@@ -423,8 +458,7 @@ const Scene = memo(forwardRef<SceneHandle, SceneProps>(({ boxes, accent, gltfUrl
             const originX = selectedBox.position[0];
             const originZ = selectedBox.position[2];
             const topFootprint = newVertices.map((vertex) => [
-              vertex[0] - originX,
-              vertex[2] - originZ,
+              ...rotateXZ(vertex[0] - originX, vertex[2] - originZ, selectedRotationY),
             ]) as [number, number][];
             setBoxes((prev) =>
               prev.map((box) =>
@@ -436,8 +470,7 @@ const Scene = memo(forwardRef<SceneHandle, SceneProps>(({ boxes, accent, gltfUrl
             const originX = selectedBox.position[0];
             const originZ = selectedBox.position[2];
             const footprint = newVertices.map((vertex) => [
-              vertex[0] - originX,
-              vertex[2] - originZ,
+              ...rotateXZ(vertex[0] - originX, vertex[2] - originZ, selectedRotationY),
             ]) as [number, number][];
             setBoxes((prev) =>
               prev.map((box) =>
@@ -486,6 +519,26 @@ const Scene = memo(forwardRef<SceneHandle, SceneProps>(({ boxes, accent, gltfUrl
               )
             );
           }}
+          allowTranslate={allowMove}
+          onDragStart={() => setIsTransforming(true)}
+          onDragEnd={() => setIsTransforming(false)}
+        />
+      )}
+      {selectedBox?.type === "room" && selectedRoomVerticesWorld && (
+        <EditableBoxHandles
+          vertices={selectedRoomVerticesWorld}
+          onVerticesChange={(newVertices) => {
+            const originX = selectedBox.position[0];
+            const originZ = selectedBox.position[2];
+            const localVertices = newVertices.map((vertex) => {
+              const localX = vertex[0] - originX;
+              const localZ = vertex[2] - originZ;
+              const [rx, rz] = rotateXZ(localX, localZ, selectedRotationY);
+              return [rx, vertex[1] - selectedBox.position[1], rz] as [number, number, number];
+            });
+            updateBoxVertices(selectedBox.id, localVertices);
+          }}
+          color="#3B82F6"
           onDragStart={() => setIsTransforming(true)}
           onDragEnd={() => setIsTransforming(false)}
         />

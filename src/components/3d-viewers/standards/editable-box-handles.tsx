@@ -9,7 +9,11 @@ import type {
   PendingTranslate,
   DragRefs,
 } from "./editable-box-handles/types";
-import { DEFAULT_POLYGON_COLOR } from "./editable-box-handles/constants";
+import {
+  DEFAULT_POLYGON_COLOR,
+  HEIGHT_CLICK_STEP,
+  MIN_HEIGHT,
+} from "./editable-box-handles/constants";
 import { createGeometries, disposeGeometries } from "./editable-box-handles/geometries";
 import { createMaterials, disposeMaterials } from "./editable-box-handles/materials";
 import {
@@ -43,6 +47,7 @@ export const EditablePolygonHandles = ({
   showFill = false,
   showEdgeHandles = true,
   liveUpdate = true,
+  allowTranslate = true,
   onDragStart,
   onDragEnd,
 }: EditablePolygonHandlesProps) => {
@@ -97,6 +102,7 @@ export const EditablePolygonHandles = ({
   const heightBaseRef = useRef<number | null>(null);
   const heightStartRef = useRef<number | null>(null);
   const heightTopRef = useRef<number | null>(null);
+  const heightStartClientYRef = useRef<number | null>(null);
   
   // Translate refs
   const translateStartYRef = useRef<number | null>(null);
@@ -129,13 +135,13 @@ export const EditablePolygonHandles = ({
     updateTranslateHover(isActive, isDragging, setIsTranslateHover, setCursor);
   };
 
-  const activateSelection = () => {
-    setShowBoundingBox(true);
-    setShowRotateHandles(true);
+  const setSelectionVisible = (isVisible: boolean) => {
+    setShowBoundingBox(isVisible);
+    setShowRotateHandles(isVisible);
   };
 
   const handleFacePointerDown = (event: ThreeEvent<PointerEvent>) => {
-    activateSelection();
+    if (!allowTranslate) return;
     dragHandlers.startTranslateFree(event);
   };
 
@@ -245,6 +251,32 @@ export const EditablePolygonHandles = ({
     }
   };
 
+  const getHeightParams = () => {
+    const baseY = verticesRef.current.length
+      ? Math.min(...verticesRef.current.map((v) => v.y))
+      : 0;
+    const topY = topVerticesRef.current?.length
+      ? Math.max(...topVerticesRef.current.map((v) => v.y))
+      : baseY + (height ?? 0);
+    return { baseY, topY };
+  };
+
+  const nudgeHeight = (direction: "up" | "down") => {
+    if (!onHeightChange) return;
+    const { baseY, topY } = getHeightParams();
+    const currentHeight = Math.max(MIN_HEIGHT, topY - baseY);
+    const nextHeight = Math.max(
+      MIN_HEIGHT,
+      currentHeight + (direction === "up" ? HEIGHT_CLICK_STEP : -HEIGHT_CLICK_STEP)
+    );
+    const nextCenterY =
+      direction === "up"
+        ? baseY + nextHeight / 2
+        : topY - nextHeight / 2;
+    onHeightChange(nextHeight, nextCenterY);
+  };
+
+
   useEffect(() => {
     if (!vertices.length) return;
     syncVertices(vertices, topVertices);
@@ -316,6 +348,7 @@ export const EditablePolygonHandles = ({
     heightBaseRef,
     heightStartRef,
     heightTopRef,
+    heightStartClientYRef,
     translateStartYRef,
     translateLastYRef,
     translateStartPointRef,
@@ -381,6 +414,7 @@ export const EditablePolygonHandles = ({
     <group
       onPointerMove={(event) => {
         if (isDragging) return;
+        setSelectionVisible(true);
         const isOverHandle = event.intersections?.some(
           (hit) => hit.object?.userData?.isHandle
         );
@@ -393,6 +427,7 @@ export const EditablePolygonHandles = ({
       }}
       onPointerOut={() => {
         if (isDragging) return;
+        setSelectionVisible(false);
         updateTranslateHoverState(false);
       }}
       onPointerDown={(event) => {
@@ -404,7 +439,6 @@ export const EditablePolygonHandles = ({
         
         // Nếu KHÔNG phải handle (point, edge, rotation) → cho phép drag
         if (!isOverHandle) {
-          activateSelection();
           dragHandlers.startTranslateFree(event);
         }
       }}
@@ -436,7 +470,6 @@ export const EditablePolygonHandles = ({
         args={[hitGeometry, hitMaterial, vertices.length]}
         onPointerDown={(event) => {
           if (event.instanceId == null) return;
-          activateSelection();
           dragHandlers.handlePointerDown(event.instanceId, event);
         }}
         onPointerUp={dragHandlers.handlePointerUp}
@@ -488,7 +521,6 @@ export const EditablePolygonHandles = ({
             args={[hitGeometry, hitMaterial, vertices.length]}
             onPointerDown={(event) => {
               if (event.instanceId == null) return;
-              activateSelection();
               dragHandlers.handlePointerDownTop(event.instanceId, event);
             }}
             onPointerUp={dragHandlers.handlePointerUp}
@@ -522,7 +554,6 @@ export const EditablePolygonHandles = ({
                 geometry={heightHitGeometry}
                 material={hitMaterial}
                 onPointerDown={(event) => {
-                  activateSelection();
                   dragHandlers.handleHeightPointerDown(event);
                 }}
                 onPointerUp={dragHandlers.handlePointerUp}
@@ -548,6 +579,24 @@ export const EditablePolygonHandles = ({
                   headRadius={0.08}
                   radius={0.03}
                   color={0x38bdf8}
+                  onPointerDown={(event) => {
+                    event.stopPropagation();
+                    dragHandlers.handleHeightPointerDown(event);
+                  }}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    nudgeHeight("up");
+                  }}
+                  onPointerOver={() => {
+                    if (!isDragging) {
+                      gl.domElement.style.cursor = "pointer";
+                    }
+                  }}
+                  onPointerOut={() => {
+                    if (!isDragging) {
+                      gl.domElement.style.cursor = "auto";
+                    }
+                  }}
                 />
               )}
         </>
@@ -585,7 +634,6 @@ export const EditablePolygonHandles = ({
             args={[edgeHitGeometry, hitMaterial, vertices.length]}
             onPointerDown={(event) => {
               if (event.instanceId == null) return;
-              activateSelection();
               dragHandlers.handleEdgePointerDown(event.instanceId, event);
             }}
             onPointerUp={dragHandlers.handlePointerUp}
@@ -613,7 +661,6 @@ export const EditablePolygonHandles = ({
                 args={[edgeHitGeometry, hitMaterial, vertices.length]}
                 onPointerDown={(event) => {
                   if (event.instanceId == null) return;
-                  activateSelection();
                   dragHandlers.handleEdgePointerDownTop(event.instanceId, event);
                 }}
                 onPointerUp={dragHandlers.handlePointerUp}
@@ -641,7 +688,6 @@ export const EditablePolygonHandles = ({
                 geometry={heightHitGeometry}
                 material={hitMaterial}
                 onPointerDown={(event) => {
-                  activateSelection();
                   dragHandlers.handleBottomHeightPointerDown(event);
                 }}
                 onPointerUp={dragHandlers.handlePointerUp}
@@ -659,15 +705,59 @@ export const EditablePolygonHandles = ({
                 }}
               />
               {heightCenters.bottom && (
-                <ProArrow
-                  origin={heightCenters.bottom}
-                  direction={[0, -1, 0]}
-                  length={0.7}
-                  headLength={0.25}
-                  headRadius={0.08}
-                  radius={0.03}
-                  color={0xf97316}
-                />
+                <group>
+                  <mesh
+                    position={[
+                      heightCenters.bottom[0],
+                      heightCenters.bottom[1] - 0.6,
+                      heightCenters.bottom[2],
+                    ]}
+                    onPointerDown={(event) => {
+                      event.stopPropagation();
+                      dragHandlers.handleBottomHeightPointerDown(event);
+                    }}
+                    onPointerOver={() => {
+                      if (!isDragging) {
+                        gl.domElement.style.cursor = "pointer";
+                      }
+                    }}
+                    onPointerOut={() => {
+                      if (!isDragging) {
+                        gl.domElement.style.cursor = "auto";
+                      }
+                    }}
+                  >
+                    <boxGeometry args={[0.6, 1.4, 0.6]} />
+                    <meshBasicMaterial transparent opacity={0} depthWrite={false} />
+                  </mesh>
+                  <ProArrow
+                    origin={heightCenters.bottom}
+                    direction={[0, -1, 0]}
+                    length={0.9}
+                    headLength={0.3}
+                    headRadius={0.1}
+                    radius={0.04}
+                    color={0xf97316}
+                    onPointerDown={(event) => {
+                      event.stopPropagation();
+                      dragHandlers.handleBottomHeightPointerDown(event);
+                    }}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      nudgeHeight("down");
+                    }}
+                    onPointerOver={() => {
+                      if (!isDragging) {
+                        gl.domElement.style.cursor = "pointer";
+                      }
+                    }}
+                    onPointerOut={() => {
+                      if (!isDragging) {
+                        gl.domElement.style.cursor = "auto";
+                      }
+                    }}
+                  />
+                </group>
               )}
             </>
           )}
@@ -680,7 +770,6 @@ export const EditablePolygonHandles = ({
         isDragging={isDragging}
         rotationAngle={rotationAngle}
         onPointerDown={(event) => {
-          activateSelection();
           dragHandlers.handleRotatePointerDown(event);
         }}
         onPointerUp={dragHandlers.handlePointerUp}

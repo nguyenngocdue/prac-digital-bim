@@ -14,6 +14,7 @@ export interface EditablePolygonHandlesProps {
   centerZ?: number;
   onTranslateXZ?: (nextCenterX: number, nextCenterZ: number) => void;
   onTranslateXYZ?: (nextCenterX: number, nextCenterY: number, nextCenterZ: number) => void;
+  allowTranslate?: boolean;
   color?: string;
   showFill?: boolean;
   showEdgeHandles?: boolean;
@@ -74,6 +75,7 @@ export interface DragRefs {
   heightBaseRef: React.MutableRefObject<number | null>;
   heightStartRef: React.MutableRefObject<number | null>;
   heightTopRef: React.MutableRefObject<number | null>;
+  heightStartClientYRef: React.MutableRefObject<number | null>;
   translateStartYRef: React.MutableRefObject<number | null>;
   translateLastYRef: React.MutableRefObject<number | null>;
   translateStartPointRef: React.MutableRefObject<THREE.Vector3 | null>;
