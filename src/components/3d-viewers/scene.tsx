@@ -25,6 +25,7 @@ import { useBoxContext } from "@/app/contexts/box-context";
 import { BuildingMesh } from "./standards/building-mesh";
 import { EditableBoxHandles } from "./standards/editable-box-handles";
 import { getFootprintPoints } from "./standards/building-shapes";
+import { getWorldFaceNormal, getWorldFacePoint, type FaceArrowState } from "./standards/face-normal-arrow";
 
 type Box = {
   id: string;
@@ -67,12 +68,14 @@ const Scene = memo(forwardRef<SceneHandle, SceneProps>(({ boxes, accent, gltfUrl
   const { boxes: contextBoxes, setBoxes, selectedId, setSelectedId, transformMode, setTransformMode, drawingPoints, updateBoxVertices } = useBoxContext();
   const [isTransforming, setIsTransforming] = useState(false);
   const [selectedObjectOverride, setSelectedObjectOverride] = useState<Object3D | null>(null);
+  const [faceArrow, setFaceArrow] = useState<FaceArrowState | null>(null);
+  const boxesGroupRef = useRef<THREE.Group | null>(null);
   const initialCameraRef = useRef<{
     position: Vector3;
     target: Vector3;
     up: Vector3;
   } | null>(null);
-  const { camera } = useThree();
+  const { camera, raycaster } = useThree();
 
   // Import Three.js components
   const { GizmoHelper, GizmoViewcube, Grid, OrbitControls, Select, Stats, TransformControls, Line } = require("@react-three/drei");
@@ -200,6 +203,24 @@ const Scene = memo(forwardRef<SceneHandle, SceneProps>(({ boxes, accent, gltfUrl
     return [...points, points[0]];
   }, [drawingPoints]);
 
+  const faceArrowHelper = useMemo(
+    () =>
+      new THREE.ArrowHelper(
+        new THREE.Vector3(0, 1, 0),
+        new THREE.Vector3(0, 0, 0),
+        1,
+        0x22c55e
+      ),
+    []
+  );
+
+  useEffect(() => {
+    if (!faceArrow) return;
+    faceArrowHelper.position.copy(faceArrow.origin);
+    faceArrowHelper.setDirection(faceArrow.direction);
+    faceArrowHelper.setLength(1, 0.25, 0.15);
+  }, [faceArrow, faceArrowHelper]);
+
   const handleResetView = useCallback(() => {
     if (!controlsRef.current || !initialCameraRef.current) return;
     const { position, target, up } = initialCameraRef.current;
@@ -227,79 +248,94 @@ const Scene = memo(forwardRef<SceneHandle, SceneProps>(({ boxes, accent, gltfUrl
       <ambientLight intensity={0.6} />
       <directionalLight position={[5, 5, 5]} intensity={1} />
       <PlaceholderBox color={accent || "#06b6d4"} />
-      <Select box multiple>
-        {boxes.map((box, i) => (
-          <group
-            key={box.id || i}
-            ref={(node) => {
-              if (node) {
-                objectRefs.current.set(box.id, node);
-              } else {
-                objectRefs.current.delete(box.id);
-              }
-            }}
-            position={box.position}
-            rotation={[0, box.rotationY || 0, 0]}
-            onPointerDown={(event: any) => {
-              event.stopPropagation();
-              const target = event.eventObject || event.object;
-              if (target) {
-                setSelectedObjectOverride(target);
-              }
-              if (!box.id) {
-                const id =
-                  typeof crypto !== "undefined" && (crypto as any).randomUUID
-                    ? (crypto as any).randomUUID()
-                    : Math.random().toString(36).slice(2, 10);
-                setBoxes((prev) => prev.map((item) => (item === box ? { ...item, id } : item)));
-                setSelectedId(id);
-              } else {
-                setSelectedId(box.id);
-              }
-              setTransformMode("translate");
-            }}
-          >
-            {box.type === "building" ? (
-              <BuildingMesh
-                color={box.color || accent}
-                height={box.height || 8}
-                footprint={box.footprint}
-                topFootprint={box.topFootprint}
-                width={box.size?.[0] || 10}
-                depth={box.size?.[2] || 10}
-                thicknessRatio={box.thicknessRatio || 0.3}
-                shape="rect"
-              />
-            ) : box.type === "room" ? (
-              <RoomBox
-                width={box.width || 3.66}
-                height={box.height || 3}
-                depth={box.depth || 3.66}
-                position={[0, 0, 0]}
-                color={box.color || "#D4A574"}
-                showMeasurements={box.showMeasurements !== false}
-                vertices={box.vertices}
-                onVerticesChange={(newVertices: [number, number, number][]) => {
-                  updateBoxVertices(box.id, newVertices);
-                }}
-                onHandleDragChange={(isDragging: boolean) => setIsTransforming(isDragging)}
-              />
-            ) : (
-              <PlaceholderBox
-                color={box.color || accent}
-                position={[0, 0, 0]}
-                size={box.size}
-                rotationY={0}
-                onSelectEffect={(selected: boolean) => {
-                  if (selected) {
-                    console.log("Box selected at", box.position);
+      {faceArrow && <primitive object={faceArrowHelper} />}
+      <group ref={boxesGroupRef}>
+        <Select box multiple>
+          {boxes.map((box, i) => (
+            <group
+              key={box.id || i}
+              ref={(node) => {
+                if (node) {
+                  objectRefs.current.set(box.id, node);
+                } else {
+                  objectRefs.current.delete(box.id);
+                }
+              }}
+              position={box.position}
+              rotation={[0, box.rotationY || 0, 0]}
+              onPointerDown={(event: any) => {
+                if (boxesGroupRef.current) {
+                  const hits = raycaster.intersectObject(boxesGroupRef.current, true);
+                  const hit = hits.find((item) => item.face && item.object.type === "Mesh");
+                  if (hit) {
+                    const normal = getWorldFaceNormal(hit);
+                    if (normal) {
+                      const origin = getWorldFacePoint(hit);
+                      origin.addScaledVector(normal, 0.01);
+                      setFaceArrow({ origin, direction: normal });
+                    }
                   }
-                }}
-              />
-            )}
-          </group>
-        ))}
-      </Select>
+                }
+                event.stopPropagation();
+                const target = event.eventObject || event.object;
+                if (target) {
+                  setSelectedObjectOverride(target);
+                }
+                if (!box.id) {
+                  const id =
+                    typeof crypto !== "undefined" && (crypto as any).randomUUID
+                      ? (crypto as any).randomUUID()
+                      : Math.random().toString(36).slice(2, 10);
+                  setBoxes((prev) => prev.map((item) => (item === box ? { ...item, id } : item)));
+                  setSelectedId(id);
+                } else {
+                  setSelectedId(box.id);
+                }
+                setTransformMode("translate");
+              }}
+            >
+              {box.type === "building" ? (
+                <BuildingMesh
+                  color={box.color || accent}
+                  height={box.height || 8}
+                  footprint={box.footprint}
+                  topFootprint={box.topFootprint}
+                  width={box.size?.[0] || 10}
+                  depth={box.size?.[2] || 10}
+                  thicknessRatio={box.thicknessRatio || 0.3}
+                  shape="rect"
+                />
+              ) : box.type === "room" ? (
+                <RoomBox
+                  width={box.width || 3.66}
+                  height={box.height || 3}
+                  depth={box.depth || 3.66}
+                  position={[0, 0, 0]}
+                  color={box.color || "#D4A574"}
+                  showMeasurements={box.showMeasurements !== false}
+                  vertices={box.vertices}
+                  onVerticesChange={(newVertices: [number, number, number][]) => {
+                    updateBoxVertices(box.id, newVertices);
+                  }}
+                  onHandleDragChange={(isDragging: boolean) => setIsTransforming(isDragging)}
+                />
+              ) : (
+                <PlaceholderBox
+                  color={box.color || accent}
+                  position={[0, 0, 0]}
+                  size={box.size}
+                  rotationY={0}
+                  onSelectEffect={(selected: boolean) => {
+                    if (selected) {
+                      console.log("Box selected at", box.position);
+                    }
+                  }}
+                />
+              )}
+            </group>
+          ))}
+        </Select>
+      </group>
 
       {/* TransformControls - disabled for room type to use EditableBoxHandles instead */}
       {(selectedObjectOverride || selectedObject) && (() => {
