@@ -414,7 +414,6 @@ export const EditablePolygonHandles = ({
     <group
       onPointerMove={(event) => {
         if (isDragging) return;
-        setSelectionVisible(true);
         const isOverHandle = event.intersections?.some(
           (hit) => hit.object?.userData?.isHandle
         );
@@ -425,10 +424,12 @@ export const EditablePolygonHandles = ({
           updateTranslateHoverState(false);
         }
       }}
-      onPointerOut={() => {
+      onPointerOut={(event) => {
         if (isDragging) return;
-        setSelectionVisible(false);
         updateTranslateHoverState(false);
+      }}
+      onDoubleClick={() => {
+        setSelectionVisible(!showBoundingBox);
       }}
       onPointerDown={(event) => {
         if (isDragging) return;
