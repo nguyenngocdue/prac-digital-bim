@@ -1,8 +1,8 @@
 "use client";
 import { Canvas } from "@react-three/fiber";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useBoxContext } from "../../app/contexts/box-context";
-import Scene from "./scene";
+import Scene, { type SceneHandle } from "./scene";
 import { GltfControls } from "./gltf/gltf-controls";
 import { IotControls } from "./iot/iot-controls";
 import { IotLegend } from "./iot/iot-legend";
@@ -10,7 +10,7 @@ import { TransformModePanel } from "./transform-mode-panel";
 import { CameraListPanel, CameraViewerPanel } from "./cameras";
 import { mockCameras } from "@/data/mock-cameras";
 import { CameraData } from "@/types/camera";
-import { Activity, Box, Camera, Map, PanelLeft, PanelRight, Upload } from "lucide-react";
+import { Activity, Box, Camera, Home, Map, PanelLeft, PanelRight, Upload } from "lucide-react";
 
 interface ViewerProps {
   useCesium?: boolean;
@@ -49,6 +49,7 @@ const Viewer = ({
   const [selectedCamera, setSelectedCamera] = useState<CameraData | null>(null);
   const [gltfUrl, setGltfUrl] = useState<string | null>(null);
   const [resourceMap, setResourceMap] = useState<Map<string, string>>();
+  const sceneRef = useRef<SceneHandle | null>(null);
   const {
     boxes,
     setBoxes,
@@ -264,7 +265,8 @@ const Viewer = ({
           powerPreference: "high-performance"
         }}
       >
-        <Scene 
+        <Scene
+          ref={sceneRef}
           boxes={boxes} 
           accent={accent} 
           gltfUrl={gltfUrl} 
@@ -277,6 +279,16 @@ const Viewer = ({
           showGoogleTiles={showGoogleTiles}
         />
       </Canvas>
+      <div className="pointer-events-auto absolute right-3 top-40 z-50">
+        <button
+          type="button"
+          onClick={() => sceneRef.current?.resetView()}
+          aria-label="Reset view"
+          className="viewer-chip flex h-7 w-7 items-center justify-center rounded-full cursor-pointer"
+        >
+          <Home className="h-3.5 w-3.5" />
+        </button>
+      </div>
       
       {/* GLTF Import Controls */}
       {showGltfControls && (

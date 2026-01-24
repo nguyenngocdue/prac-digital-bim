@@ -1,6 +1,16 @@
 "use client";
-import { memo, Suspense, useEffect, useMemo, useRef, useState } from "react";
-import type { Object3D } from "three";
+import {
+  forwardRef,
+  memo,
+  Suspense,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import type { Object3D, Vector3 } from "three";
 import { useGltfModel } from "./gltf/use-gltf-model";
 import { GltfModel } from "./gltf/gltf-model";
 import { RoomLabelsLayer } from "./iot/room-labels-layer";
@@ -47,12 +57,21 @@ interface SceneProps {
   showGoogleTiles?: boolean;
 }
 
-const Scene = memo(({ boxes, accent, gltfUrl, resourceMap, showRoomLabels = false, cameras = [], showCameras = false, onCameraClick, selectedCameraId, showGoogleTiles = false }: SceneProps) => {
+export type SceneHandle = {
+  resetView: () => void;
+};
+
+const Scene = memo(forwardRef<SceneHandle, SceneProps>(({ boxes, accent, gltfUrl, resourceMap, showRoomLabels = false, cameras = [], showCameras = false, onCameraClick, selectedCameraId, showGoogleTiles = false }, ref) => {
   const controlsRef = useRef<any>(null);
   const objectRefs = useRef<Map<string, Object3D>>(new Map());
   const { boxes: contextBoxes, setBoxes, selectedId, setSelectedId, transformMode, setTransformMode, drawingPoints, updateBoxVertices } = useBoxContext();
   const [isTransforming, setIsTransforming] = useState(false);
   const [selectedObjectOverride, setSelectedObjectOverride] = useState<Object3D | null>(null);
+  const initialCameraRef = useRef<{
+    position: Vector3;
+    target: Vector3;
+    up: Vector3;
+  } | null>(null);
   const { camera } = useThree();
 
   // Import Three.js components
@@ -71,6 +90,13 @@ const Scene = memo(({ boxes, accent, gltfUrl, resourceMap, showRoomLabels = fals
     controlsRef.current.target.set(0, 0, 0);
     controlsRef.current.update();
     camera.updateProjectionMatrix();
+    if (!initialCameraRef.current) {
+      initialCameraRef.current = {
+        position: camera.position.clone(),
+        target: controlsRef.current.target.clone(),
+        up: camera.up.clone(),
+      };
+    }
   }, [camera]);
 
   useEffect(() => {
@@ -173,6 +199,18 @@ const Scene = memo(({ boxes, accent, gltfUrl, resourceMap, showRoomLabels = fals
     const points = drawingPoints.map((p) => [p[0], p[1] + 0.05, p[2]]);
     return [...points, points[0]];
   }, [drawingPoints]);
+
+  const handleResetView = useCallback(() => {
+    if (!controlsRef.current || !initialCameraRef.current) return;
+    const { position, target, up } = initialCameraRef.current;
+    camera.position.copy(position);
+    camera.up.copy(up);
+    controlsRef.current.target.copy(target);
+    controlsRef.current.update();
+    camera.updateProjectionMatrix();
+  }, [camera]);
+
+  useImperativeHandle(ref, () => ({ resetView: handleResetView }), [handleResetView]);
 
   // Three.js scene
   const threeJsScene = (
@@ -427,7 +465,7 @@ const Scene = memo(({ boxes, accent, gltfUrl, resourceMap, showRoomLabels = fals
       <Stats />
       <GizmoHelper
         alignment="top-right"
-        margin={[350, 90]}
+        margin={[50, 90]}
         onUpdate={() => {}}
         onTarget={() => new THREE.Vector3(0, 0, 0)}
         renderPriority={1}
@@ -443,7 +481,7 @@ const Scene = memo(({ boxes, accent, gltfUrl, resourceMap, showRoomLabels = fals
   );
 
   return threeJsScene;
-});
+}));
 
 Scene.displayName = "Scene";
 
