@@ -107,6 +107,14 @@ export const GooglePhotorealisticTiles = ({
     tiles.skipLevelOfDetail = true;
     tiles.setCamera(camera);
     tiles.setResolutionFromRenderer(camera, gl);
+    
+    // Fix relative URLs by prepending the base Google Tiles API URL
+    tiles.preprocessURL = (url: string) => {
+      if (url.startsWith('/')) {
+        return `https://tile.googleapis.com${url}`;
+      }
+      return url;
+    };
   }, [camera, gl, size]);
 
   return (

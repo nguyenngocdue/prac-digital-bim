@@ -53,7 +53,7 @@ const PanelsLayout: FC<PanelsLayoutProps> = ({ projectId }) => {
         <div className={`relative flex-1 min-h-0 px-2 pb-2 ${panelPaddingTop}`}>
           <PanelGroup
             direction="horizontal"
-            className="flex h-full min-h-0 w-full gap-2"
+            className="flex h-full min-h-0 w-full gap-1"
           >
             {showLeftPanel && (
               <Panel
@@ -63,7 +63,7 @@ const PanelsLayout: FC<PanelsLayoutProps> = ({ projectId }) => {
                 className="min-h-0"
               >
                 <div className="viewer-panel viewer-panel-glass viewer-panel-enter flex h-full min-h-0 flex-col overflow-hidden rounded-sm transition">
-                  <div className="panel-drag-handle flex items-center justify-between border-b viewer-border bg-[var(--viewer-panel-strong)] px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.2em] viewer-muted cursor-col-resize" />
+                  <div className="panel-drag-handle flex items-center justify-between border-b viewer-border bg-[var(--viewer-panel-strong)] px-1 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] viewer-muted cursor-col-resize" />
                   <div className="flex-1 min-h-0">
                     <LeftPanel projectId={projectId} />
                   </div>

@@ -459,8 +459,7 @@ const Scene = memo(forwardRef<SceneHandle, SceneProps>(({ boxes, accent, gltfUrl
     <>
       {showGoogleTiles && (
         <GooglePhotorealisticTiles
-          lat={1.353285}
-          lon={103.691559}
+          lat={-33.871799} lon={151.206696}
           altitude={0}
           heading={0}
         />
