@@ -61,9 +61,12 @@ interface SceneProps {
   allowMove?: boolean;
   faceSelectMode?: boolean;
   editMode?: boolean;
+  moveGeometryMode?: boolean;
   onHasEditChanges?: (hasChanges: boolean) => void;
   onApplyEditChanges?: (callback: () => void) => void;
   onCancelEditChanges?: (callback: () => void) => void;
+  onDisableMoveGeometry?: () => void;
+  usePivotControls?: boolean;
 }
 
 export type SceneHandle = {
@@ -73,7 +76,7 @@ export type SceneHandle = {
   goOnTop: () => void;
 };
 
-const Scene = memo(forwardRef<SceneHandle, SceneProps>(({ boxes, accent, gltfUrl, resourceMap, showRoomLabels = false, cameras = [], showCameras = false, onCameraClick, selectedCameraId, showGoogleTiles = false, showAxes = true, showGrid = true, allowMove = true, faceSelectMode = false, editMode = false, onHasEditChanges, onApplyEditChanges, onCancelEditChanges }, ref) => {
+const Scene = memo(forwardRef<SceneHandle, SceneProps>(({ boxes, accent, gltfUrl, resourceMap, showRoomLabels = false, cameras = [], showCameras = false, onCameraClick, selectedCameraId, showGoogleTiles = false, showAxes = true, showGrid = true, allowMove = true, faceSelectMode = false, editMode = false, moveGeometryMode = false, onHasEditChanges, onApplyEditChanges, onCancelEditChanges, onDisableMoveGeometry, usePivotControls = false }, ref) => {
   const applyCallbackRef = useRef<(() => void) | null>(null);
   const cancelCallbackRef = useRef<(() => void) | null>(null);
   
@@ -117,7 +120,7 @@ const Scene = memo(forwardRef<SceneHandle, SceneProps>(({ boxes, accent, gltfUrl
   const { camera, gl, raycaster, scene: r3fScene } = useThree();
 
   // Import Three.js components
-  const { Grid, OrbitControls, TransformControls, Line, GizmoHelper, GizmoViewcube } =
+  const { Grid, OrbitControls, TransformControls, PivotControls, Line, GizmoHelper, GizmoViewcube } =
     require("@react-three/drei");
   const { EffectComposer, Outline, N8AO } = require("@react-three/postprocessing");
   const { RaycastCatcher } = require("@/lib/raycast-catcher");
@@ -178,6 +181,30 @@ const Scene = memo(forwardRef<SceneHandle, SceneProps>(({ boxes, accent, gltfUrl
     };
   }, []);
 
+  // Handle GLTF geometry click for move mode
+  const handleGltfClick = useCallback((event: ThreeEvent<MouseEvent>) => {
+    if (!moveGeometryMode) return;
+    if (editMode) return;
+    event.stopPropagation();
+    
+    const clickedObject = event.object;
+    if (clickedObject && clickedObject.type === 'Mesh') {
+      // Reset if clicking a different object
+      if (selectedObjectOverride && selectedObjectOverride !== clickedObject) {
+        // Reset transform mode and object
+        setTransformMode('translate');
+        setSelectedObjectOverride(null);
+        setIsTransforming(false);
+        setTimeout(() => {
+          setSelectedObjectOverride(clickedObject);
+          setTransformMode('translate');
+        }, 0);
+      } else {
+        setSelectedObjectOverride(clickedObject);
+        setTransformMode('translate');
+      }
+    }
+  }, [moveGeometryMode, editMode, setTransformMode, selectedObjectOverride]);
 
   const selectedObject = selectedId ? objectRefs.current.get(selectedId) || null : null;
   const selectedBox = selectedId ? contextBoxes.find((box) => box.id === selectedId) : undefined;
@@ -561,6 +588,12 @@ const Scene = memo(forwardRef<SceneHandle, SceneProps>(({ boxes, accent, gltfUrl
               if (target) {
                 setSelectedObjectOverride(target);
               }
+              // Tắt move geometry mode khi click vào box
+              if (moveGeometryMode && onDisableMoveGeometry) {
+                onDisableMoveGeometry();
+                setSelectedObjectOverride(null);
+              }
+              
               if (!box.id) {
                 const id =
                   typeof crypto !== "undefined" && (crypto as any).randomUUID
@@ -634,44 +667,78 @@ const Scene = memo(forwardRef<SceneHandle, SceneProps>(({ boxes, accent, gltfUrl
         ))}
       </group>
 
-      {/* TransformControls - disabled for room/building types */}
+      {/* TransformControls / PivotControls - disabled for room/building types */}
       {(selectedObjectOverride || selectedObject) && (() => {
         const isRoomType = selectedBox?.type === "room";
         const isBuildingType = selectedBox?.type === "building";
         const transformTarget = activeTransformObject;
 
-        // Don't show TransformControls for shape-editable types or geometry edit mode
+        // Show controls for moveGeometryMode with selectedObjectOverride
+        if (moveGeometryMode && selectedObjectOverride) {
+          if (usePivotControls) {
+            return (
+              <PivotControls
+                object={selectedObjectOverride}
+                scale={1}
+                lineWidth={2.5}
+                fixed={false}
+                autoTransform={true}
+                activeAxes={[true, true, true]}
+                disableAxes={false}
+                disableSliders={false}
+                disableRotations={false}
+                axisColors={['#ff2060', '#20df80', '#2080ff']}
+                hoveredColor="#ffff40"
+                depthTest={false}
+                onDragStart={() => setIsTransforming(true)}
+                onDragEnd={() => setIsTransforming(false)}
+              />
+            );
+          }
+          return (
+            <TransformControls
+              object={selectedObjectOverride}
+              mode="translate"
+              size={1.5}
+              space="world"
+              showX
+              showY
+              showZ
+              translationSnap={
+                buildingOptions.snapToGrid ? Math.max(0.1, buildingOptions.gridSize) : undefined
+              }
+              enabled={true}
+              onMouseDown={() => setIsTransforming(true)}
+              onMouseUp={() => setIsTransforming(false)}
+              onDraggingChanged={(dragging: boolean) => {
+                setIsTransforming(dragging);
+              }}
+            />
+          );
+        }
+
+        // Don't show controls for shape-editable types or geometry edit mode
         if (isRoomType || isBuildingType || editMode || !transformTarget) return null;
 
-        return (
-          <TransformControls
-            object={transformTarget}
-            mode={transformMode}
-            size={1.5}
-            space="world"
-            showX
-            showY
-            showZ
-            translationSnap={
-              buildingOptions.snapToGrid ? Math.max(0.1, buildingOptions.gridSize) : undefined
-            }
-            rotationSnap={buildingOptions.snapToGrid ? Math.PI / 18 : undefined}
-            scaleSnap={buildingOptions.snapToGrid ? 0.1 : undefined}
-            enabled={allowMove || transformMode !== "translate"}
-            onMouseDown={() => setIsTransforming(true)}
-            onMouseUp={() => {
-              setIsTransforming(false);
-              if (!selectedId) return;
-              handleTransformEnd({
-                selectedId,
-                activeTransformObject: transformTarget,
-                setBoxes,
-                applyScaleToBox,
-              });
-            }}
-            onDraggingChanged={(dragging: boolean) => {
-              setIsTransforming(dragging);
-              if (!dragging ) {
+        // Use PivotControls or TransformControls for regular objects
+        if (usePivotControls) {
+          return (
+            <PivotControls
+              object={transformTarget}
+              scale={1}
+              lineWidth={2.5}
+              fixed={false}
+              autoTransform={true}
+              activeAxes={[true, true, true]}
+              disableAxes={transformMode === 'rotate'}
+              disableSliders={transformMode !== 'translate'}
+              disableRotations={transformMode !== 'rotate'}
+              axisColors={['#ff2060', '#20df80', '#2080ff']}
+              hoveredColor="#ffff40"
+              depthTest={false}
+              onDragStart={() => setIsTransforming(true)}
+              onDragEnd={() => {
+                setIsTransforming(false);
                 if (!selectedId) return;
                 handleTransformEnd({
                   selectedId,
@@ -679,10 +746,51 @@ const Scene = memo(forwardRef<SceneHandle, SceneProps>(({ boxes, accent, gltfUrl
                   setBoxes,
                   applyScaleToBox,
                 });
+              }}
+            />
+          );
+        }
+        
+        return (
+          <TransformControls
+              object={transformTarget}
+              mode={transformMode}
+              size={1.5}
+              space="world"
+              showX
+              showY
+              showZ
+              translationSnap={
+                buildingOptions.snapToGrid ? Math.max(0.1, buildingOptions.gridSize) : undefined
               }
-            }}
-            onObjectChange={handleTransformChange}
-          />
+              rotationSnap={buildingOptions.snapToGrid ? Math.PI / 18 : undefined}
+              scaleSnap={buildingOptions.snapToGrid ? 0.1 : undefined}
+              enabled={allowMove || transformMode !== "translate"}
+              onMouseDown={() => setIsTransforming(true)}
+              onMouseUp={() => {
+                setIsTransforming(false);
+                if (!selectedId) return;
+                handleTransformEnd({
+                  selectedId,
+                  activeTransformObject: transformTarget,
+                  setBoxes,
+                  applyScaleToBox,
+                });
+              }}
+              onDraggingChanged={(dragging: boolean) => {
+                setIsTransforming(dragging);
+                if (!dragging ) {
+                  if (!selectedId) return;
+                  handleTransformEnd({
+                    selectedId,
+                    activeTransformObject: transformTarget,
+                    setBoxes,
+                    applyScaleToBox,
+                  });
+                }
+              }}
+              onObjectChange={handleTransformChange}
+            />
         );
       })()}
       <RotationAngleLabel
@@ -757,6 +865,7 @@ const Scene = memo(forwardRef<SceneHandle, SceneProps>(({ boxes, accent, gltfUrl
             scene={gltfScene}
             position={[0, 0, 0]}
             autoRotate={false}
+            onClick={handleGltfClick}
           />
         </Suspense>
       )}

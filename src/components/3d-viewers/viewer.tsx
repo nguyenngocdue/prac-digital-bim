@@ -16,6 +16,7 @@ import {
   ArrowUp,
   Camera,
   Grid3x3,
+  Hand,
   Home,
   Map,
   Maximize2,
@@ -67,7 +68,9 @@ const Viewer = ({
   const [allowMove, setAllowMove] = useState(true);
   const [editMode, setEditMode] = useState(false);
   const [faceSelectMode, setFaceSelectMode] = useState(false);
+  const [moveGeometryMode, setMoveGeometryMode] = useState(false);
   const [hasEditChanges, setHasEditChanges] = useState(false);
+  const [usePivotControls, setUsePivotControls] = useState(true);
   const applyChangesCallbackRef = useRef<(() => void) | null>(null);
   const cancelChangesCallbackRef = useRef<(() => void) | null>(null);
   const [selectedCamera, setSelectedCamera] = useState<CameraData | null>(null);
@@ -94,11 +97,30 @@ const Viewer = ({
 
   const overlayActions = [
     {
+      key: "pivot-controls",
+      label: "Pivot Controls",
+      active: usePivotControls,
+      onClick: () => setUsePivotControls((prev) => !prev),
+      icon: RotateCw,
+    },
+    {
       key: "move",
       label: "Move",
       active: allowMove,
       onClick: () => setAllowMove((prev) => !prev),
       icon: Move3d,
+    },
+    {
+      key: "move-geometry",
+      label: "Move Geometry",
+      active: moveGeometryMode,
+      onClick: () => {
+        setMoveGeometryMode((prev) => !prev);
+        if (moveGeometryMode) {
+          setSelectedId(null);
+        }
+      },
+      icon: Hand,
     },
     {
       key: "axes",
@@ -277,6 +299,10 @@ const Viewer = ({
         if (creationMode) {
           setCreationMode(false);
         }
+        if (moveGeometryMode) {
+          setMoveGeometryMode(false);
+          setSelectedId(null);
+        }
         if (selectedId) {
           setSelectedId(null);
         }
@@ -309,6 +335,7 @@ const Viewer = ({
   }, [
     creationMode,
     faceSelectMode,
+    moveGeometryMode,
     selectedId,
     setBoxes,
     setCreationMode,
@@ -336,6 +363,19 @@ const Viewer = ({
               {creationTool === "room" ? "Click to place Room" : 
                creationTool === "building" ? "Click to place Building" : 
                "Click to place Box"}
+            </span>
+            <span className="text-xs text-muted-foreground ml-2">(ESC to exit)</span>
+          </div>
+        </div>
+      )}
+      
+      {/* Move Geometry Mode Indicator */}
+      {moveGeometryMode && (
+        <div className="absolute top-20 left-1/2 z-40 -translate-x-1/2">
+          <div className="viewer-panel viewer-panel-strong flex items-center gap-2 rounded-lg px-4 py-2 shadow-lg backdrop-blur">
+            <div className="h-2 w-2 rounded-full bg-blue-500 animate-pulse" />
+            <span className="text-sm font-medium">
+              Click on geometry to move it
             </span>
             <span className="text-xs text-muted-foreground ml-2">(ESC to exit)</span>
           </div>
@@ -371,9 +411,12 @@ const Viewer = ({
           allowMove={allowMove}
           faceSelectMode={faceSelectMode}
           editMode={editMode}
+          moveGeometryMode={moveGeometryMode}
           onHasEditChanges={setHasEditChanges}
           onApplyEditChanges={(fn) => { applyChangesCallbackRef.current = fn; }}
           onCancelEditChanges={(fn) => { cancelChangesCallbackRef.current = fn; }}
+          onDisableMoveGeometry={() => setMoveGeometryMode(false)}
+          usePivotControls={usePivotControls}
         />
       </Canvas>
       {selectedId && (

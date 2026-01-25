@@ -10,6 +10,7 @@ interface GltfModelProps {
   rotation?: [number, number, number];
   scale?: [number, number, number];
   autoRotate?: boolean;
+  onClick?: (event: any) => void;
 }
 
 export const GltfModel = ({ 
@@ -17,7 +18,8 @@ export const GltfModel = ({
   position = [0, 0, 0], 
   rotation = [0, 0, 0],
   scale = [1, 1, 1],
-  autoRotate = false
+  autoRotate = false,
+  onClick
 }: GltfModelProps) => {
   const groupRef = useRef<Group>(null);
 
@@ -44,6 +46,7 @@ export const GltfModel = ({
       position={position} 
       rotation={rotation}
       scale={scale}
+      onClick={onClick}
     >
       <primitive object={scene} />
     </group>
