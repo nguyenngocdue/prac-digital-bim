@@ -1,7 +1,9 @@
 "use client";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ThreeEvent, useFrame, useThree } from "@react-three/fiber";
+import { Html } from "@react-three/drei";
 import * as THREE from "three";
+import { Pencil } from "lucide-react";
 import { updateTranslateHover, updateLineLoop, markAsHandle } from "./editable-box-handles/utils";
 import type {
   EditablePolygonHandlesProps,
@@ -15,7 +17,7 @@ import {
   MIN_HEIGHT,
 } from "./editable-box-handles/constants";
 import { createGeometries, disposeGeometries } from "./editable-box-handles/geometries";
-import { createMaterials, disposeMaterials } from "./editable-box-handles/materials";
+import { createMaterials } from "./editable-box-handles/materials";
 import {
   updateVertexHandles,
   updateEdgeHandles,
@@ -26,10 +28,14 @@ import {
 import { createShapeFromVertices, calculateAverageY } from "./editable-box-handles/calculations";
 import { createDragHandlers } from "./editable-box-handles/drag-handlers";
 import { BoundingBox, BoundingBoxInfo, useBoundingBox } from './editable-box-handles/bounding-box';
-import { RotationHandles } from "./editable-box-handles/rotation-handles";
 import { PolygonDisplay, AreaLabel } from './editable-box-handles/polygon-display';
 import { ProArrow } from "@/components/pro-arrow";
 import { PointLabel } from "./editable-box-handles/point-label";
+import { RotationHandles } from "./editable-box-handles/rotation-handles";
+import { useBoxContext } from "@/app/contexts/box-context";
+
+const cloneVertices = (points: [number, number, number][]) =>
+  points.map((point) => [...point]) as [number, number, number][];
 
 export const EditablePolygonHandles = ({
   vertices,
@@ -54,6 +60,9 @@ export const EditablePolygonHandles = ({
   allowTranslate = true,
   onDragStart,
   onDragEnd,
+  onHasChanges,
+  onRegisterApply,
+  onRegisterCancel,
 }: EditablePolygonHandlesProps) => {
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [draggedEdgeIndex, setDraggedEdgeIndex] = useState<number | null>(null);
@@ -64,13 +73,32 @@ export const EditablePolygonHandles = ({
   const [, setIsTranslateHover] = useState(false);
   const [showRotateHandles, setShowRotateHandles] = useState(false);
   const [showBoundingBox, setShowBoundingBox] = useState(false);
+  const [isBoxHovered, setIsBoxHovered] = useState(false);
   const [rotationAngle, setRotationAngle] = useState(0);
   const [isRotating, setIsRotating] = useState(false);
+  const [hasChanges, setHasChanges] = useState(false);
+  
+  // Notify parent about changes
+  useEffect(() => {
+    onHasChanges?.(hasChanges);
+  }, [hasChanges, onHasChanges]);
+  
   const [heightCenters, setHeightCenters] = useState<{
     top?: [number, number, number];
     bottom?: [number, number, number];
   }>({});
   const { camera, gl } = useThree();
+  const { setSelectedId } = useBoxContext();
+  const initialStateRef = useRef<{
+    vertices: [number, number, number][];
+    topVertices: [number, number, number][] | null;
+    height?: number;
+  }>({
+    vertices: [],
+    topVertices: null,
+    height: undefined,
+  });
+  const prevBoundingVisibilityRef = useRef(showBoundingBox);
   
   // Drag state refs
   const dragPlane = useRef(new THREE.Plane(new THREE.Vector3(0, 1, 0), 0));
@@ -128,6 +156,7 @@ export const EditablePolygonHandles = ({
   const dragMoveRafRef = useRef<number | null>(null);
   const pendingPointerRef = useRef<{ clientX: number; clientY: number } | null>(null);
   const rotationAngleRef = useRef(0);
+  const dragHandlersRef = useRef<ReturnType<typeof createDragHandlers> | null>(null);
   
   // UI state refs
   const dragDisposersRef = useRef<(() => void)[]>([]);
@@ -140,6 +169,9 @@ export const EditablePolygonHandles = ({
   const handleScaleRef = useRef(1);
   const lastHandleScaleRef = useRef(1);
   const shiftKeyRef = useRef(false);
+  const capturedPointerIdRef = useRef<number | null>(null);
+  const editHoverRef = useRef(false);
+  const editHoverTimeoutRef = useRef<number | null>(null);
 
   const setCursor = (cursor: string) => {
     gl.domElement.style.cursor = cursor;
@@ -154,6 +186,53 @@ export const EditablePolygonHandles = ({
     setShowBoundingBox(isVisible);
     setShowRotateHandles(isVisible);
   };
+  const saveInitialState = useCallback(() => {
+    initialStateRef.current = {
+      vertices: cloneVertices(vertices),
+      topVertices: topVertices ? cloneVertices(topVertices) : null,
+      height,
+    };
+  }, [height, topVertices, vertices]);
+  const restoreInitialState = useCallback(() => {
+    const { vertices: savedVertices, topVertices: savedTop, height: savedHeight } =
+      initialStateRef.current;
+    if (savedVertices.length && onVerticesChange) {
+      onVerticesChange(cloneVertices(savedVertices));
+    }
+    if (savedTop && savedTop.length && onTopVerticesChange) {
+      onTopVerticesChange(cloneVertices(savedTop));
+    }
+    if (typeof savedHeight === "number" && onHeightChange && savedVertices.length) {
+      const maxY = Math.max(...savedVertices.map((v) => v[1]));
+      const minY = Math.min(...savedVertices.map((v) => v[1]));
+      const nextCenterY = (minY + maxY) / 2;
+      onHeightChange(savedHeight, nextCenterY);
+    }
+    setHasChanges(false);
+  }, [onHeightChange, onTopVerticesChange, onVerticesChange]);
+
+  const applyChanges = useCallback(() => {
+    // Save current state as new initial state
+    saveInitialState();
+    setHasChanges(false);
+    setSelectionVisible(false);
+    setSelectedId(null);
+  }, [saveInitialState, setSelectedId]);
+
+  const cancelChanges = useCallback(() => {
+    restoreInitialState();
+    setSelectionVisible(false);
+    setSelectedId(null);
+  }, [restoreInitialState, setSelectedId]);
+  
+  // Register callbacks with parent
+  useEffect(() => {
+    onRegisterApply?.(applyChanges);
+  }, [applyChanges, onRegisterApply]);
+  
+  useEffect(() => {
+    onRegisterCancel?.(cancelChanges);
+  }, [cancelChanges, onRegisterCancel]);
   const isSelectionControlled = typeof showBoundingBoxProp === "boolean";
 
   useEffect(() => {
@@ -167,7 +246,41 @@ export const EditablePolygonHandles = ({
       setShowBoundingBox(showBoundingBoxProp);
     }
   }, [showBoundingBoxProp]);
-
+  useEffect(() => {
+    if (!showBoundingBox && !isSelectionControlled) {
+      setSelectedId(null);
+    }
+  }, [isSelectionControlled, setSelectedId, showBoundingBox]);
+  useEffect(() => {
+    if (showBoundingBox && !prevBoundingVisibilityRef.current) {
+      saveInitialState();
+      setHasChanges(false);
+    }
+    prevBoundingVisibilityRef.current = showBoundingBox;
+  }, [saveInitialState, showBoundingBox]);
+  useEffect(() => {
+    if (!showBoundingBox) return;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        cancelChanges();
+      } else if (event.key === "Enter") {
+        applyChanges();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [applyChanges, cancelChanges, showBoundingBox]);
+  useEffect(() => {
+    if (showBoundingBox) {
+      setIsBoxHovered(false);
+    }
+    if (editHoverTimeoutRef.current !== null) {
+      window.clearTimeout(editHoverTimeoutRef.current);
+      editHoverTimeoutRef.current = null;
+    }
+  }, [showBoundingBox]);
   const handleFacePointerDown = (event: ThreeEvent<PointerEvent>) => {
     if (!allowTranslate) return;
     dragHandlers.startTranslateFree(event);
@@ -196,6 +309,10 @@ export const EditablePolygonHandles = ({
       hitMaterial.dispose();
       if (rafRef.current !== null) {
         cancelAnimationFrame(rafRef.current);
+      }
+      if (editHoverTimeoutRef.current !== null) {
+        window.clearTimeout(editHoverTimeoutRef.current);
+        editHoverTimeoutRef.current = null;
       }
     };
   }, [
@@ -292,18 +409,22 @@ export const EditablePolygonHandles = ({
       bottom: getCenterPoint(points) ?? undefined,
     };
     setHeightCenters((prev) => {
+      const nextTop = nextHeightCenters.top;
+      const nextBottom = nextHeightCenters.bottom;
       const sameTop =
         prev.top &&
-        nextHeightCenters.top &&
-        prev.top.every((value, index) => Math.abs(value - nextHeightCenters.top![index]) < 1e-5);
+        nextTop &&
+        Math.abs(prev.top[0] - nextTop[0]) < 1e-5 &&
+        Math.abs(prev.top[1] - nextTop[1]) < 1e-5 &&
+        Math.abs(prev.top[2] - nextTop[2]) < 1e-5;
       const sameBottom =
         prev.bottom &&
-        nextHeightCenters.bottom &&
-        prev.bottom.every(
-          (value, index) => Math.abs(value - nextHeightCenters.bottom![index]) < 1e-5
-        );
-      if ((prev.top === undefined && nextHeightCenters.top === undefined) || sameTop) {
-        if ((prev.bottom === undefined && nextHeightCenters.bottom === undefined) || sameBottom) {
+        nextBottom &&
+        Math.abs(prev.bottom[0] - nextBottom[0]) < 1e-5 &&
+        Math.abs(prev.bottom[1] - nextBottom[1]) < 1e-5 &&
+        Math.abs(prev.bottom[2] - nextBottom[2]) < 1e-5;
+      if ((prev.top === undefined && nextTop === undefined) || sameTop) {
+        if ((prev.bottom === undefined && nextBottom === undefined) || sameBottom) {
           return prev;
         }
       }
@@ -396,9 +517,34 @@ export const EditablePolygonHandles = ({
     [vertices]
   );
   
-
   // Use custom hooks for bounding box
   const boundingBox = useBoundingBox(vertices, topVertices, height);
+  
+  const editIconPosition = useMemo(() => {
+    if (!vertices.length) return null;
+    if (boundingBox) {
+      const center = boundingBox.center;
+      const topY = boundingBox.box.max.y;
+      return [center.x, topY + 0.25, center.z] as [number, number, number];
+    }
+    const center = vertices.reduce(
+      (acc, point) => {
+        acc[0] += point[0];
+        acc[1] += point[1];
+        acc[2] += point[2];
+        return acc;
+      },
+      [0, 0, 0] as [number, number, number]
+    );
+    const count = vertices.length;
+    return [center[0] / count, bottomFaceY + 0.25, center[2] / count] as [number, number, number];
+  }, [boundingBox, bottomFaceY, vertices]);
+  const canShowEditIcon = Boolean(!showBoundingBox && !isSelectionControlled && bottomFaceShape && editIconPosition);
+  useEffect(() => {
+    if (!canShowEditIcon) {
+      setIsBoxHovered(false);
+    }
+  }, [canShowEditIcon]);
 
   // CHỈ update rotation center khi KHÔNG đang rotate
   // Nếu đang rotate, giữ nguyên center cũ để geometry xoay quanh điểm cố định
@@ -458,6 +604,7 @@ export const EditablePolygonHandles = ({
     hoverTopHandleRef,
     translateHoverRef,
     pendingTranslateRef,
+    capturedPointerIdRef,
   };
 
   const dragHandlers = createDragHandlers({
@@ -477,7 +624,10 @@ export const EditablePolygonHandles = ({
     onTranslateXZ,
     onTranslateXYZ,
     onDragStart,
-    onDragEnd,
+    onDragEnd: () => {
+      setHasChanges(true);
+      onDragEnd?.();
+    },
     setDraggedIndex,
     setDraggedEdgeIndex,
     setCursor,
@@ -491,6 +641,12 @@ export const EditablePolygonHandles = ({
     },
     setIsRotating,
   });
+  dragHandlersRef.current = dragHandlers;
+  useEffect(() => {
+    return () => {
+      dragHandlersRef.current?.cancelDrag();
+    };
+  }, []);
   useEffect(() => {
     if (showBoundingBox) return;
     dragHandlers.cancelDrag();
@@ -576,12 +732,23 @@ export const EditablePolygonHandles = ({
   });
 
   return (
-    <group
+    <>
+      <group
       onPointerMove={(event) => {
         if (isDragging) return;
         const isOverHandle = event.intersections?.some(
           (hit) => hit.object?.userData?.isHandle
         );
+        const isOverBody = event.intersections?.some(
+          (hit) => hit.object?.userData?.isEditableBody
+        );
+        if (canShowEditIcon) {
+          if (isOverBody && !isOverHandle && !isDragging) {
+            setIsBoxHovered(true);
+          } else if (!editHoverRef.current) {
+            setIsBoxHovered(false);
+          }
+        }
         // Nếu KHÔNG phải handle, cho phép drag
         if (!isOverHandle) {
           updateTranslateHoverState(true);
@@ -592,6 +759,9 @@ export const EditablePolygonHandles = ({
       onPointerOut={() => {
         if (isDragging) return;
         updateTranslateHoverState(false);
+        if (!editHoverRef.current) {
+          setIsBoxHovered(false);
+        }
       }}
       onDoubleClick={() => {
         if (isSelectionControlled) return;
@@ -616,7 +786,65 @@ export const EditablePolygonHandles = ({
         color={color}
         showFill={showFill}
         isDragging={isDragging}
+        hovered={canShowEditIcon && isBoxHovered}
       />
+      {canShowEditIcon && (
+        <mesh
+          position={[0, bottomFaceY, 0]}
+          rotation={[-Math.PI / 2, 0, 0]}
+          userData={{ isEditableBody: true }}
+          onPointerOver={() => {
+            if (editHoverTimeoutRef.current !== null) {
+              window.clearTimeout(editHoverTimeoutRef.current);
+              editHoverTimeoutRef.current = null;
+            }
+            if (!isDragging) {
+              setIsBoxHovered(true);
+            }
+          }}
+          onPointerOut={() => {
+            if (editHoverTimeoutRef.current !== null) {
+              window.clearTimeout(editHoverTimeoutRef.current);
+            }
+            editHoverTimeoutRef.current = window.setTimeout(() => {
+              if (!editHoverRef.current) {
+                setIsBoxHovered(false);
+              }
+              editHoverTimeoutRef.current = null;
+            }, 80);
+          }}
+        >
+          <shapeGeometry args={[bottomFaceShape!]} />
+          <meshBasicMaterial transparent opacity={0} depthWrite={false} side={THREE.DoubleSide} />
+        </mesh>
+      )}
+      {canShowEditIcon && isBoxHovered && editIconPosition && (
+        <Html position={editIconPosition} center zIndexRange={[1300, 0]} occlude={false}>
+          <button
+            type="button"
+            className="pointer-events-auto flex items-center gap-1.5 rounded-full bg-white/90 px-2.5 py-1.5 text-xs font-semibold text-slate-700 shadow-lg ring-1 ring-black/10 backdrop-blur"
+            onPointerEnter={() => {
+              if (editHoverTimeoutRef.current !== null) {
+                window.clearTimeout(editHoverTimeoutRef.current);
+                editHoverTimeoutRef.current = null;
+              }
+              editHoverRef.current = true;
+              setIsBoxHovered(true);
+            }}
+            onPointerLeave={() => {
+              editHoverRef.current = false;
+              setIsBoxHovered(false);
+            }}
+            onClick={(event) => {
+              event.stopPropagation();
+              setSelectionVisible(true);
+            }}
+          >
+            <Pencil className="h-3.5 w-3.5" />
+            Edit
+          </button>
+        </Html>
+      )}
 
       {/* Bounding Box */}
       <BoundingBox
@@ -989,7 +1217,6 @@ export const EditablePolygonHandles = ({
         boundingBox={boundingBox}
         labelPosition={rotationLabelPosition || undefined}
         show={showRotateHandles}
-        isDragging={isDragging}
         rotationAngle={rotationAngle}
         onPointerDown={(event) => {
           dragHandlers.handleRotatePointerDown(event);
@@ -1038,6 +1265,7 @@ export const EditablePolygonHandles = ({
       )}
       {!isDragging && <AreaLabel vertices={vertices} />}
     </group>
+    </>
   );
 };
 // Export với cả 2 tên để tương thích

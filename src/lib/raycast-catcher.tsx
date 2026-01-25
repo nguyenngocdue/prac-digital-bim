@@ -21,6 +21,7 @@ export function RaycastCatcher({ accent }: { accent: string }) {
   // Track mouse movement to distinguish click from drag
   const mouseDownPos = useRef<{ x: number; y: number } | null>(null);
   const isDragging = useRef(false);
+  const raycast = creationMode ? undefined : () => null;
 
   const snapPoint = (point: THREE.Vector3) => {
     const snapped = point.clone();
@@ -110,6 +111,7 @@ export function RaycastCatcher({ accent }: { accent: string }) {
       position={[0, 0, 0]}
       rotation={[-Math.PI / 2, 0, 0]}
       visible={false}
+      raycast={raycast}
       onPointerDown={(e: any) => {
         mouseDownPos.current = { x: e.clientX, y: e.clientY };
         isDragging.current = false;

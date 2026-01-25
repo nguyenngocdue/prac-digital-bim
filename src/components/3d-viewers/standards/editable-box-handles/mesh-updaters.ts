@@ -1,6 +1,8 @@
 import * as THREE from "three";
 import { HANDLE_COLOR, HANDLE_HOVER_COLOR, HANDLE_ACTIVE_COLOR } from "./constants";
 
+const HIT_SCALE_MULTIPLIER = 2.5; // Hit mesh is larger for easier clicking
+
 /**
  * Update instance matrices for vertex handles
  */
@@ -20,6 +22,7 @@ export const updateVertexHandles = (
   }
 
   const temp = new THREE.Matrix4();
+  const hitTemp = new THREE.Matrix4();
   const baseColor = new THREE.Color(HANDLE_COLOR);
   const activeColor = new THREE.Color(HANDLE_ACTIVE_COLOR);
   const activeIndex =
@@ -28,12 +31,14 @@ export const updateVertexHandles = (
       : null;
 
   const scaleVec = new THREE.Vector3(scale, scale, scale);
+  const hitScaleVec = new THREE.Vector3(scale * HIT_SCALE_MULTIPLIER, scale * HIT_SCALE_MULTIPLIER, scale * HIT_SCALE_MULTIPLIER);
   const quat = new THREE.Quaternion();
 
   vertices.forEach((point, index) => {
     temp.compose(point, quat, scaleVec);
+    hitTemp.compose(point, quat, hitScaleVec);
     handlesRef.setMatrixAt(index, temp);
-    hitRef.setMatrixAt(index, temp);
+    hitRef.setMatrixAt(index, hitTemp);
     handlesRef.setColorAt(index, baseColor);
   });
   if (activeIndex !== null) {
@@ -135,11 +140,13 @@ export const updateHandleHover = (
       : null;
   const prev = hoverRef.current;
   
+  // Reset previous hover to normal or active color
   if (prev !== null) {
     mesh.setColorAt(prev, prev === activeIndex ? active : normal);
   }
+  // Set new hover color (always use hover color when hovering)
   if (nextIndex !== null) {
-    mesh.setColorAt(nextIndex, nextIndex === activeIndex ? active : hover);
+    mesh.setColorAt(nextIndex, hover);
   }
   
   hoverRef.current = nextIndex;

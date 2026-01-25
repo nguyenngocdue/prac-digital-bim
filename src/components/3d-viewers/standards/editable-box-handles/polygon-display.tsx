@@ -2,12 +2,14 @@ import { useMemo } from "react";
 import * as THREE from "three";
 import { Html } from "@react-three/drei";
 import { calculateArea, calculateCentroid, calculateAverageY } from "./calculations";
+import { HOVER_EDGE_COLOR, HOVER_FILL_COLOR } from "../colors";
 
 interface PolygonDisplayProps {
   vertices: [number, number, number][];
   color: string;
   showFill: boolean;
   isDragging: boolean;
+  hovered?: boolean;
 }
 
 /**
@@ -18,18 +20,22 @@ export const PolygonDisplay = ({
   color,
   showFill,
   isDragging,
+  hovered,
 }: PolygonDisplayProps) => {
   if (vertices.length < 2) return null;
+
+  const highlightColor = hovered ? HOVER_FILL_COLOR : color;
+  const edgeColor = hovered ? HOVER_EDGE_COLOR : color;
 
   return (
     <>
       {/* Fill */}
       {!isDragging && showFill && vertices.length >= 3 && (
-        <PolygonFill vertices={vertices} color={color} />
+        <PolygonFill vertices={vertices} color={highlightColor} />
       )}
 
       {/* Edges */}
-      <PolygonEdges vertices={vertices} color={color} />
+      <PolygonEdges vertices={vertices} color={edgeColor} />
 
       {/* Area label */}
       {vertices.length >= 3 && !isDragging && (

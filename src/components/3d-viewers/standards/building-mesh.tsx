@@ -3,6 +3,18 @@
 import { useMemo } from "react";
 import * as THREE from "three";
 import { BuildingShape, getFootprintPoints } from "./building-shapes";
+import {
+  BUILDING_HIGHLIGHT_EDGE_PRIMARY,
+  BUILDING_HIGHLIGHT_EDGE_SECONDARY,
+  BUILDING_HIGHLIGHT_EMISSIVE,
+  BUILDING_HIGHLIGHT_EMISSIVE_INTENSITY,
+  BUILDING_HIGHLIGHT_FILL,
+  BUILDING_SELECTED_EDGE_PRIMARY,
+  BUILDING_SELECTED_EDGE_SECONDARY,
+  BUILDING_SELECTED_EMISSIVE,
+  BUILDING_SELECTED_EMISSIVE_INTENSITY,
+  BUILDING_SELECTED_FILL,
+} from "./colors";
 
 type BuildingMeshProps = {
   color: string;
@@ -14,6 +26,8 @@ type BuildingMeshProps = {
   thicknessRatio?: number;
   shape?: BuildingShape;
   enableRaycast?: boolean;
+  highlighted?: boolean;
+  selected?: boolean;
 };
 
 export function BuildingMesh({
@@ -26,7 +40,38 @@ export function BuildingMesh({
   thicknessRatio = 0.3,
   shape = "rect",
   enableRaycast = true,
+  highlighted = false,
+  selected = false,
 }: BuildingMeshProps) {
+  const highlightColors = useMemo(() => {
+    const fill = selected
+      ? BUILDING_SELECTED_FILL
+      : highlighted
+        ? BUILDING_HIGHLIGHT_FILL
+        : color;
+    const edgePrimary = selected
+      ? BUILDING_SELECTED_EDGE_PRIMARY
+      : highlighted
+        ? BUILDING_HIGHLIGHT_EDGE_PRIMARY
+        : "#7dd3fc";
+    const edgeSecondary = selected
+      ? BUILDING_SELECTED_EDGE_SECONDARY
+      : highlighted
+        ? BUILDING_HIGHLIGHT_EDGE_SECONDARY
+        : "#38bdf8";
+    const emissiveColor = selected
+      ? new THREE.Color(BUILDING_SELECTED_EMISSIVE)
+      : highlighted
+        ? new THREE.Color(BUILDING_HIGHLIGHT_EMISSIVE)
+        : new THREE.Color(0x000000);
+    const emissiveIntensity = selected
+      ? BUILDING_SELECTED_EMISSIVE_INTENSITY
+      : highlighted
+        ? BUILDING_HIGHLIGHT_EMISSIVE_INTENSITY
+        : 0;
+    return { fill, edgePrimary, edgeSecondary, emissiveColor, emissiveIntensity };
+  }, [color, highlighted, selected]);
+
   const geometry = useMemo(() => {
     const points = footprint?.length
       ? footprint
@@ -100,23 +145,33 @@ export function BuildingMesh({
     <group>
       <mesh geometry={geometry} castShadow receiveShadow raycast={raycast}>
         <meshPhysicalMaterial
-          color={color}
+          color={highlightColors.fill}
           metalness={0.05}
           roughness={0.12}
           clearcoat={0.6}
           clearcoatRoughness={0.1}
           transparent
-          opacity={0.14}
+          opacity={highlighted ? 0.32 : 0.14}
           transmission={0.35}
           thickness={0.35}
           ior={1.42}
+          emissive={highlightColors.emissiveColor}
+          emissiveIntensity={highlightColors.emissiveIntensity}
         />
       </mesh>
       <lineSegments geometry={new THREE.EdgesGeometry(geometry, 25)} raycast={raycast}>
-        <lineBasicMaterial color="#7dd3fc" transparent opacity={0.95} />
+        <lineBasicMaterial
+          color={highlightColors.edgePrimary}
+          transparent
+          opacity={highlighted ? 0.98 : 0.95}
+        />
       </lineSegments>
       <lineSegments geometry={new THREE.EdgesGeometry(geometry, 55)} raycast={raycast}>
-        <lineBasicMaterial color="#38bdf8" transparent opacity={0.55} />
+        <lineBasicMaterial
+          color={highlightColors.edgeSecondary}
+          transparent
+          opacity={highlighted ? 0.85 : 0.55}
+        />
       </lineSegments>
     </group>
   );

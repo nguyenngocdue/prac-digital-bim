@@ -10,7 +10,7 @@ import {
   useRef,
   useState,
 } from "react";
-import { Vector3 } from "three";
+import { Vector2, Vector3 } from "three";
 import type { Group, Mesh, Object3D } from "three";
 import { useGltfModel } from "./gltf/use-gltf-model";
 import { GltfModel } from "./gltf/gltf-model";
@@ -21,11 +21,12 @@ import { CameraMarkersLayer } from "./cameras/camera-markers-layer";
 import { mockRooms } from "@/data/mock-rooms";
 import { CameraData } from "@/types/camera";
 import { GooglePhotorealisticTiles } from "./gis/google-photorealistic-tiles";
-import { useThree } from "@react-three/fiber";
+import { useThree, type ThreeEvent } from "@react-three/fiber";
 import { useBoxContext, type Box } from "@/app/contexts/box-context";
 import { BuildingMesh } from "./standards/building-mesh";
 import { EditableBoxHandles } from "./standards/editable-box-handles";
 import { getFootprintPoints } from "./standards/building-shapes";
+import { BuildingHandles } from "./scene-handlers/building-handles";
 import { getWorldFaceNormal, getWorldFacePoint, type FaceArrowState } from "./standards/face-normal-arrow";
 import {
   resetVertexColors,
@@ -36,7 +37,6 @@ import { ProArrow } from "@/components/pro-arrow";
 import { getSnappedPosition } from "./transform-modes/translate";
 import { RotationAngleLabel } from "./transform-modes/rotate/rotation-angle-label";
 import { applyScaleToBox } from "./transform-modes/scale";
-import { BuildingHandles } from "./scene-handlers/building-handles";
 import { getBoxBounds, getBoxHeight } from "./scene-utils/box-bounds";
 import { rotateXZ } from "./scene-utils/rotate-xz";
 import { handleRotateChange } from "./scene-handlers/rotate-change";
@@ -59,9 +59,11 @@ interface SceneProps {
   showAxes?: boolean;
   showGrid?: boolean;
   allowMove?: boolean;
-  geometryEditMode?: boolean;
   faceSelectMode?: boolean;
-  onRequestGeometryEdit?: () => void;
+  editMode?: boolean;
+  onHasEditChanges?: (hasChanges: boolean) => void;
+  onApplyEditChanges?: (callback: () => void) => void;
+  onCancelEditChanges?: (callback: () => void) => void;
 }
 
 export type SceneHandle = {
@@ -71,15 +73,40 @@ export type SceneHandle = {
   goOnTop: () => void;
 };
 
-const Scene = memo(forwardRef<SceneHandle, SceneProps>(({ boxes, accent, gltfUrl, resourceMap, showRoomLabels = false, cameras = [], showCameras = false, onCameraClick, selectedCameraId, showGoogleTiles = false, showAxes = true, showGrid = true, allowMove = true, geometryEditMode = false, faceSelectMode = false, onRequestGeometryEdit }, ref) => {
+const Scene = memo(forwardRef<SceneHandle, SceneProps>(({ boxes, accent, gltfUrl, resourceMap, showRoomLabels = false, cameras = [], showCameras = false, onCameraClick, selectedCameraId, showGoogleTiles = false, showAxes = true, showGrid = true, allowMove = true, faceSelectMode = false, editMode = false, onHasEditChanges, onApplyEditChanges, onCancelEditChanges }, ref) => {
+  const applyCallbackRef = useRef<(() => void) | null>(null);
+  const cancelCallbackRef = useRef<(() => void) | null>(null);
+  
+  // Notify parent when callbacks are updated
+  const notifyCallbacks = useCallback(() => {
+    if (applyCallbackRef.current && onApplyEditChanges) {
+      onApplyEditChanges(applyCallbackRef.current);
+    }
+    if (cancelCallbackRef.current && onCancelEditChanges) {
+      onCancelEditChanges(cancelCallbackRef.current);
+    }
+  }, [onApplyEditChanges, onCancelEditChanges]);
   const controlsRef = useRef<any>(null);
   const objectRefs = useRef<Map<string, Object3D>>(new Map());
-  const { boxes: contextBoxes, setBoxes, selectedId, setSelectedId, transformMode, setTransformMode, drawingPoints, updateBoxVertices, buildingOptions } = useBoxContext();
+  const {
+    boxes: contextBoxes,
+    setBoxes,
+    selectedId,
+    setSelectedId,
+    transformMode,
+    setTransformMode,
+    drawingPoints,
+    buildingOptions,
+    creationMode,
+    updateBoxVertices,
+  } = useBoxContext();
   const [isTransforming, setIsTransforming] = useState(false);
   const [selectedObjectOverride, setSelectedObjectOverride] = useState<Object3D | null>(null);
   const [hoveredObject, setHoveredObject] = useState<Object3D | null>(null);
+  const [hoveredBoxId, setHoveredBoxId] = useState<string | null>(null);
   const [faceArrow, setFaceArrow] = useState<FaceArrowState | null>(null);
   const boxesGroupRef = useRef<Group | null>(null);
+  const mouseNdcRef = useRef(new Vector2());
   const lastFaceRef = useRef<FaceSelection | null>(null);
   const transformRafRef = useRef<number | null>(null);
   const initialCameraRef = useRef<{
@@ -87,10 +114,10 @@ const Scene = memo(forwardRef<SceneHandle, SceneProps>(({ boxes, accent, gltfUrl
     target: Vector3;
     up: Vector3;
   } | null>(null);
-  const { camera, raycaster, scene: r3fScene } = useThree();
+  const { camera, gl, raycaster, scene: r3fScene } = useThree();
 
   // Import Three.js components
-  const { Grid, OrbitControls, TransformControls, Line, GizmoHelper, GizmoViewcube, Html } =
+  const { Grid, OrbitControls, TransformControls, Line, GizmoHelper, GizmoViewcube } =
     require("@react-three/drei");
   const { EffectComposer, Outline, N8AO } = require("@react-three/postprocessing");
   const { RaycastCatcher } = require("@/lib/raycast-catcher");
@@ -120,9 +147,22 @@ const Scene = memo(forwardRef<SceneHandle, SceneProps>(({ boxes, accent, gltfUrl
   }, [isTransforming]);
 
   useEffect(() => {
-    if (!geometryEditMode && !faceSelectMode) return;
+    if (!faceSelectMode) return;
     setHoveredObject(null);
-  }, [faceSelectMode, geometryEditMode]);
+  }, [faceSelectMode]);
+
+  useEffect(() => {
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      setSelectedId(null);
+      setSelectedObjectOverride(null);
+      setHoveredBoxId(null);
+    };
+    window.addEventListener("keydown", handleEscape);
+    return () => {
+      window.removeEventListener("keydown", handleEscape);
+    };
+  }, [setSelectedId, setSelectedObjectOverride]);
 
   useEffect(() => {
     const handlePointerEnd = () => {
@@ -342,6 +382,45 @@ const Scene = memo(forwardRef<SceneHandle, SceneProps>(({ boxes, accent, gltfUrl
     setFaceArrow(null);
   }, []);
 
+  const resolveBoxId = useCallback((object: Object3D | null) => {
+    let current: Object3D | null = object;
+    while (current) {
+      if (current.userData?.boxId) {
+        return current.userData.boxId as string;
+      }
+      current = current.parent;
+    }
+    return null;
+  }, []);
+
+  const updateHoveredBoxByRaycaster = useCallback(
+    (clientX: number, clientY: number) => {
+      const group = boxesGroupRef.current;
+      if (!group || !gl) {
+        return;
+      }
+      const rect = gl.domElement.getBoundingClientRect();
+      if (!rect.width || !rect.height) return;
+      const x = ((clientX - rect.left) / rect.width) * 2 - 1;
+      const y = -((clientY - rect.top) / rect.height) * 2 + 1;
+      mouseNdcRef.current.set(x, y);
+      raycaster.setFromCamera(mouseNdcRef.current, camera);
+      const hits = raycaster.intersectObject(group, true);
+      const hit = hits.find((intersection) => resolveBoxId(intersection.object));
+      const nextId = hit ? resolveBoxId(hit.object) : null;
+      setHoveredBoxId(nextId);
+    },
+    [camera, gl, raycaster, resolveBoxId]
+  );
+
+  const handleBoxesPointerMove = useCallback(
+    (event: ThreeEvent<PointerEvent>) => {
+      if (faceSelectMode) return;
+      updateHoveredBoxByRaycaster(event.clientX, event.clientY);
+    },
+    [faceSelectMode, updateHoveredBoxByRaycaster]
+  );
+
   useEffect(() => {
     if (faceSelectMode) return;
     clearFaceSelection();
@@ -386,7 +465,7 @@ const Scene = memo(forwardRef<SceneHandle, SceneProps>(({ boxes, accent, gltfUrl
           heading={0}
         />
       )}
-      <RaycastCatcher accent={accent} />
+      {creationMode && <RaycastCatcher accent={accent} />}
       <ambientLight intensity={0.6} />
       <directionalLight position={[5, 5, 5]} intensity={1} />
       <PlaceholderBox color={accent || "#06b6d4"} />
@@ -418,7 +497,13 @@ const Scene = memo(forwardRef<SceneHandle, SceneProps>(({ boxes, accent, gltfUrl
           blur
         />
       </EffectComposer>
-      <group ref={boxesGroupRef}>
+      <group
+        ref={boxesGroupRef}
+        onPointerMove={handleBoxesPointerMove}
+        onPointerLeave={() => {
+          setHoveredBoxId(null);
+        }}
+      >
         {boxes.map((box, i) => (
           <group
             key={box.id || i}
@@ -431,11 +516,8 @@ const Scene = memo(forwardRef<SceneHandle, SceneProps>(({ boxes, accent, gltfUrl
             }}
             position={box.position}
             rotation={[0, box.rotationY || 0, 0]}
+            userData={{ boxId: box.id }}
             onPointerDown={(event: any) => {
-              if (geometryEditMode) {
-                event.stopPropagation();
-                return;
-              }
               if (faceSelectMode && boxesGroupRef.current) {
                 const hits = raycaster.intersectObject(boxesGroupRef.current, true);
                 const hit = hits.find((item) => item.face && item.object.type === "Mesh");
@@ -476,9 +558,6 @@ const Scene = memo(forwardRef<SceneHandle, SceneProps>(({ boxes, accent, gltfUrl
                 }
               }
               event.stopPropagation();
-              if (event.detail >= 2 && onRequestGeometryEdit) {
-                onRequestGeometryEdit();
-              }
               const target = objectRefs.current.get(box.id) || event.eventObject || event.object;
               if (target) {
                 setSelectedObjectOverride(target);
@@ -498,7 +577,7 @@ const Scene = memo(forwardRef<SceneHandle, SceneProps>(({ boxes, accent, gltfUrl
               }
             }}
             onPointerOver={(event: any) => {
-              if (geometryEditMode || faceSelectMode) return;
+              if (faceSelectMode) return;
               const target = objectRefs.current.get(box.id) || event.eventObject || event.object;
               if (!target) return;
               if (box.id === selectedId) {
@@ -508,7 +587,7 @@ const Scene = memo(forwardRef<SceneHandle, SceneProps>(({ boxes, accent, gltfUrl
               }
             }}
             onPointerOut={(event: any) => {
-              if (geometryEditMode || faceSelectMode) return;
+              if (faceSelectMode) return;
               const target = objectRefs.current.get(box.id) || event.eventObject || event.object;
               if (hoveredObject && target === hoveredObject) {
                 setHoveredObject(null);
@@ -525,7 +604,9 @@ const Scene = memo(forwardRef<SceneHandle, SceneProps>(({ boxes, accent, gltfUrl
                 depth={box.size?.[2] || 10}
                 thicknessRatio={box.thicknessRatio || 0.3}
                 shape="rect"
-                enableRaycast={!geometryEditMode}
+                enableRaycast={true}
+                highlighted={hoveredBoxId === box.id}
+                selected={selectedId === box.id}
               />
             ) : box.type === "room" ? (
               <RoomBox
@@ -535,12 +616,7 @@ const Scene = memo(forwardRef<SceneHandle, SceneProps>(({ boxes, accent, gltfUrl
                 position={[0, 0, 0]}
                 color={box.color || "#D4A574"}
                 showMeasurements={box.showMeasurements !== false}
-                showHandles={false}
                 vertices={box.vertices}
-                onVerticesChange={(newVertices: [number, number, number][]) => {
-                  updateBoxVertices(box.id, newVertices);
-                }}
-                onHandleDragChange={(isDragging: boolean) => setIsTransforming(isDragging)}
               />
             ) : (
               <PlaceholderBox
@@ -559,14 +635,14 @@ const Scene = memo(forwardRef<SceneHandle, SceneProps>(({ boxes, accent, gltfUrl
         ))}
       </group>
 
-      {/* TransformControls - disabled for room type to use EditableBoxHandles instead */}
+      {/* TransformControls - disabled for room/building types */}
       {(selectedObjectOverride || selectedObject) && (() => {
         const isRoomType = selectedBox?.type === "room";
         const isBuildingType = selectedBox?.type === "building";
         const transformTarget = activeTransformObject;
 
         // Don't show TransformControls for shape-editable types or geometry edit mode
-        if (isRoomType || isBuildingType || geometryEditMode || !transformTarget) return null;
+        if (isRoomType || isBuildingType || editMode || !transformTarget) return null;
 
         return (
           <TransformControls
@@ -629,12 +705,21 @@ const Scene = memo(forwardRef<SceneHandle, SceneProps>(({ boxes, accent, gltfUrl
         setBoxes={setBoxes}
         allowMove={allowMove}
         transformMode={transformMode}
-        showHandles={geometryEditMode}
+        showHandles={editMode}
         rotateXZ={rotateXZ}
         onDragStart={() => setIsTransforming(true)}
         onDragEnd={() => setIsTransforming(false)}
+        onHasChanges={onHasEditChanges}
+        onRegisterApply={(fn) => { 
+          applyCallbackRef.current = fn; 
+          notifyCallbacks();
+        }}
+        onRegisterCancel={(fn) => { 
+          cancelCallbackRef.current = fn; 
+          notifyCallbacks();
+        }}
       />
-      {geometryEditMode && selectedBox?.type === "room" && selectedRoomVerticesWorld && (
+      {editMode && selectedBox?.type === "room" && selectedRoomVerticesWorld && (
         <EditableBoxHandles
           vertices={selectedRoomVerticesWorld}
           showRotateHandles={transformMode === "rotate"}
@@ -654,6 +739,15 @@ const Scene = memo(forwardRef<SceneHandle, SceneProps>(({ boxes, accent, gltfUrl
           color="#3B82F6"
           onDragStart={() => setIsTransforming(true)}
           onDragEnd={() => setIsTransforming(false)}
+          onHasChanges={onHasEditChanges}
+          onRegisterApply={(fn) => { 
+            applyCallbackRef.current = fn; 
+            notifyCallbacks();
+          }}
+          onRegisterCancel={(fn) => { 
+            cancelCallbackRef.current = fn; 
+            notifyCallbacks();
+          }}
         />
       )}
 

@@ -54,7 +54,6 @@ export type DragHandlers = {
 export const createDragHandlers = (params: DragHandlerParams): DragHandlers => {
   const smoothedIntersection = new THREE.Vector3();
   let hasSmoothIntersection = false;
-  let capturedPointerId: number | null = null;
   const {
     dragRefs,
     gl,
@@ -126,6 +125,7 @@ export const createDragHandlers = (params: DragHandlerParams): DragHandlers => {
     pendingPointerRef,
     dragDisposersRef,
     pendingTranslateRef,
+    capturedPointerIdRef,
   } = dragRefs;
 
   const disposeDragListeners = () => {
@@ -142,7 +142,7 @@ export const createDragHandlers = (params: DragHandlerParams): DragHandlers => {
       dragModeRef.current !== "translate-xz" &&
       dragModeRef.current !== "translate-free" &&
       pendingTranslateRef.current === null &&
-      capturedPointerId === null
+      capturedPointerIdRef.current === null
     )
       return;
     setDraggedIndex(null);
@@ -180,11 +180,11 @@ export const createDragHandlers = (params: DragHandlerParams): DragHandlers => {
     }
     
     setCursor("auto");
-    const releaseId = pointerId ?? capturedPointerId ?? undefined;
+    const releaseId = pointerId ?? capturedPointerIdRef.current ?? undefined;
     if (releaseId !== undefined) {
       gl.domElement.releasePointerCapture(releaseId);
     }
-    capturedPointerId = null;
+    capturedPointerIdRef.current = null;
     onDragEnd?.();
     disposeDragListeners();
     if (lastMode !== "translate-xz" && lastMode !== "translate-free") {
@@ -265,7 +265,7 @@ export const createDragHandlers = (params: DragHandlerParams): DragHandlers => {
 
     setCursor("grabbing");
     gl.domElement.setPointerCapture(event.pointerId);
-    capturedPointerId = event.pointerId;
+    capturedPointerIdRef.current = event.pointerId;
     onDragStart?.();
     attachDragListeners();
   };
@@ -302,7 +302,7 @@ export const createDragHandlers = (params: DragHandlerParams): DragHandlers => {
     }
     setCursor("grabbing");
     gl.domElement.setPointerCapture(event.pointerId);
-    capturedPointerId = event.pointerId;
+    capturedPointerIdRef.current = event.pointerId;
     onDragStart?.();
     attachDragListeners();
   };
@@ -326,7 +326,7 @@ export const createDragHandlers = (params: DragHandlerParams): DragHandlers => {
     }
     setCursor("grabbing");
     gl.domElement.setPointerCapture(event.pointerId);
-    capturedPointerId = event.pointerId;
+    capturedPointerIdRef.current = event.pointerId;
     onDragStart?.();
     attachDragListeners();
   };
@@ -731,7 +731,7 @@ export const createDragHandlers = (params: DragHandlerParams): DragHandlers => {
     
     setCursor("grabbing");
     gl.domElement.setPointerCapture(event.pointerId);
-    capturedPointerId = event.pointerId;
+    capturedPointerIdRef.current = event.pointerId;
     onDragStart?.();
     attachDragListeners();
   };
@@ -761,7 +761,7 @@ export const createDragHandlers = (params: DragHandlerParams): DragHandlers => {
     }
     setCursor("grabbing");
     gl.domElement.setPointerCapture(event.pointerId);
-    capturedPointerId = event.pointerId;
+    capturedPointerIdRef.current = event.pointerId;
     onDragStart?.();
     attachDragListeners();
   };
@@ -791,7 +791,7 @@ export const createDragHandlers = (params: DragHandlerParams): DragHandlers => {
     }
     setCursor("grabbing");
     gl.domElement.setPointerCapture(event.pointerId);
-    capturedPointerId = event.pointerId;
+    capturedPointerIdRef.current = event.pointerId;
     onDragStart?.();
     attachDragListeners();
   };
@@ -840,7 +840,7 @@ export const createDragHandlers = (params: DragHandlerParams): DragHandlers => {
     
     setCursor("grabbing");
     gl.domElement.setPointerCapture(event.pointerId);
-    capturedPointerId = event.pointerId;
+    capturedPointerIdRef.current = event.pointerId;
     onDragStart?.();
     attachDragListeners();
   };

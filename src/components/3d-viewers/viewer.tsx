@@ -1,12 +1,13 @@
 "use client";
 import { Canvas } from "@react-three/fiber";
 import { useEffect, useRef, useState } from "react";
-import { useBoxContext, type Box } from "../../app/contexts/box-context";
+import { useBoxContext } from "../../app/contexts/box-context";
 import Scene, { type SceneHandle } from "./scene";
 import { GltfControls } from "./gltf/gltf-controls";
 import { IotControls } from "./iot/iot-controls";
 import { IotLegend } from "./iot/iot-legend";
 import { TransformModePanel } from "./transform-mode-panel";
+import { EditControlsPanel } from "./edit-controls-panel";
 import { CameraListPanel, CameraViewerPanel } from "./cameras";
 import { mockCameras } from "@/data/mock-cameras";
 import { CameraData } from "@/types/camera";
@@ -19,7 +20,6 @@ import {
   Map,
   Maximize2,
   Move3d,
-  PenTool,
   PanelLeft,
   PanelRight,
   Scan,
@@ -65,9 +65,11 @@ const Viewer = ({
   const [showAxes, setShowAxes] = useState(true);
   const [showGrid, setShowGrid] = useState(true);
   const [allowMove, setAllowMove] = useState(true);
-  const [geometryEditMode, setGeometryEditMode] = useState(false);
+  const [editMode, setEditMode] = useState(false);
   const [faceSelectMode, setFaceSelectMode] = useState(false);
-  const editSnapshotRef = useRef<{ id: string; box: Box } | null>(null);
+  const [hasEditChanges, setHasEditChanges] = useState(false);
+  const applyChangesCallbackRef = useRef<(() => void) | null>(null);
+  const cancelChangesCallbackRef = useRef<(() => void) | null>(null);
   const [selectedCamera, setSelectedCamera] = useState<CameraData | null>(null);
   const [gltfUrl, setGltfUrl] = useState<string | null>(null);
   const [resourceMap, setResourceMap] = useState<Map<string, string>>();
@@ -89,35 +91,6 @@ const Viewer = ({
     setTransformMode,
   } = useBoxContext();
   const [canvasKey] = useState(() => `canvas-${projectId || "default"}`);
-  const cloneBox = (box: Box): Box => {
-    if (typeof structuredClone === "function") {
-      return structuredClone(box);
-    }
-    return JSON.parse(JSON.stringify(box)) as Box;
-  };
-
-  const startGeometryEdit = () => {
-    if (!selectedId) return;
-    const target = boxes.find((box) => box.id === selectedId);
-    if (!target) return;
-    editSnapshotRef.current = { id: selectedId, box: cloneBox(target) };
-    setCreationMode(false);
-    setGeometryEditMode(true);
-  };
-
-  const applyGeometryEdit = () => {
-    editSnapshotRef.current = null;
-    setGeometryEditMode(false);
-  };
-
-  const cancelGeometryEdit = () => {
-    const snapshot = editSnapshotRef.current;
-    if (snapshot) {
-      setBoxes((prev) => prev.map((box) => (box.id === snapshot.id ? snapshot.box : box)));
-    }
-    editSnapshotRef.current = null;
-    setGeometryEditMode(false);
-  };
 
   const overlayActions = [
     {
@@ -140,16 +113,6 @@ const Viewer = ({
       active: showGrid,
       onClick: () => setShowGrid((prev) => !prev),
       icon: Grid3x3,
-    },
-    {
-      key: "edit-geometry",
-      label: "Edit Geometry",
-      active: geometryEditMode,
-      onClick: () => {
-        if (geometryEditMode) return;
-        startGeometryEdit();
-      },
-      icon: PenTool,
     },
     {
       key: "face-select",
@@ -218,7 +181,7 @@ const Viewer = ({
   ]
     .map((action) => ({
       ...action,
-      disabled: geometryEditMode && action.key !== "edit-geometry",
+      disabled: false,
     }))
     .filter((action) => typeof action.onClick === "function");
 
@@ -237,12 +200,15 @@ const Viewer = ({
   }, []);
 
   useEffect(() => {
-    if (!geometryEditMode) return;
-    if (faceSelectMode) {
-      setFaceSelectMode(false);
-      sceneRef.current?.clearFaceSelection();
+    if (!faceSelectMode) return;
+    sceneRef.current?.clearFaceSelection();
+  }, [faceSelectMode]);
+
+  useEffect(() => {
+    if (!selectedId) {
+      setEditMode(false);
     }
-  }, [faceSelectMode, geometryEditMode]);
+  }, [selectedId]);
 
   // Debug: log boxes when they change
   useEffect(() => {
@@ -311,15 +277,10 @@ const Viewer = ({
         if (creationMode) {
           setCreationMode(false);
         }
-        if (geometryEditMode) {
-          cancelGeometryEdit();
-          return;
-        }
         if (selectedId) {
           setSelectedId(null);
         }
       }
-      if (geometryEditMode) return;
       if ((e.key === "Delete" || e.key === "Backspace") && selectedId) {
         setBoxes((prev) => prev.filter((box) => box.id !== selectedId));
         setSelectedId(null);
@@ -347,12 +308,10 @@ const Viewer = ({
     };
   }, [
     creationMode,
-    geometryEditMode,
     faceSelectMode,
     selectedId,
     setBoxes,
     setCreationMode,
-    cancelGeometryEdit,
     setSelectedId,
     setTransformMode,
   ]);
@@ -391,6 +350,9 @@ const Viewer = ({
           antialias: true,
           powerPreference: "high-performance"
         }}
+        onPointerMissed={() => {
+          setSelectedId(null);
+        }}
       >
         <Scene
           ref={sceneRef}
@@ -406,39 +368,15 @@ const Viewer = ({
           showGoogleTiles={showGoogleTiles}
           showAxes={showAxes}
           showGrid={showGrid}
-          allowMove={geometryEditMode ? false : allowMove}
-          geometryEditMode={geometryEditMode}
+          allowMove={allowMove}
           faceSelectMode={faceSelectMode}
-          onRequestGeometryEdit={() => {
-            if (geometryEditMode) return;
-            startGeometryEdit();
-          }}
+          editMode={editMode}
+          onHasEditChanges={setHasEditChanges}
+          onApplyEditChanges={(fn) => { applyChangesCallbackRef.current = fn; }}
+          onCancelEditChanges={(fn) => { cancelChangesCallbackRef.current = fn; }}
         />
       </Canvas>
-      {geometryEditMode && selectedId && (
-        <div className="pointer-events-auto absolute left-1/2 top-6 z-50 -translate-x-1/2">
-          <div className="flex items-center gap-2 rounded-lg border border-slate-200/70 bg-white/90 px-2.5 py-2 text-xs shadow-sm backdrop-blur dark:border-slate-700/60 dark:bg-slate-900/70">
-            <span className="rounded-md bg-emerald-50 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-200">
-              Edit Mode
-            </span>
-            <button
-              type="button"
-              onClick={applyGeometryEdit}
-              className="rounded-md bg-emerald-600 px-3 py-1 text-xs font-semibold text-white shadow-sm hover:bg-emerald-500"
-            >
-              Apply
-            </button>
-            <button
-              type="button"
-              onClick={cancelGeometryEdit}
-              className="rounded-md border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-700 shadow-sm hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      )}
-      {selectedId && !geometryEditMode && (
+      {selectedId && (
         <div className="pointer-events-auto absolute left-3 top-24 z-50 flex flex-col gap-2">
           <div className="viewer-panel viewer-panel-strong flex flex-col items-center gap-1 rounded-lg p-1 shadow-lg backdrop-blur">
             {[
@@ -487,6 +425,19 @@ const Viewer = ({
             >
               <ArrowUp className="h-4 w-4" />
             </button>
+            <button
+              type="button"
+              onClick={() => setEditMode((prev) => !prev)}
+              title="Edit mode"
+              aria-pressed={editMode}
+              className={`flex h-9 w-9 items-center justify-center rounded-md text-sm transition ${
+                editMode
+                  ? "viewer-chip shadow-sm"
+                  : "bg-white/70 text-slate-700 hover:bg-white dark:bg-slate-900/60 dark:text-slate-100 dark:hover:bg-slate-900"
+              }`}
+            >
+              <span className="text-xs font-semibold">E</span>
+            </button>
           </div>
         </div>
       )}
@@ -524,14 +475,27 @@ const Viewer = ({
       )}
 
       {/* Transform Mode Panel */}
-      {!geometryEditMode && (
-        <TransformModePanel
-          mode={transformMode}
-          onModeChange={setTransformMode}
-          selectedId={selectedId}
-          onGoOnTop={() => sceneRef.current?.goOnTop()}
-        />
-      )}
+      <TransformModePanel
+        mode={transformMode}
+        onModeChange={setTransformMode}
+        selectedId={selectedId}
+        onGoOnTop={() => sceneRef.current?.goOnTop()}
+      />
+
+      {/* Edit Controls Panel */}
+      <EditControlsPanel
+        hasChanges={hasEditChanges}
+        editMode={editMode}
+        onApply={() => {
+          applyChangesCallbackRef.current?.();
+          setHasEditChanges(false);
+        }}
+        onCancel={() => {
+          cancelChangesCallbackRef.current?.();
+          setHasEditChanges(false);
+        }}
+        onClose={() => setEditMode(false)}
+      />
 
       {overlayActions.length > 0 && (
         <div className="absolute bottom-2 left-1/2 z-40 -translate-x-1/2">

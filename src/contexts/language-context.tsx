@@ -19,9 +19,9 @@ const translations = {
     "nav.viewer": "3D Viewer",
     
     // Hero
-    "hero.title": "Digital Twin BIM",
+    "hero.title": "Connected BIM Workspace",
     "hero.subtitle": "Platform",
-    "hero.description": "Revolutionize your building lifecycle management with our advanced Digital Twin BIM solution. Integrate, visualize, and optimize your built environment.",
+    "hero.description": "Revolutionize your building lifecycle management with our advanced Connected BIM Workspace solution. Integrate, visualize, and optimize your built environment.",
     "hero.exploreProjects": "Explore Projects",
     "hero.viewer": "3D Viewer Demo",
     "hero.workflows": "Workflows",

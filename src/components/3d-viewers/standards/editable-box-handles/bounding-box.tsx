@@ -9,6 +9,7 @@ interface BoundingBoxProps {
   height?: number;
   show: boolean;
   rotationAngle?: number;
+  lineColor?: string;
 }
 
 /**
@@ -105,6 +106,7 @@ export const BoundingBox = ({
   height,
   show,
   rotationAngle = 0,
+  lineColor = "#7e00fc",
 }: BoundingBoxProps) => {
   const boundingBox = useBoundingBox(vertices, topVertices, height);
   const boundingLines = useBoundingBoxLines(boundingBox);
@@ -135,7 +137,7 @@ export const BoundingBox = ({
         </bufferGeometry>
 
         <lineDashedMaterial
-          color="#7e00fc"
+          color={lineColor}
           dashSize={0.25}
           gapSize={0.15}
           transparent

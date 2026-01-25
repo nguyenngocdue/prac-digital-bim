@@ -6,7 +6,6 @@ interface RotationHandlesProps {
   boundingBox: { box: THREE.Box3; center: THREE.Vector3 } | null;
   labelPosition?: [number, number, number];
   show: boolean;
-  isDragging: boolean;
   rotationAngle: number;
   onPointerDown: (event: any) => void;
   onPointerUp: (event: any) => void;
@@ -39,7 +38,6 @@ export const RotationHandles = ({
   boundingBox,
   labelPosition,
   show,
-  isDragging,
   rotationAngle,
   onPointerDown,
   onPointerUp,

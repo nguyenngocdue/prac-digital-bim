@@ -23,6 +23,9 @@ export interface EditablePolygonHandlesProps {
   liveUpdate?: boolean;
   onDragStart?: () => void;
   onDragEnd?: () => void;
+  onHasChanges?: (hasChanges: boolean) => void;
+  onRegisterApply?: (fn: () => void) => void;
+  onRegisterCancel?: (fn: () => void) => void;
 }
 
 export type DragMode =
@@ -97,4 +100,5 @@ export interface DragRefs {
   hoverTopHandleRef: React.MutableRefObject<number | null>;
   translateHoverRef: React.MutableRefObject<boolean>;
   pendingTranslateRef: React.MutableRefObject<PendingTranslate | null>;
+  capturedPointerIdRef: React.MutableRefObject<number | null>;
 }

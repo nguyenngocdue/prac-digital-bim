@@ -1,6 +1,6 @@
 // Handle sizes
 export const HANDLE_SIZE = 0.06;
-export const HANDLE_HIT_SIZE = 0.05;
+export const HANDLE_HIT_SIZE = 0.18; // Larger hit area for easier clicking
 export const EDGE_SIZE = 0.05;
 export const EDGE_HIT_SIZE = 0.4;
 export const HEIGHT_SIZE = 0.08;

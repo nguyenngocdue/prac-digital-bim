@@ -15,6 +15,9 @@ type BuildingHandlesProps = {
   rotateXZ: (x: number, z: number, angle: number) => [number, number];
   onDragStart: () => void;
   onDragEnd: () => void;
+  onHasChanges?: (hasChanges: boolean) => void;
+  onRegisterApply?: (fn: () => void) => void;
+  onRegisterCancel?: (fn: () => void) => void;
 };
 
 export const BuildingHandles = ({
@@ -29,6 +32,9 @@ export const BuildingHandles = ({
   rotateXZ,
   onDragStart,
   onDragEnd,
+  onHasChanges,
+  onRegisterApply,
+  onRegisterCancel,
 }: BuildingHandlesProps) => {
   if (!showHandles) {
     return null;
@@ -111,6 +117,9 @@ export const BuildingHandles = ({
       allowTranslate={!showHandles && allowMove}
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
+      onHasChanges={onHasChanges}
+      onRegisterApply={onRegisterApply}
+      onRegisterCancel={onRegisterCancel}
     />
   );
 };
