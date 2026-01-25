@@ -677,17 +677,6 @@ export const EditablePolygonHandles = ({
     };
   }, []);
 
-  const rotateAxis = useMemo(() => {
-    if (!isRotating || !boundingBox) return null;
-    const center = rotateLockedCenterRef.current ?? boundingBox.center;
-    const minY = boundingBox.box.min.y;
-    const maxY = boundingBox.box.max.y;
-    const margin = 0.2;
-    return new Float32Array([
-      center.x, minY - margin, center.z,
-      center.x, maxY + margin, center.z,
-    ]);
-  }, [boundingBox, isRotating]);
   const rotationLabelCenter = useMemo(() => {
     if (!vertices.length) return null;
     const center = vertices.reduce(
@@ -1223,32 +1212,13 @@ export const EditablePolygonHandles = ({
         labelPosition={rotationLabelPosition || undefined}
         show={showRotateHandles}
         rotationAngle={rotationAngle}
+        isRotating={isRotating}
         onPointerDown={(event) => {
           dragHandlers.handleRotatePointerDown(event);
         }}
         onPointerUp={dragHandlers.handlePointerUp}
         setCursor={setCursor}
       />
-      {rotateAxis && (
-        <lineSegments frustumCulled={false} renderOrder={11}>
-          <bufferGeometry>
-            <bufferAttribute
-              attach="attributes-position"
-              args={[rotateAxis, 3]}
-              count={rotateAxis.length / 3}
-              itemSize={3}
-            />
-          </bufferGeometry>
-          <lineBasicMaterial
-            color="#f59e0b"
-            transparent
-            opacity={0.9}
-            depthTest={false}
-            depthWrite={false}
-            linewidth={2}
-          />
-        </lineSegments>
-      )}
       <PointLabel
         show={showBoundingBox}
         point={
