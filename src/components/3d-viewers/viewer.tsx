@@ -12,6 +12,7 @@ import { mockCameras } from "@/data/mock-cameras";
 import { CameraData } from "@/types/camera";
 import {
   Activity,
+  ArrowUp,
   Camera,
   Grid3x3,
   Home,
@@ -20,6 +21,7 @@ import {
   Move3d,
   PanelLeft,
   PanelRight,
+  RotateCw,
   Upload,
   Axis3d,
 } from "lucide-react";
@@ -319,6 +321,58 @@ const Viewer = ({
           allowMove={allowMove}
         />
       </Canvas>
+      {selectedId && (
+        <div className="pointer-events-auto absolute left-3 top-24 z-50 flex flex-col gap-2">
+          <div className="viewer-panel viewer-panel-strong flex flex-col items-center gap-1 rounded-lg p-1 shadow-lg backdrop-blur">
+            {[
+              {
+                key: "translate",
+                label: "Move (G)",
+                icon: Move3d,
+                active: transformMode === "translate",
+                onClick: () => setTransformMode("translate"),
+              },
+              {
+                key: "rotate",
+                label: "Rotate (R)",
+                icon: RotateCw,
+                active: transformMode === "rotate",
+                onClick: () => setTransformMode("rotate"),
+              },
+              {
+                key: "scale",
+                label: "Scale (S)",
+                icon: Maximize2,
+                active: transformMode === "scale",
+                onClick: () => setTransformMode("scale"),
+              },
+            ].map(({ key, label, icon: Icon, active, onClick }) => (
+              <button
+                key={key}
+                type="button"
+                onClick={onClick}
+                title={label}
+                aria-pressed={active}
+                className={`flex h-9 w-9 items-center justify-center rounded-md text-sm transition ${
+                  active
+                    ? "viewer-chip shadow-sm"
+                    : "bg-white/70 text-slate-700 hover:bg-white dark:bg-slate-900/60 dark:text-slate-100 dark:hover:bg-slate-900"
+                }`}
+              >
+                <Icon className="h-4 w-4" />
+              </button>
+            ))}
+            <button
+              type="button"
+              onClick={() => sceneRef.current?.goOnTop()}
+              title="Go on top"
+              className="flex h-9 w-9 items-center justify-center rounded-md text-sm transition bg-white/70 text-slate-700 hover:bg-white dark:bg-slate-900/60 dark:text-slate-100 dark:hover:bg-slate-900"
+            >
+              <ArrowUp className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      )}
       <div className="pointer-events-auto absolute right-3 top-40 z-50 flex flex-col gap-2">
         <button
           type="button"
@@ -357,6 +411,7 @@ const Viewer = ({
         mode={transformMode}
         onModeChange={setTransformMode}
         selectedId={selectedId}
+        onGoOnTop={() => sceneRef.current?.goOnTop()}
       />
 
       {overlayActions.length > 0 && (

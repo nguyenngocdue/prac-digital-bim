@@ -72,17 +72,19 @@ export type SceneHandle = {
   resetView: () => void;
   zoomToFit: () => void;
   clearFaceSelection: () => void;
+  goOnTop: () => void;
 };
 
 const Scene = memo(forwardRef<SceneHandle, SceneProps>(({ boxes, accent, gltfUrl, resourceMap, showRoomLabels = false, cameras = [], showCameras = false, onCameraClick, selectedCameraId, showGoogleTiles = false, showAxes = true, showGrid = true, allowMove = true }, ref) => {
   const controlsRef = useRef<any>(null);
   const objectRefs = useRef<Map<string, Object3D>>(new Map());
-  const { boxes: contextBoxes, setBoxes, selectedId, setSelectedId, transformMode, setTransformMode, drawingPoints, updateBoxVertices } = useBoxContext();
+  const { boxes: contextBoxes, setBoxes, selectedId, setSelectedId, transformMode, setTransformMode, drawingPoints, updateBoxVertices, buildingOptions } = useBoxContext();
   const [isTransforming, setIsTransforming] = useState(false);
   const [selectedObjectOverride, setSelectedObjectOverride] = useState<Object3D | null>(null);
   const [faceArrow, setFaceArrow] = useState<FaceArrowState | null>(null);
   const boxesGroupRef = useRef<Group | null>(null);
   const lastFaceRef = useRef<FaceSelection | null>(null);
+  const transformRafRef = useRef<number | null>(null);
   const initialCameraRef = useRef<{
     position: Vector3;
     target: Vector3;
@@ -91,7 +93,7 @@ const Scene = memo(forwardRef<SceneHandle, SceneProps>(({ boxes, accent, gltfUrl
   const { camera, raycaster } = useThree();
 
   // Import Three.js components
-  const { Grid, OrbitControls, Select, TransformControls, Line, GizmoHelper, GizmoViewcube } =
+  const { Grid, OrbitControls, Select, TransformControls, Line, GizmoHelper, GizmoViewcube, Html } =
     require("@react-three/drei");
   const { RaycastCatcher } = require("@/lib/raycast-catcher");
   const { PlaceholderBox } = require("./standards/placeholder-box");
@@ -135,6 +137,66 @@ const Scene = memo(forwardRef<SceneHandle, SceneProps>(({ boxes, accent, gltfUrl
 
   const selectedObject = selectedId ? objectRefs.current.get(selectedId) || null : null;
   const selectedBox = selectedId ? contextBoxes.find((box) => box.id === selectedId) : undefined;
+  const activeTransformObject = selectedObjectOverride || selectedObject;
+  const getBoxHeight = (box: Box) => {
+    if (box.type === "building" && box.height) return box.height;
+    if (box.type === "room" && box.height) return box.height;
+    if (box.size?.[1]) return box.size[1];
+    if (box.height) return box.height;
+    return 1;
+  };
+  const getBoxFootprint = (box: Box): [number, number][] => {
+    if (box.footprint?.length) return box.footprint;
+    if (box.vertices?.length) {
+      return box.vertices.map(([x, , z]) => [x, z]);
+    }
+    const width = box.size?.[0] ?? box.width ?? 1;
+    const depth = box.size?.[2] ?? box.depth ?? 1;
+    return [
+      [-width / 2, -depth / 2],
+      [width / 2, -depth / 2],
+      [width / 2, depth / 2],
+      [-width / 2, depth / 2],
+    ];
+  };
+  const getBoxBounds = (box: Box, positionOverride?: Vector3, rotationOverride?: number) => {
+    const position = positionOverride ?? new Vector3(...box.position);
+    const rotationY = rotationOverride ?? box.rotationY ?? 0;
+    const points = getBoxFootprint(box);
+    const height = getBoxHeight(box);
+    if (!points.length) {
+      return {
+        minX: position.x,
+        maxX: position.x,
+        minZ: position.z,
+        maxZ: position.z,
+        minY: position.y - height / 2,
+        maxY: position.y + height / 2,
+      };
+    }
+    const cos = Math.cos(rotationY);
+    const sin = Math.sin(rotationY);
+    let minX = Infinity;
+    let maxX = -Infinity;
+    let minZ = Infinity;
+    let maxZ = -Infinity;
+    points.forEach(([x, z]) => {
+      const rx = x * cos - z * sin + position.x;
+      const rz = x * sin + z * cos + position.z;
+      minX = Math.min(minX, rx);
+      maxX = Math.max(maxX, rx);
+      minZ = Math.min(minZ, rz);
+      maxZ = Math.max(maxZ, rz);
+    });
+    return {
+      minX,
+      maxX,
+      minZ,
+      maxZ,
+      minY: position.y - height / 2,
+      maxY: position.y + height / 2,
+    };
+  };
   const rotateXZ = (x: number, z: number, angle: number) => {
     const cos = Math.cos(angle);
     const sin = Math.sin(angle);
@@ -228,8 +290,8 @@ const Scene = memo(forwardRef<SceneHandle, SceneProps>(({ boxes, accent, gltfUrl
   }, [contextBoxes, setBoxes]);
 
   const handleTransformEnd = () => {
-    if (!selectedId || !selectedObject) return;
-    const { position, rotation, scale } = selectedObject;
+    if (!selectedId || !activeTransformObject) return;
+    const { position, rotation, scale } = activeTransformObject;
     setBoxes((prev) =>
       prev.map((box) => {
         if (box.id !== selectedId) return box;
@@ -246,12 +308,90 @@ const Scene = memo(forwardRef<SceneHandle, SceneProps>(({ boxes, accent, gltfUrl
           } else if (box.size) {
             next.size = [box.size[0] * scale.x, box.size[1] * scale.y, box.size[2] * scale.z];
           }
-          selectedObject.scale.set(1, 1, 1);
+          activeTransformObject.scale.set(1, 1, 1);
         }
         return next;
       })
     );
   };
+  const handleTransformChange = useCallback(() => {
+    if (!selectedBox || !activeTransformObject) return;
+    if (transformMode === "rotate") {
+      if (!selectedId) return;
+      if (transformRafRef.current !== null) return;
+      transformRafRef.current = requestAnimationFrame(() => {
+        transformRafRef.current = null;
+        const rotationY = activeTransformObject.rotation.y;
+        setBoxes((prev) =>
+          prev.map((box) =>
+            box.id === selectedId ? { ...box, rotationY } : box
+          )
+        );
+      });
+      return;
+    }
+    if (transformMode !== "translate") return;
+    let nextPosition = activeTransformObject.position.clone();
+    if (buildingOptions.snapToGrid && buildingOptions.gridSize > 0) {
+      const gridSize = buildingOptions.gridSize;
+      nextPosition.x = Math.round(nextPosition.x / gridSize) * gridSize;
+      nextPosition.z = Math.round(nextPosition.z / gridSize) * gridSize;
+      if (buildingOptions.allowVertical) {
+        nextPosition.y = Math.round(nextPosition.y / gridSize) * gridSize;
+      }
+    }
+    if (buildingOptions.snapToObjects && buildingOptions.snapDistance > 0) {
+      const selectedRotation = activeTransformObject.rotation.y;
+      const selectedBounds = getBoxBounds(selectedBox, nextPosition, selectedRotation);
+      const halfX = (selectedBounds.maxX - selectedBounds.minX) / 2;
+      const halfZ = (selectedBounds.maxZ - selectedBounds.minZ) / 2;
+      let snappedX = nextPosition.x;
+      let snappedZ = nextPosition.z;
+      let bestDeltaX = buildingOptions.snapDistance + 1;
+      let bestDeltaZ = buildingOptions.snapDistance + 1;
+      contextBoxes.forEach((box) => {
+        if (box.id === selectedId) return;
+        const bounds = getBoxBounds(box);
+        const candidateXs = [bounds.minX, bounds.maxX, (bounds.minX + bounds.maxX) / 2];
+        const candidateZs = [bounds.minZ, bounds.maxZ, (bounds.minZ + bounds.maxZ) / 2];
+        candidateXs.forEach((candidate) => {
+          const options = [candidate - halfX, candidate + halfX, candidate];
+          options.forEach((option) => {
+            const delta = Math.abs(nextPosition.x - option);
+            if (delta <= buildingOptions.snapDistance && delta < bestDeltaX) {
+              bestDeltaX = delta;
+              snappedX = option;
+            }
+          });
+        });
+        candidateZs.forEach((candidate) => {
+          const options = [candidate - halfZ, candidate + halfZ, candidate];
+          options.forEach((option) => {
+            const delta = Math.abs(nextPosition.z - option);
+            if (delta <= buildingOptions.snapDistance && delta < bestDeltaZ) {
+              bestDeltaZ = delta;
+              snappedZ = option;
+            }
+          });
+        });
+      });
+      nextPosition = new Vector3(snappedX, nextPosition.y, snappedZ);
+    }
+    activeTransformObject.position.copy(nextPosition);
+  }, [
+    activeTransformObject,
+    buildingOptions.allowVertical,
+    buildingOptions.gridSize,
+    buildingOptions.snapDistance,
+    buildingOptions.snapToGrid,
+    buildingOptions.snapToObjects,
+    contextBoxes,
+    getBoxBounds,
+    selectedBox,
+    selectedId,
+    setBoxes,
+    transformMode,
+  ]);
 
   const drawingLinePoints = useMemo(() => {
     if (drawingPoints.length < 2) return null;
@@ -294,11 +434,55 @@ const Scene = memo(forwardRef<SceneHandle, SceneProps>(({ boxes, accent, gltfUrl
     }
     setFaceArrow(null);
   }, []);
+  const handleGoOnTop = useCallback(() => {
+    if (!selectedId || !selectedBox) return;
+    const currentPosition = activeTransformObject
+      ? activeTransformObject.position.clone()
+      : new Vector3(...selectedBox.position);
+    const selectedBounds = getBoxBounds(
+      selectedBox,
+      currentPosition,
+      activeTransformObject?.rotation.y ?? selectedBox.rotationY ?? 0
+    );
+    const selectedHeight = getBoxHeight(selectedBox);
+    let targetTop = 0;
+    contextBoxes.forEach((box) => {
+      if (box.id === selectedId) return;
+      const bounds = getBoxBounds(box);
+      const overlaps =
+        selectedBounds.maxX >= bounds.minX &&
+        selectedBounds.minX <= bounds.maxX &&
+        selectedBounds.maxZ >= bounds.minZ &&
+        selectedBounds.minZ <= bounds.maxZ;
+      if (overlaps) {
+        targetTop = Math.max(targetTop, bounds.maxY);
+      }
+    });
+    const nextY = targetTop + selectedHeight / 2;
+    if (activeTransformObject) {
+      activeTransformObject.position.y = nextY;
+    }
+    setBoxes((prev) =>
+      prev.map((box) =>
+        box.id === selectedId
+          ? {
+              ...box,
+              position: [currentPosition.x, nextY, currentPosition.z],
+            }
+          : box
+      )
+    );
+  }, [activeTransformObject, contextBoxes, getBoxBounds, getBoxHeight, selectedBox, selectedId, setBoxes]);
 
   useImperativeHandle(
     ref,
-    () => ({ resetView: handleResetView, zoomToFit: handleZoomToFit, clearFaceSelection }),
-    [clearFaceSelection, handleResetView, handleZoomToFit]
+    () => ({
+      resetView: handleResetView,
+      zoomToFit: handleZoomToFit,
+      clearFaceSelection,
+      goOnTop: handleGoOnTop,
+    }),
+    [clearFaceSelection, handleGoOnTop, handleResetView, handleZoomToFit]
   );
 
   // Three.js scene
@@ -372,7 +556,7 @@ const Scene = memo(forwardRef<SceneHandle, SceneProps>(({ boxes, accent, gltfUrl
                   }
                 }
                 event.stopPropagation();
-                const target = event.eventObject || event.object;
+                const target = objectRefs.current.get(box.id) || event.eventObject || event.object;
                 if (target) {
                   setSelectedObjectOverride(target);
                 }
@@ -439,31 +623,61 @@ const Scene = memo(forwardRef<SceneHandle, SceneProps>(({ boxes, accent, gltfUrl
       {(selectedObjectOverride || selectedObject) && (() => {
         const isRoomType = selectedBox?.type === "room";
         const isBuildingType = selectedBox?.type === "building";
+        const transformTarget = activeTransformObject;
 
         // Don't show TransformControls for shape-editable types
-        if (isRoomType || isBuildingType) return null;
+        if (isRoomType || isBuildingType || !transformTarget) return null;
 
         return (
           <TransformControls
-            object={selectedObjectOverride || selectedObject}
+            object={transformTarget}
             mode={transformMode}
             size={1.5}
             space="world"
             showX
             showY
             showZ
-            translationSnap={0.1}
-            rotationSnap={Math.PI / 18}
-            scaleSnap={0.1}
+            translationSnap={
+              buildingOptions.snapToGrid ? Math.max(0.1, buildingOptions.gridSize) : undefined
+            }
+            rotationSnap={buildingOptions.snapToGrid ? Math.PI / 18 : undefined}
+            scaleSnap={buildingOptions.snapToGrid ? 0.1 : undefined}
             enabled={allowMove || transformMode !== "translate"}
             onMouseDown={() => setIsTransforming(true)}
             onMouseUp={() => {
               setIsTransforming(false);
               handleTransformEnd();
             }}
+            onDraggingChanged={(dragging: boolean) => {
+              setIsTransforming(dragging);
+              if (!dragging ) {
+                handleTransformEnd();
+              }
+            }}
+            onObjectChange={handleTransformChange}
           />
         );
       })()}
+      {transformMode === "rotate" && selectedBox && (
+        <Html
+          position={[
+            selectedBox.position[0],
+            selectedBox.position[1] + getBoxHeight(selectedBox) / 2 + 0.2,
+            selectedBox.position[2],
+          ]}
+          occlude={false}
+          zIndexRange={[1000, 0]}
+          distanceFactor={8}
+          center
+        >
+          <div className="pointer-events-none rounded-full bg-black/80 px-2.5 py-1 text-[11px] font-semibold text-white shadow-lg">
+            {Math.round(
+              (((activeTransformObject?.rotation.y ?? selectedBox.rotationY ?? 0) * 180) / Math.PI)
+            )}
+            °
+          </div>
+        </Html>
+      )}
 
       {drawingLinePoints && (
         <Line points={drawingLinePoints} color={accent} lineWidth={2} dashed={false} />
@@ -473,6 +687,8 @@ const Scene = memo(forwardRef<SceneHandle, SceneProps>(({ boxes, accent, gltfUrl
         <EditableBoxHandles
           vertices={selectedFootprintVertices}
           topVertices={selectedTopVertices || undefined}
+          showRotateHandles={transformMode === "rotate"}
+          showBoundingBox={transformMode === "rotate"}
           onTopVerticesChange={(newVertices) => {
             const originX = selectedBox.position[0];
             const originZ = selectedBox.position[2];
@@ -546,6 +762,8 @@ const Scene = memo(forwardRef<SceneHandle, SceneProps>(({ boxes, accent, gltfUrl
       {selectedBox?.type === "room" && selectedRoomVerticesWorld && (
         <EditableBoxHandles
           vertices={selectedRoomVerticesWorld}
+          showRotateHandles={transformMode === "rotate"}
+          showBoundingBox={transformMode === "rotate"}
           onVerticesChange={(newVertices) => {
             const originX = selectedBox.position[0];
             const originZ = selectedBox.position[2];

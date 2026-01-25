@@ -112,6 +112,8 @@ export const createDragHandlers = (params: DragHandlerParams): DragHandlers => {
     translateStartXYZRef,
     translateLastXYZRef,
     rotateStartAngleRef,
+    rotateLastAngleRef,
+    rotateAccumulatedRef,
     rotateCenterRef,
     rotateLockedCenterRef,
     dragMoveRafRef,
@@ -156,6 +158,8 @@ export const createDragHandlers = (params: DragHandlerParams): DragHandlers => {
     translateStartXYZRef.current = null;
     translateLastXYZRef.current = null;
     rotateStartAngleRef.current = null;
+    rotateLastAngleRef.current = null;
+    rotateAccumulatedRef.current = 0;
     rotateLockedCenterRef.current = null; // Clear locked center
     if (dragMoveRafRef.current !== null) {
       cancelAnimationFrame(dragMoveRafRef.current);
@@ -164,10 +168,6 @@ export const createDragHandlers = (params: DragHandlerParams): DragHandlers => {
     pendingPointerRef.current = null;
     hasSmoothIntersection = false;
     
-    // Reset rotation angle display
-    if (setRotationAngle) {
-      setRotationAngle(0);
-    }
     if (setIsRotating) {
       setIsRotating(false);
     }
@@ -417,7 +417,14 @@ export const createDragHandlers = (params: DragHandlerParams): DragHandlers => {
         intersection.current.z - center.z
       );
       const angle = Math.atan2(current.y, current.x);
-      const delta = angle - rotateStartAngleRef.current;
+      if (rotateLastAngleRef.current === null) {
+        rotateLastAngleRef.current = angle;
+      }
+      const rawStep = angle - rotateLastAngleRef.current;
+      const step = Math.atan2(Math.sin(rawStep), Math.cos(rawStep));
+      rotateAccumulatedRef.current += step;
+      rotateLastAngleRef.current = angle;
+      const delta = rotateAccumulatedRef.current;
       const angleDegrees = (delta * 180) / Math.PI;
       
       // Update rotation angle display
@@ -782,7 +789,10 @@ export const createDragHandlers = (params: DragHandlerParams): DragHandlers => {
         intersection.current.x - lockedCenter.x,
         intersection.current.z - lockedCenter.z
       );
-      rotateStartAngleRef.current = Math.atan2(start.y, start.x);
+      const startAngle = Math.atan2(start.y, start.x);
+      rotateStartAngleRef.current = startAngle;
+      rotateLastAngleRef.current = startAngle;
+      rotateAccumulatedRef.current = 0;
     }
     
     setCursor("grabbing");

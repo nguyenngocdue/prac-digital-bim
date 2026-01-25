@@ -18,6 +18,8 @@ export interface EditablePolygonHandlesProps {
   color?: string;
   showFill?: boolean;
   showEdgeHandles?: boolean;
+  showRotateHandles?: boolean;
+  showBoundingBox?: boolean;
   liveUpdate?: boolean;
   onDragStart?: () => void;
   onDragEnd?: () => void;
@@ -84,6 +86,8 @@ export interface DragRefs {
   translateStartXYZRef: React.MutableRefObject<[number, number, number] | null>;
   translateLastXYZRef: React.MutableRefObject<[number, number, number] | null>;
   rotateStartAngleRef: React.MutableRefObject<number | null>;
+  rotateLastAngleRef: React.MutableRefObject<number | null>;
+  rotateAccumulatedRef: React.MutableRefObject<number>;
   rotateCenterRef: React.MutableRefObject<THREE.Vector3 | null>;
   rotateLockedCenterRef: React.MutableRefObject<THREE.Vector3 | null>;
   dragMoveRafRef: React.MutableRefObject<number | null>;

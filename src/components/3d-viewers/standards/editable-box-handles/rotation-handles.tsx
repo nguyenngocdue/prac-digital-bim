@@ -4,6 +4,7 @@ import { Html } from "@react-three/drei";
 
 interface RotationHandlesProps {
   boundingBox: { box: THREE.Box3; center: THREE.Vector3 } | null;
+  labelPosition?: [number, number, number];
   show: boolean;
   isDragging: boolean;
   rotationAngle: number;
@@ -36,6 +37,7 @@ export const useRotationHandlePositions = (
  */
 export const RotationHandles = ({
   boundingBox,
+  labelPosition,
   show,
   isDragging,
   rotationAngle,
@@ -44,8 +46,9 @@ export const RotationHandles = ({
   setCursor,
 }: RotationHandlesProps) => {
   const handlePositions = useRotationHandlePositions(boundingBox);
+  const label = labelPosition ?? (boundingBox ? [boundingBox.center.x, boundingBox.center.y, boundingBox.center.z] : null);
 
-  if (!show || isDragging || handlePositions.length === 0) return null;
+  if (!show || handlePositions.length === 0) return null;
 
   return (
     <>
@@ -58,10 +61,7 @@ export const RotationHandles = ({
           setCursor={setCursor}
         />
       ))}
-      
-      {handlePositions[0] && (
-        <RotationLabel position={handlePositions[0]} rotationAngle={rotationAngle} />
-      )}
+      {label && <RotationLabel position={label} rotationAngle={rotationAngle} />}
     </>
   );
 };
@@ -120,13 +120,14 @@ interface RotationLabelProps {
 }
 
 const RotationLabel = ({ position, rotationAngle }: RotationLabelProps) => {
+  const displayAngle = Number.isFinite(rotationAngle) ? Math.round(rotationAngle) : 0;
   return (
-    <Html
-      position={[position[0], position[1] + 0.18, position[2]]}
-      center
-    >
-      <div className="pointer-events-none rounded-full bg-black/70 px-2 py-1 text-[10px] uppercase tracking-wide text-white">
-        rotate {rotationAngle !== 0 && `${rotationAngle.toFixed(1)}°`}
+    <Html position={position} center>
+      <div
+        className="pointer-events-none select-none rounded-full bg-black/80 px-3 py-1.5 text-[12px] font-semibold text-white shadow-lg"
+        style={{ cursor: "default" }}
+      >
+        {displayAngle}°
       </div>
     </Html>
   );

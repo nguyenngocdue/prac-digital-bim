@@ -46,6 +46,8 @@ export const EditablePolygonHandles = ({
   color = DEFAULT_POLYGON_COLOR,
   showFill = false,
   showEdgeHandles = true,
+  showRotateHandles: showRotateHandlesProp,
+  showBoundingBox: showBoundingBoxProp,
   liveUpdate = true,
   allowTranslate = true,
   onDragStart,
@@ -115,6 +117,8 @@ export const EditablePolygonHandles = ({
   const rotateStartAngleRef = useRef<number | null>(null);
   const rotateCenterRef = useRef<THREE.Vector3 | null>(null);
   const rotateLockedCenterRef = useRef<THREE.Vector3 | null>(null);
+  const rotateLastAngleRef = useRef<number | null>(null);
+  const rotateAccumulatedRef = useRef(0);
   const dragMoveRafRef = useRef<number | null>(null);
   const pendingPointerRef = useRef<{ clientX: number; clientY: number } | null>(null);
   const rotationAngleRef = useRef(0);
@@ -139,6 +143,18 @@ export const EditablePolygonHandles = ({
     setShowBoundingBox(isVisible);
     setShowRotateHandles(isVisible);
   };
+
+  useEffect(() => {
+    if (typeof showRotateHandlesProp === "boolean") {
+      setShowRotateHandles(showRotateHandlesProp);
+    }
+  }, [showRotateHandlesProp]);
+
+  useEffect(() => {
+    if (typeof showBoundingBoxProp === "boolean") {
+      setShowBoundingBox(showBoundingBoxProp);
+    }
+  }, [showBoundingBoxProp]);
 
   const handleFacePointerDown = (event: ThreeEvent<PointerEvent>) => {
     if (!allowTranslate) return;
@@ -357,6 +373,8 @@ export const EditablePolygonHandles = ({
     translateStartXYZRef,
     translateLastXYZRef,
     rotateStartAngleRef,
+    rotateLastAngleRef,
+    rotateAccumulatedRef,
     rotateCenterRef,
     rotateLockedCenterRef,
     dragMoveRafRef,
@@ -409,6 +427,31 @@ export const EditablePolygonHandles = ({
       center.x, maxY + margin, center.z,
     ]);
   }, [boundingBox, isRotating]);
+  const rotationLabelCenter = useMemo(() => {
+    if (!vertices.length) return null;
+    const center = vertices.reduce(
+      (acc, point) => {
+        acc[0] += point[0];
+        acc[1] += point[1];
+        acc[2] += point[2];
+        return acc;
+      },
+      [0, 0, 0] as [number, number, number]
+    );
+    const count = vertices.length;
+    return [center[0] / count, center[1] / count, center[2] / count] as [number, number, number];
+  }, [vertices]);
+  const rotationLabelPosition = useMemo(() => {
+    if (!boundingBox) return rotationLabelCenter;
+    const size = boundingBox.size ?? boundingBox.box.getSize(new THREE.Vector3());
+    const maxSize = Math.max(size.x, size.y, size.z);
+    const offset = maxSize * 0.6 + 0.35;
+    const dir = new THREE.Vector3()
+      .subVectors(camera.position, boundingBox.center)
+      .normalize();
+    const pos = boundingBox.center.clone().add(dir.multiplyScalar(offset));
+    return [pos.x, pos.y, pos.z] as [number, number, number];
+  }, [boundingBox, camera.position, rotationLabelCenter]);
 
   return (
     <group
@@ -767,6 +810,7 @@ export const EditablePolygonHandles = ({
 
       <RotationHandles
         boundingBox={boundingBox}
+        labelPosition={rotationLabelPosition || undefined}
         show={showRotateHandles}
         isDragging={isDragging}
         rotationAngle={rotationAngle}
