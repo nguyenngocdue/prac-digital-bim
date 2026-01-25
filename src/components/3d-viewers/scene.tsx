@@ -10,7 +10,7 @@ import {
   useRef,
   useState,
 } from "react";
-import { Box3, Vector3 } from "three";
+import { Vector3 } from "three";
 import type { Group, Mesh, Object3D } from "three";
 import { useGltfModel } from "./gltf/use-gltf-model";
 import { GltfModel } from "./gltf/gltf-model";
@@ -22,7 +22,7 @@ import { mockRooms } from "@/data/mock-rooms";
 import { CameraData } from "@/types/camera";
 import { GooglePhotorealisticTiles } from "./gis/google-photorealistic-tiles";
 import { useThree } from "@react-three/fiber";
-import { useBoxContext } from "@/app/contexts/box-context";
+import { useBoxContext, type Box } from "@/app/contexts/box-context";
 import { BuildingMesh } from "./standards/building-mesh";
 import { EditableBoxHandles } from "./standards/editable-box-handles";
 import { getFootprintPoints } from "./standards/building-shapes";
@@ -33,23 +33,16 @@ import {
   type FaceSelection,
 } from "./standards/face-selection";
 import { ProArrow } from "@/components/pro-arrow";
-
-type Box = {
-  id: string;
-  position: [number, number, number];
-  color?: string;
-  size?: [number, number, number];
-  type?: "box" | "building" | "room";
-  rotationY?: number;
-  footprint?: [number, number][];
-  vertices?: [number, number, number][];
-  height?: number;
-  thicknessRatio?: number;
-  width?: number;
-  depth?: number;
-  showMeasurements?: boolean;
-  topFootprint?: [number, number][];
-};
+import { getSnappedPosition } from "./transform-modes/translate";
+import { RotationAngleLabel } from "./transform-modes/rotate/rotation-angle-label";
+import { applyScaleToBox } from "./transform-modes/scale";
+import { BuildingHandles } from "./scene-handlers/building-handles";
+import { getBoxBounds, getBoxHeight } from "./scene-utils/box-bounds";
+import { rotateXZ } from "./scene-utils/rotate-xz";
+import { handleRotateChange } from "./scene-handlers/rotate-change";
+import { handleTransformEnd } from "./scene-handlers/transform-end";
+import { handleGoOnTop } from "./scene-handlers/go-on-top";
+import { zoomToFit } from "./scene-handlers/zoom-to-fit";
 
 interface SceneProps {
   boxes: Box[];
@@ -138,70 +131,6 @@ const Scene = memo(forwardRef<SceneHandle, SceneProps>(({ boxes, accent, gltfUrl
   const selectedObject = selectedId ? objectRefs.current.get(selectedId) || null : null;
   const selectedBox = selectedId ? contextBoxes.find((box) => box.id === selectedId) : undefined;
   const activeTransformObject = selectedObjectOverride || selectedObject;
-  const getBoxHeight = (box: Box) => {
-    if (box.type === "building" && box.height) return box.height;
-    if (box.type === "room" && box.height) return box.height;
-    if (box.size?.[1]) return box.size[1];
-    if (box.height) return box.height;
-    return 1;
-  };
-  const getBoxFootprint = (box: Box): [number, number][] => {
-    if (box.footprint?.length) return box.footprint;
-    if (box.vertices?.length) {
-      return box.vertices.map(([x, , z]) => [x, z]);
-    }
-    const width = box.size?.[0] ?? box.width ?? 1;
-    const depth = box.size?.[2] ?? box.depth ?? 1;
-    return [
-      [-width / 2, -depth / 2],
-      [width / 2, -depth / 2],
-      [width / 2, depth / 2],
-      [-width / 2, depth / 2],
-    ];
-  };
-  const getBoxBounds = (box: Box, positionOverride?: Vector3, rotationOverride?: number) => {
-    const position = positionOverride ?? new Vector3(...box.position);
-    const rotationY = rotationOverride ?? box.rotationY ?? 0;
-    const points = getBoxFootprint(box);
-    const height = getBoxHeight(box);
-    if (!points.length) {
-      return {
-        minX: position.x,
-        maxX: position.x,
-        minZ: position.z,
-        maxZ: position.z,
-        minY: position.y - height / 2,
-        maxY: position.y + height / 2,
-      };
-    }
-    const cos = Math.cos(rotationY);
-    const sin = Math.sin(rotationY);
-    let minX = Infinity;
-    let maxX = -Infinity;
-    let minZ = Infinity;
-    let maxZ = -Infinity;
-    points.forEach(([x, z]) => {
-      const rx = x * cos - z * sin + position.x;
-      const rz = x * sin + z * cos + position.z;
-      minX = Math.min(minX, rx);
-      maxX = Math.max(maxX, rx);
-      minZ = Math.min(minZ, rz);
-      maxZ = Math.max(maxZ, rz);
-    });
-    return {
-      minX,
-      maxX,
-      minZ,
-      maxZ,
-      minY: position.y - height / 2,
-      maxY: position.y + height / 2,
-    };
-  };
-  const rotateXZ = (x: number, z: number, angle: number) => {
-    const cos = Math.cos(angle);
-    const sin = Math.sin(angle);
-    return [x * cos - z * sin, x * sin + z * cos] as [number, number];
-  };
   const selectedRotationY = selectedBox?.rotationY || 0;
   const selectedFootprint =
     selectedBox?.type === "building"
@@ -289,107 +218,51 @@ const Scene = memo(forwardRef<SceneHandle, SceneProps>(({ boxes, accent, gltfUrl
     );
   }, [contextBoxes, setBoxes]);
 
-  const handleTransformEnd = () => {
+  const handleRotateChangeRef = useCallback(() => {
     if (!selectedId || !activeTransformObject) return;
-    const { position, rotation, scale } = activeTransformObject;
-    setBoxes((prev) =>
-      prev.map((box) => {
-        if (box.id !== selectedId) return box;
-        const next = {
-          ...box,
-          position: [position.x, position.y, position.z] as [number, number, number],
-          rotationY: rotation.y,
-        };
+    handleRotateChange({
+      selectedId,
+      activeTransformObject,
+      setBoxes,
+      rafRef: transformRafRef,
+    });
+  }, [activeTransformObject, selectedId, setBoxes]);
 
-        if (scale.x !== 1 || scale.y !== 1 || scale.z !== 1) {
-          if (box.footprint) {
-            next.footprint = box.footprint.map(([x, z]) => [x * scale.x, z * scale.z]);
-            next.height = (box.height || 1) * scale.y;
-          } else if (box.size) {
-            next.size = [box.size[0] * scale.x, box.size[1] * scale.y, box.size[2] * scale.z];
-          }
-          activeTransformObject.scale.set(1, 1, 1);
-        }
-        return next;
-      })
-    );
-  };
-  const handleTransformChange = useCallback(() => {
-    if (!selectedBox || !activeTransformObject) return;
-    if (transformMode === "rotate") {
-      if (!selectedId) return;
-      if (transformRafRef.current !== null) return;
-      transformRafRef.current = requestAnimationFrame(() => {
-        transformRafRef.current = null;
-        const rotationY = activeTransformObject.rotation.y;
-        setBoxes((prev) =>
-          prev.map((box) =>
-            box.id === selectedId ? { ...box, rotationY } : box
-          )
-        );
-      });
-      return;
-    }
-    if (transformMode !== "translate") return;
-    let nextPosition = activeTransformObject.position.clone();
-    if (buildingOptions.snapToGrid && buildingOptions.gridSize > 0) {
-      const gridSize = buildingOptions.gridSize;
-      nextPosition.x = Math.round(nextPosition.x / gridSize) * gridSize;
-      nextPosition.z = Math.round(nextPosition.z / gridSize) * gridSize;
-      if (buildingOptions.allowVertical) {
-        nextPosition.y = Math.round(nextPosition.y / gridSize) * gridSize;
-      }
-    }
-    if (buildingOptions.snapToObjects && buildingOptions.snapDistance > 0) {
-      const selectedRotation = activeTransformObject.rotation.y;
-      const selectedBounds = getBoxBounds(selectedBox, nextPosition, selectedRotation);
-      const halfX = (selectedBounds.maxX - selectedBounds.minX) / 2;
-      const halfZ = (selectedBounds.maxZ - selectedBounds.minZ) / 2;
-      let snappedX = nextPosition.x;
-      let snappedZ = nextPosition.z;
-      let bestDeltaX = buildingOptions.snapDistance + 1;
-      let bestDeltaZ = buildingOptions.snapDistance + 1;
-      contextBoxes.forEach((box) => {
-        if (box.id === selectedId) return;
-        const bounds = getBoxBounds(box);
-        const candidateXs = [bounds.minX, bounds.maxX, (bounds.minX + bounds.maxX) / 2];
-        const candidateZs = [bounds.minZ, bounds.maxZ, (bounds.minZ + bounds.maxZ) / 2];
-        candidateXs.forEach((candidate) => {
-          const options = [candidate - halfX, candidate + halfX, candidate];
-          options.forEach((option) => {
-            const delta = Math.abs(nextPosition.x - option);
-            if (delta <= buildingOptions.snapDistance && delta < bestDeltaX) {
-              bestDeltaX = delta;
-              snappedX = option;
-            }
-          });
-        });
-        candidateZs.forEach((candidate) => {
-          const options = [candidate - halfZ, candidate + halfZ, candidate];
-          options.forEach((option) => {
-            const delta = Math.abs(nextPosition.z - option);
-            if (delta <= buildingOptions.snapDistance && delta < bestDeltaZ) {
-              bestDeltaZ = delta;
-              snappedZ = option;
-            }
-          });
-        });
-      });
-      nextPosition = new Vector3(snappedX, nextPosition.y, snappedZ);
-    }
+  const handleTranslateChange = useCallback(() => {
+    if (!selectedBox || !activeTransformObject || !selectedId) return;
+    const nextPosition = getSnappedPosition({
+      position: activeTransformObject.position,
+      selectedBox,
+      selectedRotationY: activeTransformObject.rotation.y,
+      boxes: contextBoxes,
+      selectedId,
+      buildingOptions,
+      getBoxBounds,
+    });
     activeTransformObject.position.copy(nextPosition);
   }, [
     activeTransformObject,
-    buildingOptions.allowVertical,
-    buildingOptions.gridSize,
-    buildingOptions.snapDistance,
-    buildingOptions.snapToGrid,
-    buildingOptions.snapToObjects,
+    buildingOptions,
     contextBoxes,
     getBoxBounds,
     selectedBox,
     selectedId,
-    setBoxes,
+  ]);
+
+  const handleTransformChange = useCallback(() => {
+    if (!selectedBox || !activeTransformObject) return;
+    if (transformMode === "rotate") {
+      handleRotateChangeRef();
+      return;
+    }
+    if (transformMode === "translate") {
+      handleTranslateChange();
+    }
+  }, [
+    activeTransformObject,
+    handleRotateChangeRef,
+    handleTranslateChange,
+    selectedBox,
     transformMode,
   ]);
 
@@ -410,21 +283,11 @@ const Scene = memo(forwardRef<SceneHandle, SceneProps>(({ boxes, accent, gltfUrl
   }, [camera]);
 
   const handleZoomToFit = useCallback(() => {
-    if (!controlsRef.current || !boxesGroupRef.current) return;
-    const box = new Box3().setFromObject(boxesGroupRef.current);
-    if (box.isEmpty()) return;
-    const center = box.getCenter(new Vector3());
-    const size = box.getSize(new Vector3());
-    const maxSize = Math.max(size.x, size.y, size.z);
-    const fitOffset = 1.3;
-    const fitHeightDistance = maxSize / (2 * Math.tan((camera.fov * Math.PI) / 360));
-    const fitWidthDistance = fitHeightDistance / camera.aspect;
-    const distance = fitOffset * Math.max(fitHeightDistance, fitWidthDistance);
-    const direction = camera.position.clone().sub(controlsRef.current.target).normalize();
-    camera.position.copy(direction.multiplyScalar(distance).add(center));
-    controlsRef.current.target.copy(center);
-    controlsRef.current.update();
-    camera.updateProjectionMatrix();
+    zoomToFit({
+      controls: controlsRef.current,
+      boxesGroup: boxesGroupRef.current,
+      camera,
+    });
   }, [camera]);
 
   const clearFaceSelection = useCallback(() => {
@@ -434,44 +297,22 @@ const Scene = memo(forwardRef<SceneHandle, SceneProps>(({ boxes, accent, gltfUrl
     }
     setFaceArrow(null);
   }, []);
-  const handleGoOnTop = useCallback(() => {
+  const handleGoOnTopRef = useCallback(() => {
     if (!selectedId || !selectedBox) return;
     const currentPosition = activeTransformObject
       ? activeTransformObject.position.clone()
       : new Vector3(...selectedBox.position);
-    const selectedBounds = getBoxBounds(
+    handleGoOnTop({
+      selectedId,
       selectedBox,
       currentPosition,
-      activeTransformObject?.rotation.y ?? selectedBox.rotationY ?? 0
-    );
-    const selectedHeight = getBoxHeight(selectedBox);
-    let targetTop = 0;
-    contextBoxes.forEach((box) => {
-      if (box.id === selectedId) return;
-      const bounds = getBoxBounds(box);
-      const overlaps =
-        selectedBounds.maxX >= bounds.minX &&
-        selectedBounds.minX <= bounds.maxX &&
-        selectedBounds.maxZ >= bounds.minZ &&
-        selectedBounds.minZ <= bounds.maxZ;
-      if (overlaps) {
-        targetTop = Math.max(targetTop, bounds.maxY);
-      }
+      rotationY: activeTransformObject?.rotation.y ?? selectedBox.rotationY ?? 0,
+      boxes: contextBoxes,
+      getBoxBounds,
+      getBoxHeight,
+      activeTransformObject,
+      setBoxes,
     });
-    const nextY = targetTop + selectedHeight / 2;
-    if (activeTransformObject) {
-      activeTransformObject.position.y = nextY;
-    }
-    setBoxes((prev) =>
-      prev.map((box) =>
-        box.id === selectedId
-          ? {
-              ...box,
-              position: [currentPosition.x, nextY, currentPosition.z],
-            }
-          : box
-      )
-    );
   }, [activeTransformObject, contextBoxes, getBoxBounds, getBoxHeight, selectedBox, selectedId, setBoxes]);
 
   useImperativeHandle(
@@ -480,9 +321,9 @@ const Scene = memo(forwardRef<SceneHandle, SceneProps>(({ boxes, accent, gltfUrl
       resetView: handleResetView,
       zoomToFit: handleZoomToFit,
       clearFaceSelection,
-      goOnTop: handleGoOnTop,
+      goOnTop: handleGoOnTopRef,
     }),
-    [clearFaceSelection, handleGoOnTop, handleResetView, handleZoomToFit]
+    [clearFaceSelection, handleGoOnTopRef, handleResetView, handleZoomToFit]
   );
 
   // Three.js scene
@@ -646,119 +487,53 @@ const Scene = memo(forwardRef<SceneHandle, SceneProps>(({ boxes, accent, gltfUrl
             onMouseDown={() => setIsTransforming(true)}
             onMouseUp={() => {
               setIsTransforming(false);
-              handleTransformEnd();
+              if (!selectedId) return;
+              handleTransformEnd({
+                selectedId,
+                activeTransformObject: transformTarget,
+                setBoxes,
+                applyScaleToBox,
+              });
             }}
             onDraggingChanged={(dragging: boolean) => {
               setIsTransforming(dragging);
               if (!dragging ) {
-                handleTransformEnd();
+                if (!selectedId) return;
+                handleTransformEnd({
+                  selectedId,
+                  activeTransformObject: transformTarget,
+                  setBoxes,
+                  applyScaleToBox,
+                });
               }
             }}
             onObjectChange={handleTransformChange}
           />
         );
       })()}
-      {transformMode === "rotate" && selectedBox && (
-        <Html
-          position={[
-            selectedBox.position[0],
-            selectedBox.position[1] + getBoxHeight(selectedBox) / 2 + 0.2,
-            selectedBox.position[2],
-          ]}
-          occlude={false}
-          zIndexRange={[1000, 0]}
-          distanceFactor={8}
-          center
-        >
-          <div className="pointer-events-none rounded-full bg-black/80 px-2.5 py-1 text-[11px] font-semibold text-white shadow-lg">
-            {Math.round(
-              (((activeTransformObject?.rotation.y ?? selectedBox.rotationY ?? 0) * 180) / Math.PI)
-            )}
-            °
-          </div>
-        </Html>
-      )}
+      <RotationAngleLabel
+        transformMode={transformMode}
+        selectedBox={selectedBox}
+        rotationY={activeTransformObject?.rotation.y ?? selectedBox?.rotationY ?? 0}
+        height={selectedBox ? getBoxHeight(selectedBox) : 0}
+      />
 
       {drawingLinePoints && (
         <Line points={drawingLinePoints} color={accent} lineWidth={2} dashed={false} />
       )}
 
-      {selectedBox?.type === "building" && selectedFootprintVertices && (
-        <EditableBoxHandles
-          vertices={selectedFootprintVertices}
-          topVertices={selectedTopVertices || undefined}
-          showRotateHandles={transformMode === "rotate"}
-          showBoundingBox={transformMode === "rotate"}
-          onTopVerticesChange={(newVertices) => {
-            const originX = selectedBox.position[0];
-            const originZ = selectedBox.position[2];
-            const topFootprint = newVertices.map((vertex) => [
-              ...rotateXZ(vertex[0] - originX, vertex[2] - originZ, selectedRotationY),
-            ]) as [number, number][];
-            setBoxes((prev) =>
-              prev.map((box) =>
-                box.id === selectedBox.id ? { ...box, topFootprint } : box
-              )
-            );
-          }}
-          onVerticesChange={(newVertices) => {
-            const originX = selectedBox.position[0];
-            const originZ = selectedBox.position[2];
-            const footprint = newVertices.map((vertex) => [
-              ...rotateXZ(vertex[0] - originX, vertex[2] - originZ, selectedRotationY),
-            ]) as [number, number][];
-            setBoxes((prev) =>
-              prev.map((box) =>
-                box.id === selectedBox.id ? { ...box, footprint } : box
-              )
-            );
-          }}
-          color="#3B82F6"
-          height={selectedBox.height || 0}
-          onHeightChange={(nextHeight, nextCenterY) => {
-            setBoxes((prev) =>
-              prev.map((box) =>
-                box.id === selectedBox.id
-                  ? { ...box, height: nextHeight, position: [box.position[0], nextCenterY, box.position[2]] }
-                  : box
-              )
-            );
-          }}
-          centerY={selectedBox.position[1]}
-          onTranslate={(nextCenterY) => {
-            setBoxes((prev) =>
-              prev.map((box) =>
-                box.id === selectedBox.id
-                  ? { ...box, position: [box.position[0], nextCenterY, box.position[2]] }
-                  : box
-              )
-            );
-          }}
-          centerX={selectedBox.position[0]}
-          centerZ={selectedBox.position[2]}
-          onTranslateXZ={(nextCenterX, nextCenterZ) => {
-            setBoxes((prev) =>
-              prev.map((box) =>
-                box.id === selectedBox.id
-                  ? { ...box, position: [nextCenterX, box.position[1], nextCenterZ] }
-                  : box
-              )
-            );
-          }}
-          onTranslateXYZ={(nextCenterX, nextCenterY, nextCenterZ) => {
-            setBoxes((prev) =>
-              prev.map((box) =>
-                box.id === selectedBox.id
-                  ? { ...box, position: [nextCenterX, nextCenterY, nextCenterZ] }
-                  : box
-              )
-            );
-          }}
-          allowTranslate={allowMove}
-          onDragStart={() => setIsTransforming(true)}
-          onDragEnd={() => setIsTransforming(false)}
-        />
-      )}
+      <BuildingHandles
+        selectedBox={selectedBox}
+        selectedFootprintVertices={selectedFootprintVertices}
+        selectedTopVertices={selectedTopVertices}
+        selectedRotationY={selectedRotationY}
+        setBoxes={setBoxes}
+        allowMove={allowMove}
+        transformMode={transformMode}
+        rotateXZ={rotateXZ}
+        onDragStart={() => setIsTransforming(true)}
+        onDragEnd={() => setIsTransforming(false)}
+      />
       {selectedBox?.type === "room" && selectedRoomVerticesWorld && (
         <EditableBoxHandles
           vertices={selectedRoomVerticesWorld}
