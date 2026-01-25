@@ -63,6 +63,7 @@ export const EditablePolygonHandles = ({
   onHasChanges,
   onRegisterApply,
   onRegisterCancel,
+  onRotate,
 }: EditablePolygonHandlesProps) => {
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [draggedEdgeIndex, setDraggedEdgeIndex] = useState<number | null>(null);
@@ -626,6 +627,10 @@ export const EditablePolygonHandles = ({
     onDragStart,
     onDragEnd: () => {
       setHasChanges(true);
+      // Call onRotate with final angle when rotation drag ends
+      if (isRotating) {
+        onRotate?.(rotationAngleRef.current);
+      }
       onDragEnd?.();
     },
     setDraggedIndex,

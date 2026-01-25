@@ -26,6 +26,7 @@ export interface EditablePolygonHandlesProps {
   onHasChanges?: (hasChanges: boolean) => void;
   onRegisterApply?: (fn: () => void) => void;
   onRegisterCancel?: (fn: () => void) => void;
+  onRotate?: (angle: number) => void;
 }
 
 export type DragMode =

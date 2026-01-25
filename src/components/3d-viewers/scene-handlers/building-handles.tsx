@@ -120,6 +120,15 @@ export const BuildingHandles = ({
       onHasChanges={onHasChanges}
       onRegisterApply={onRegisterApply}
       onRegisterCancel={onRegisterCancel}
+      onRotate={(angle) => {
+        setBoxes((prev) =>
+          prev.map((box) =>
+            box.id === selectedBox.id
+              ? { ...box, rotationY: angle }
+              : box
+          )
+        );
+      }}
     />
   );
 };
