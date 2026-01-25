@@ -11,6 +11,7 @@ type BuildingHandlesProps = {
   setBoxes: Dispatch<SetStateAction<Box[]>>;
   allowMove: boolean;
   transformMode: "translate" | "rotate" | "scale";
+  showHandles: boolean;
   rotateXZ: (x: number, z: number, angle: number) => [number, number];
   onDragStart: () => void;
   onDragEnd: () => void;
@@ -24,6 +25,7 @@ export const BuildingHandles = ({
   setBoxes,
   allowMove,
   transformMode,
+  showHandles,
   rotateXZ,
   onDragStart,
   onDragEnd,
@@ -36,8 +38,8 @@ export const BuildingHandles = ({
     <EditableBoxHandles
       vertices={selectedFootprintVertices}
       topVertices={selectedTopVertices || undefined}
-      showRotateHandles={transformMode === "rotate"}
-      showBoundingBox={transformMode === "rotate"}
+      showRotateHandles={showHandles && transformMode === "rotate"}
+      showBoundingBox={showHandles}
       onTopVerticesChange={(newVertices) => {
         const originX = selectedBox.position[0];
         const originZ = selectedBox.position[2];
@@ -103,7 +105,7 @@ export const BuildingHandles = ({
           )
         );
       }}
-      allowTranslate={allowMove}
+      allowTranslate={!showHandles && allowMove}
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
     />

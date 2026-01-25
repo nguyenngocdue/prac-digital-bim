@@ -148,8 +148,8 @@ const LeftPanel: FC<LeftPanelProps> = ({
                 {[
                   { key: "rect", label: "Rectangle" },
                   { key: "l", label: "L Shape" },
-                  { key: "u", label: "U Shape" },
                   { key: "c", label: "C Shape" },
+                  { key: "u", label: "U Shape" },
                   { key: "h", label: "H Shape" },
                   { key: "v", label: "V Shape" },
                   { key: "m", label: "M Shape" },

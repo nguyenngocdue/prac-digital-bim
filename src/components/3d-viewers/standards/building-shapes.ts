@@ -27,7 +27,7 @@ export function getFootprintPoints(
     ];
   }
 
-  if (shape === "u") {
+  if (shape === "c") {
     return [
       [-hw, -hd],
       [hw, -hd],
@@ -40,7 +40,7 @@ export function getFootprintPoints(
     ];
   }
 
-  if (shape === "c") {
+  if (shape === "u") {
     return [
       [-hw, -hd],
       [hw, -hd],

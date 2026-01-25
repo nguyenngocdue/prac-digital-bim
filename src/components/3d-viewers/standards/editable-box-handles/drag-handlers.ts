@@ -32,6 +32,7 @@ type DragHandlerParams = {
   setDraggedIndex: (value: number | null) => void;
   setDraggedEdgeIndex: (value: number | null) => void;
   setCursor: (cursor: string) => void;
+  handleScaleRef: { current: number };
   setRotationAngle?: (angle: number) => void;
   setIsRotating?: (value: boolean) => void;
 };
@@ -72,6 +73,7 @@ export const createDragHandlers = (params: DragHandlerParams): DragHandlers => {
     setDraggedIndex,
     setDraggedEdgeIndex,
     setCursor,
+    handleScaleRef,
     setRotationAngle,
     setIsRotating,
   } = params;
@@ -587,7 +589,15 @@ export const createDragHandlers = (params: DragHandlerParams): DragHandlers => {
     }
 
     const points = verticesRef.current;
-    updateAllHandles(handlesRef.current, hitRef.current, edgeHandlesRef.current, edgeHitRef.current, points);
+    const handleScale = handleScaleRef.current;
+    updateAllHandles(
+      handlesRef.current,
+      hitRef.current,
+      edgeHandlesRef.current,
+      edgeHitRef.current,
+      points,
+      handleScale
+    );
 
     if (topVerticesRef.current) {
       updateAllHandles(
@@ -595,7 +605,8 @@ export const createDragHandlers = (params: DragHandlerParams): DragHandlers => {
         topHitRef.current,
         topEdgeHandlesRef.current,
         topEdgeHitRef.current,
-        topVerticesRef.current
+        topVerticesRef.current,
+        handleScale
       );
     }
 

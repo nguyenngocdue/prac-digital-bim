@@ -19,6 +19,7 @@ import {
   Map,
   Maximize2,
   Move3d,
+  PenTool,
   PanelLeft,
   PanelRight,
   RotateCw,
@@ -63,6 +64,7 @@ const Viewer = ({
   const [showAxes, setShowAxes] = useState(true);
   const [showGrid, setShowGrid] = useState(true);
   const [allowMove, setAllowMove] = useState(true);
+  const [geometryEditMode, setGeometryEditMode] = useState(false);
   const [selectedCamera, setSelectedCamera] = useState<CameraData | null>(null);
   const [gltfUrl, setGltfUrl] = useState<string | null>(null);
   const [resourceMap, setResourceMap] = useState<Map<string, string>>();
@@ -105,6 +107,16 @@ const Viewer = ({
       active: showGrid,
       onClick: () => setShowGrid((prev) => !prev),
       icon: Grid3x3,
+    },
+    {
+      key: "edit-geometry",
+      label: "Edit Geometry",
+      active: geometryEditMode,
+      onClick: () => {
+        if (!selectedId) return;
+        setGeometryEditMode((prev) => !prev);
+      },
+      icon: PenTool,
     },
     {
       key: "create-room",
@@ -241,6 +253,9 @@ const Viewer = ({
         if (selectedId) {
           setSelectedId(null);
         }
+        if (geometryEditMode) {
+          setGeometryEditMode(false);
+        }
       }
       if ((e.key === "Delete" || e.key === "Backspace") && selectedId) {
         setBoxes((prev) => prev.filter((box) => box.id !== selectedId));
@@ -267,7 +282,16 @@ const Viewer = ({
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [creationMode, selectedId, setBoxes, setCreationMode, setSelectedId, setTransformMode]);
+  }, [
+    creationMode,
+    geometryEditMode,
+    selectedId,
+    setBoxes,
+    setCreationMode,
+    setGeometryEditMode,
+    setSelectedId,
+    setTransformMode,
+  ]);
 
   // Don't render canvas on server or before mounting
   if (!mounted) {
@@ -319,6 +343,12 @@ const Viewer = ({
           showAxes={showAxes}
           showGrid={showGrid}
           allowMove={allowMove}
+          geometryEditMode={geometryEditMode}
+          onRequestGeometryEdit={() => {
+            if (selectedId) {
+              setGeometryEditMode(true);
+            }
+          }}
         />
       </Canvas>
       {selectedId && (

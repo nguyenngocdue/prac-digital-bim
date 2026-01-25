@@ -59,6 +59,8 @@ interface SceneProps {
   showAxes?: boolean;
   showGrid?: boolean;
   allowMove?: boolean;
+  geometryEditMode?: boolean;
+  onRequestGeometryEdit?: () => void;
 }
 
 export type SceneHandle = {
@@ -68,7 +70,7 @@ export type SceneHandle = {
   goOnTop: () => void;
 };
 
-const Scene = memo(forwardRef<SceneHandle, SceneProps>(({ boxes, accent, gltfUrl, resourceMap, showRoomLabels = false, cameras = [], showCameras = false, onCameraClick, selectedCameraId, showGoogleTiles = false, showAxes = true, showGrid = true, allowMove = true }, ref) => {
+const Scene = memo(forwardRef<SceneHandle, SceneProps>(({ boxes, accent, gltfUrl, resourceMap, showRoomLabels = false, cameras = [], showCameras = false, onCameraClick, selectedCameraId, showGoogleTiles = false, showAxes = true, showGrid = true, allowMove = true, geometryEditMode = false, onRequestGeometryEdit }, ref) => {
   const controlsRef = useRef<any>(null);
   const objectRefs = useRef<Map<string, Object3D>>(new Map());
   const { boxes: contextBoxes, setBoxes, selectedId, setSelectedId, transformMode, setTransformMode, drawingPoints, updateBoxVertices, buildingOptions } = useBoxContext();
@@ -127,6 +129,7 @@ const Scene = memo(forwardRef<SceneHandle, SceneProps>(({ boxes, accent, gltfUrl
       window.removeEventListener("blur", handlePointerEnd);
     };
   }, []);
+
 
   const selectedObject = selectedId ? objectRefs.current.get(selectedId) || null : null;
   const selectedBox = selectedId ? contextBoxes.find((box) => box.id === selectedId) : undefined;
@@ -397,6 +400,9 @@ const Scene = memo(forwardRef<SceneHandle, SceneProps>(({ boxes, accent, gltfUrl
                   }
                 }
                 event.stopPropagation();
+                if (event.detail >= 2 && onRequestGeometryEdit) {
+                  onRequestGeometryEdit();
+                }
                 const target = objectRefs.current.get(box.id) || event.eventObject || event.object;
                 if (target) {
                   setSelectedObjectOverride(target);
@@ -466,8 +472,8 @@ const Scene = memo(forwardRef<SceneHandle, SceneProps>(({ boxes, accent, gltfUrl
         const isBuildingType = selectedBox?.type === "building";
         const transformTarget = activeTransformObject;
 
-        // Don't show TransformControls for shape-editable types
-        if (isRoomType || isBuildingType || !transformTarget) return null;
+        // Don't show TransformControls for shape-editable types or geometry edit mode
+        if (isRoomType || isBuildingType || geometryEditMode || !transformTarget) return null;
 
         return (
           <TransformControls
@@ -530,6 +536,7 @@ const Scene = memo(forwardRef<SceneHandle, SceneProps>(({ boxes, accent, gltfUrl
         setBoxes={setBoxes}
         allowMove={allowMove}
         transformMode={transformMode}
+        showHandles={geometryEditMode}
         rotateXZ={rotateXZ}
         onDragStart={() => setIsTransforming(true)}
         onDragEnd={() => setIsTransforming(false)}
@@ -537,8 +544,9 @@ const Scene = memo(forwardRef<SceneHandle, SceneProps>(({ boxes, accent, gltfUrl
       {selectedBox?.type === "room" && selectedRoomVerticesWorld && (
         <EditableBoxHandles
           vertices={selectedRoomVerticesWorld}
-          showRotateHandles={transformMode === "rotate"}
-          showBoundingBox={transformMode === "rotate"}
+          showRotateHandles={geometryEditMode && transformMode === "rotate"}
+          showBoundingBox={geometryEditMode}
+          allowTranslate={!geometryEditMode && allowMove}
           onVerticesChange={(newVertices) => {
             const originX = selectedBox.position[0];
             const originZ = selectedBox.position[2];

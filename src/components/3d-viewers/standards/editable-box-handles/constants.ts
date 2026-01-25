@@ -1,8 +1,8 @@
 // Handle sizes
-export const HANDLE_SIZE = 0.08;
-export const HANDLE_HIT_SIZE = 0.175;
-export const EDGE_SIZE = 0.07;
-export const EDGE_HIT_SIZE = 0.25;
+export const HANDLE_SIZE = 0.06;
+export const HANDLE_HIT_SIZE = 0.05;
+export const EDGE_SIZE = 0.05;
+export const EDGE_HIT_SIZE = 0.4;
 export const HEIGHT_SIZE = 0.08;
 export const HEIGHT_HIT_SIZE = 0.9;
 
@@ -14,7 +14,8 @@ export const HIT_SEGMENTS = 8;
 // Colors
 export const DEFAULT_POLYGON_COLOR = "#3B82F6";
 export const HANDLE_COLOR = "#FFD700";
-export const HANDLE_HOVER_COLOR = "#FFB300";
+export const HANDLE_HOVER_COLOR = "#EF4444";
+export const HANDLE_ACTIVE_COLOR = "#EF4444";
 export const EDGE_COLOR = "#60A5FA";
 
 // Emissive intensities
