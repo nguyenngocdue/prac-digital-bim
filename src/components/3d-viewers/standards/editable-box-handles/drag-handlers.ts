@@ -33,6 +33,7 @@ type DragHandlerParams = {
   setDraggedEdgeIndex: (value: number | null) => void;
   setCursor: (cursor: string) => void;
   handleScaleRef: { current: number };
+  shiftKeyRef: { current: boolean };
   setRotationAngle?: (angle: number) => void;
   setIsRotating?: (value: boolean) => void;
 };
@@ -47,11 +48,13 @@ export type DragHandlers = {
   handleHeightPointerDown: (event: ThreeEvent<PointerEvent>) => void;
   handleBottomHeightPointerDown: (event: ThreeEvent<PointerEvent>) => void;
   handleRotatePointerDown: (event: ThreeEvent<PointerEvent>) => void;
+  cancelDrag: () => void;
 };
 
 export const createDragHandlers = (params: DragHandlerParams): DragHandlers => {
   const smoothedIntersection = new THREE.Vector3();
   let hasSmoothIntersection = false;
+  let capturedPointerId: number | null = null;
   const {
     dragRefs,
     gl,
@@ -74,6 +77,7 @@ export const createDragHandlers = (params: DragHandlerParams): DragHandlers => {
     setDraggedEdgeIndex,
     setCursor,
     handleScaleRef,
+    shiftKeyRef,
     setRotationAngle,
     setIsRotating,
   } = params;
@@ -137,7 +141,8 @@ export const createDragHandlers = (params: DragHandlerParams): DragHandlers => {
       dragModeRef.current !== "translate" &&
       dragModeRef.current !== "translate-xz" &&
       dragModeRef.current !== "translate-free" &&
-      pendingTranslateRef.current === null
+      pendingTranslateRef.current === null &&
+      capturedPointerId === null
     )
       return;
     setDraggedIndex(null);
@@ -175,9 +180,11 @@ export const createDragHandlers = (params: DragHandlerParams): DragHandlers => {
     }
     
     setCursor("auto");
-    if (pointerId !== undefined) {
-      gl.domElement.releasePointerCapture(pointerId);
+    const releaseId = pointerId ?? capturedPointerId ?? undefined;
+    if (releaseId !== undefined) {
+      gl.domElement.releasePointerCapture(releaseId);
     }
+    capturedPointerId = null;
     onDragEnd?.();
     disposeDragListeners();
     if (lastMode !== "translate-xz" && lastMode !== "translate-free") {
@@ -258,6 +265,7 @@ export const createDragHandlers = (params: DragHandlerParams): DragHandlers => {
 
     setCursor("grabbing");
     gl.domElement.setPointerCapture(event.pointerId);
+    capturedPointerId = event.pointerId;
     onDragStart?.();
     attachDragListeners();
   };
@@ -294,6 +302,7 @@ export const createDragHandlers = (params: DragHandlerParams): DragHandlers => {
     }
     setCursor("grabbing");
     gl.domElement.setPointerCapture(event.pointerId);
+    capturedPointerId = event.pointerId;
     onDragStart?.();
     attachDragListeners();
   };
@@ -317,6 +326,7 @@ export const createDragHandlers = (params: DragHandlerParams): DragHandlers => {
     }
     setCursor("grabbing");
     gl.domElement.setPointerCapture(event.pointerId);
+    capturedPointerId = event.pointerId;
     onDragStart?.();
     attachDragListeners();
   };
@@ -474,6 +484,18 @@ export const createDragHandlers = (params: DragHandlerParams): DragHandlers => {
       const delta = new THREE.Vector3()
         .subVectors(intersection.current, translateStartPointRef.current)
         .multiplyScalar(DRAG_SENSITIVITY);
+      if (shiftKeyRef.current) {
+        const absX = Math.abs(delta.x);
+        const absY = Math.abs(delta.y);
+        const absZ = Math.abs(delta.z);
+        if (absX >= absY && absX >= absZ) {
+          delta.set(delta.x, 0, 0);
+        } else if (absY >= absX && absY >= absZ) {
+          delta.set(0, delta.y, 0);
+        } else {
+          delta.set(0, 0, delta.z);
+        }
+      }
       const start = translateStartXYZRef.current;
       translateLastXYZRef.current = [start[0] + delta.x, start[1] + delta.y, start[2] + delta.z];
       verticesRef.current.forEach((point, index) => {
@@ -490,8 +512,15 @@ export const createDragHandlers = (params: DragHandlerParams): DragHandlers => {
       }
     } else if (dragModeRef.current === "translate-xz") {
       if (!translateStartPointRef.current || !translateStartXZRef.current) return;
-      const deltaX = (intersection.current.x - translateStartPointRef.current.x) * DRAG_SENSITIVITY;
-      const deltaZ = (intersection.current.z - translateStartPointRef.current.z) * DRAG_SENSITIVITY;
+      let deltaX = (intersection.current.x - translateStartPointRef.current.x) * DRAG_SENSITIVITY;
+      let deltaZ = (intersection.current.z - translateStartPointRef.current.z) * DRAG_SENSITIVITY;
+      if (shiftKeyRef.current) {
+        if (Math.abs(deltaX) >= Math.abs(deltaZ)) {
+          deltaZ = 0;
+        } else {
+          deltaX = 0;
+        }
+      }
       const start = translateStartXZRef.current;
       translateLastXZRef.current = [start[0] + deltaX, start[1] + deltaZ];
       const delta = new THREE.Vector3(deltaX, 0, deltaZ);
@@ -702,6 +731,7 @@ export const createDragHandlers = (params: DragHandlerParams): DragHandlers => {
     
     setCursor("grabbing");
     gl.domElement.setPointerCapture(event.pointerId);
+    capturedPointerId = event.pointerId;
     onDragStart?.();
     attachDragListeners();
   };
@@ -731,6 +761,7 @@ export const createDragHandlers = (params: DragHandlerParams): DragHandlers => {
     }
     setCursor("grabbing");
     gl.domElement.setPointerCapture(event.pointerId);
+    capturedPointerId = event.pointerId;
     onDragStart?.();
     attachDragListeners();
   };
@@ -760,6 +791,7 @@ export const createDragHandlers = (params: DragHandlerParams): DragHandlers => {
     }
     setCursor("grabbing");
     gl.domElement.setPointerCapture(event.pointerId);
+    capturedPointerId = event.pointerId;
     onDragStart?.();
     attachDragListeners();
   };
@@ -808,6 +840,7 @@ export const createDragHandlers = (params: DragHandlerParams): DragHandlers => {
     
     setCursor("grabbing");
     gl.domElement.setPointerCapture(event.pointerId);
+    capturedPointerId = event.pointerId;
     onDragStart?.();
     attachDragListeners();
   };
@@ -822,5 +855,6 @@ export const createDragHandlers = (params: DragHandlerParams): DragHandlers => {
     handleHeightPointerDown,
     handleBottomHeightPointerDown,
     handleRotatePointerDown,
+    cancelDrag: () => finalizeDrag(),
   };
 };

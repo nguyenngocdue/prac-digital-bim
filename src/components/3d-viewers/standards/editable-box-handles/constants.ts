@@ -12,11 +12,11 @@ export const EDGE_SEGMENTS = 12;
 export const HIT_SEGMENTS = 8;
 
 // Colors
-export const DEFAULT_POLYGON_COLOR = "#3B82F6";
-export const HANDLE_COLOR = "#FFD700";
-export const HANDLE_HOVER_COLOR = "#EF4444";
-export const HANDLE_ACTIVE_COLOR = "#EF4444";
-export const EDGE_COLOR = "#60A5FA";
+export const DEFAULT_POLYGON_COLOR = "#3B82F6"; // Blue-500
+export const HANDLE_COLOR = "#FFD700"; // Gold
+export const HANDLE_HOVER_COLOR = "#EF4444"; // Red-500
+export const HANDLE_ACTIVE_COLOR = "#EF4444"; // Red-500
+export const EDGE_COLOR = "#60A5FA"; // Blue-400
 
 // Emissive intensities
 export const HANDLE_EMISSIVE_INTENSITY = 0.8;

@@ -60,6 +60,7 @@ interface SceneProps {
   showGrid?: boolean;
   allowMove?: boolean;
   geometryEditMode?: boolean;
+  faceSelectMode?: boolean;
   onRequestGeometryEdit?: () => void;
 }
 
@@ -70,12 +71,13 @@ export type SceneHandle = {
   goOnTop: () => void;
 };
 
-const Scene = memo(forwardRef<SceneHandle, SceneProps>(({ boxes, accent, gltfUrl, resourceMap, showRoomLabels = false, cameras = [], showCameras = false, onCameraClick, selectedCameraId, showGoogleTiles = false, showAxes = true, showGrid = true, allowMove = true, geometryEditMode = false, onRequestGeometryEdit }, ref) => {
+const Scene = memo(forwardRef<SceneHandle, SceneProps>(({ boxes, accent, gltfUrl, resourceMap, showRoomLabels = false, cameras = [], showCameras = false, onCameraClick, selectedCameraId, showGoogleTiles = false, showAxes = true, showGrid = true, allowMove = true, geometryEditMode = false, faceSelectMode = false, onRequestGeometryEdit }, ref) => {
   const controlsRef = useRef<any>(null);
   const objectRefs = useRef<Map<string, Object3D>>(new Map());
   const { boxes: contextBoxes, setBoxes, selectedId, setSelectedId, transformMode, setTransformMode, drawingPoints, updateBoxVertices, buildingOptions } = useBoxContext();
   const [isTransforming, setIsTransforming] = useState(false);
   const [selectedObjectOverride, setSelectedObjectOverride] = useState<Object3D | null>(null);
+  const [hoveredObject, setHoveredObject] = useState<Object3D | null>(null);
   const [faceArrow, setFaceArrow] = useState<FaceArrowState | null>(null);
   const boxesGroupRef = useRef<Group | null>(null);
   const lastFaceRef = useRef<FaceSelection | null>(null);
@@ -85,11 +87,12 @@ const Scene = memo(forwardRef<SceneHandle, SceneProps>(({ boxes, accent, gltfUrl
     target: Vector3;
     up: Vector3;
   } | null>(null);
-  const { camera, raycaster } = useThree();
+  const { camera, raycaster, scene: r3fScene } = useThree();
 
   // Import Three.js components
-  const { Grid, OrbitControls, Select, TransformControls, Line, GizmoHelper, GizmoViewcube, Html } =
+  const { Grid, OrbitControls, TransformControls, Line, GizmoHelper, GizmoViewcube, Html } =
     require("@react-three/drei");
+  const { EffectComposer, Outline, N8AO } = require("@react-three/postprocessing");
   const { RaycastCatcher } = require("@/lib/raycast-catcher");
   const { PlaceholderBox } = require("./standards/placeholder-box");
   const { RoomBox } = require("./standards/room-box");
@@ -117,6 +120,11 @@ const Scene = memo(forwardRef<SceneHandle, SceneProps>(({ boxes, accent, gltfUrl
   }, [isTransforming]);
 
   useEffect(() => {
+    if (!geometryEditMode && !faceSelectMode) return;
+    setHoveredObject(null);
+  }, [faceSelectMode, geometryEditMode]);
+
+  useEffect(() => {
     const handlePointerEnd = () => {
       setIsTransforming(false);
     };
@@ -134,6 +142,23 @@ const Scene = memo(forwardRef<SceneHandle, SceneProps>(({ boxes, accent, gltfUrl
   const selectedObject = selectedId ? objectRefs.current.get(selectedId) || null : null;
   const selectedBox = selectedId ? contextBoxes.find((box) => box.id === selectedId) : undefined;
   const activeTransformObject = selectedObjectOverride || selectedObject;
+  const outlineSelection = useMemo(() => {
+    const collectMeshes = (root: Object3D | null) => {
+      const meshes: Object3D[] = [];
+      if (!root) return meshes;
+      root.traverse((child) => {
+        if (child.type === "Mesh") {
+          meshes.push(child);
+        }
+      });
+      return meshes;
+    };
+    const items = [
+      ...collectMeshes(activeTransformObject),
+      ...collectMeshes(hoveredObject),
+    ];
+    return Array.from(new Set(items));
+  }, [activeTransformObject, hoveredObject]);
   const selectedRotationY = selectedBox?.rotationY || 0;
   const selectedFootprint =
     selectedBox?.type === "building"
@@ -204,6 +229,22 @@ const Scene = memo(forwardRef<SceneHandle, SceneProps>(({ boxes, accent, gltfUrl
       setSelectedObjectOverride(null);
     }
   }, [selectedId, selectedObject]);
+
+  useEffect(() => {
+    if (!activeTransformObject) return;
+    let current: Object3D | null = activeTransformObject;
+    let attached = false;
+    while (current) {
+      if (current === r3fScene) {
+        attached = true;
+        break;
+      }
+      current = current.parent;
+    }
+    if (!attached) {
+      setSelectedObjectOverride(null);
+    }
+  }, [activeTransformObject, r3fScene]);
 
   useEffect(() => {
     if (!contextBoxes.length) return;
@@ -300,6 +341,11 @@ const Scene = memo(forwardRef<SceneHandle, SceneProps>(({ boxes, accent, gltfUrl
     }
     setFaceArrow(null);
   }, []);
+
+  useEffect(() => {
+    if (faceSelectMode) return;
+    clearFaceSelection();
+  }, [clearFaceSelection, faceSelectMode]);
   const handleGoOnTopRef = useCallback(() => {
     if (!selectedId || !selectedBox) return;
     const currentPosition = activeTransformObject
@@ -355,115 +401,162 @@ const Scene = memo(forwardRef<SceneHandle, SceneProps>(({ boxes, accent, gltfUrl
           color={0x22c55e}
         />
       )}
+      <EffectComposer autoClear={false}>
+        <N8AO
+          halfRes
+          aoRadius={0.45}
+          intensity={0.8}
+          distanceFalloff={1}
+          denoiseSamples={4}
+        />
+        <Outline
+          selection={outlineSelection}
+          visibleEdgeColor="#f59e0b"
+          hiddenEdgeColor="#f59e0b"
+          edgeStrength={2.4}
+          width={600}
+          blur
+        />
+      </EffectComposer>
       <group ref={boxesGroupRef}>
-        <Select box multiple>
-          {boxes.map((box, i) => (
-            <group
-              key={box.id || i}
-              ref={(node) => {
-                if (node) {
-                  objectRefs.current.set(box.id, node);
-                } else {
-                  objectRefs.current.delete(box.id);
-                }
-              }}
-              position={box.position}
-              rotation={[0, box.rotationY || 0, 0]}
-              onPointerDown={(event: any) => {
-                if (boxesGroupRef.current) {
-                  const hits = raycaster.intersectObject(boxesGroupRef.current, true);
-                  const hit = hits.find((item) => item.face && item.object.type === "Mesh");
-                  if (hit) {
-                    const normal = getWorldFaceNormal(hit);
-                    if (normal) {
-                      const origin = getWorldFacePoint(hit);
-                      const toCamera = camera.position.clone().sub(origin);
-                      if (normal.dot(toCamera) < 0) {
-                        normal.negate();
-                      }
-                      origin.addScaledVector(normal, 0.01);
-                      setFaceArrow({ origin, direction: normal });
+        {boxes.map((box, i) => (
+          <group
+            key={box.id || i}
+            ref={(node) => {
+              if (node) {
+                objectRefs.current.set(box.id, node);
+              } else {
+                objectRefs.current.delete(box.id);
+              }
+            }}
+            position={box.position}
+            rotation={[0, box.rotationY || 0, 0]}
+            onPointerDown={(event: any) => {
+              if (geometryEditMode) {
+                event.stopPropagation();
+                return;
+              }
+              if (faceSelectMode && boxesGroupRef.current) {
+                const hits = raycaster.intersectObject(boxesGroupRef.current, true);
+                const hit = hits.find((item) => item.face && item.object.type === "Mesh");
+                if (hit) {
+                  const normal = getWorldFaceNormal(hit);
+                  if (normal) {
+                    const origin = getWorldFacePoint(hit);
+                    const toCamera = camera.position.clone().sub(origin);
+                    if (normal.dot(toCamera) < 0) {
+                      normal.negate();
                     }
-                    if (hit.faceIndex !== undefined) {
-                      const mesh = hit.object as Mesh;
-                      if (lastFaceRef.current) {
-                        resetVertexColors(
-                          lastFaceRef.current.mesh,
-                          lastFaceRef.current.indices
-                        );
-                      }
-                      const selection = selectCoplanarFace(mesh, hit, "#f59e0b", 0.01, 0.02);
-                      if (selection) {
-                        lastFaceRef.current = selection;
-                      }
+                    origin.addScaledVector(normal, 0.01);
+                    setFaceArrow({ origin, direction: normal });
+                  }
+                  if (hit.faceIndex !== undefined) {
+                    const mesh = hit.object as Mesh;
+                    if (lastFaceRef.current) {
+                      resetVertexColors(
+                        lastFaceRef.current.mesh,
+                        lastFaceRef.current.indices
+                      );
+                    }
+                    const selection = selectCoplanarFace(mesh, hit, "#f59e0b", 0.01, 0.02);
+                    if (selection) {
+                      lastFaceRef.current = selection;
                     }
                   }
                 }
-                event.stopPropagation();
-                if (event.detail >= 2 && onRequestGeometryEdit) {
-                  onRequestGeometryEdit();
+              }
+              if (!faceSelectMode) {
+                setFaceArrow(null);
+                if (lastFaceRef.current) {
+                  resetVertexColors(
+                    lastFaceRef.current.mesh,
+                    lastFaceRef.current.indices
+                  );
+                  lastFaceRef.current = null;
                 }
-                const target = objectRefs.current.get(box.id) || event.eventObject || event.object;
-                if (target) {
-                  setSelectedObjectOverride(target);
-                }
-                if (!box.id) {
-                  const id =
-                    typeof crypto !== "undefined" && (crypto as any).randomUUID
-                      ? (crypto as any).randomUUID()
-                      : Math.random().toString(36).slice(2, 10);
-                  setBoxes((prev) => prev.map((item) => (item === box ? { ...item, id } : item)));
-                  setSelectedId(id);
-                } else {
-                  setSelectedId(box.id);
-                }
-                if (allowMove) {
-                  setTransformMode("translate");
-                }
-              }}
-            >
-              {box.type === "building" ? (
-                <BuildingMesh
-                  color={box.color || accent}
-                  height={box.height || 8}
-                  footprint={box.footprint}
-                  topFootprint={box.topFootprint}
-                  width={box.size?.[0] || 10}
-                  depth={box.size?.[2] || 10}
-                  thicknessRatio={box.thicknessRatio || 0.3}
-                  shape="rect"
-                />
-              ) : box.type === "room" ? (
-                <RoomBox
-                  width={box.width || 3.66}
-                  height={box.height || 3}
-                  depth={box.depth || 3.66}
-                  position={[0, 0, 0]}
-                  color={box.color || "#D4A574"}
-                  showMeasurements={box.showMeasurements !== false}
-                  showHandles={false}
-                  vertices={box.vertices}
-                  onVerticesChange={(newVertices: [number, number, number][]) => {
-                    updateBoxVertices(box.id, newVertices);
-                  }}
-                  onHandleDragChange={(isDragging: boolean) => setIsTransforming(isDragging)}
-                />
-              ) : (
-                <PlaceholderBox
-                  color={box.color || accent}
-                  position={[0, 0, 0]}
-                  size={box.size}
-                  rotationY={0}
-                  onSelectEffect={(selected: boolean) => {
-                    if (selected) {
-                      console.log("Box selected at", box.position);
-                    }
-                  }}
-                />
-              )}
-            </group>
-          ))}
-        </Select>
+              }
+              event.stopPropagation();
+              if (event.detail >= 2 && onRequestGeometryEdit) {
+                onRequestGeometryEdit();
+              }
+              const target = objectRefs.current.get(box.id) || event.eventObject || event.object;
+              if (target) {
+                setSelectedObjectOverride(target);
+              }
+              if (!box.id) {
+                const id =
+                  typeof crypto !== "undefined" && (crypto as any).randomUUID
+                    ? (crypto as any).randomUUID()
+                    : Math.random().toString(36).slice(2, 10);
+                setBoxes((prev) => prev.map((item) => (item === box ? { ...item, id } : item)));
+                setSelectedId(id);
+              } else {
+                setSelectedId(box.id);
+              }
+              if (allowMove) {
+                setTransformMode("translate");
+              }
+            }}
+            onPointerOver={(event: any) => {
+              if (geometryEditMode || faceSelectMode) return;
+              const target = objectRefs.current.get(box.id) || event.eventObject || event.object;
+              if (!target) return;
+              if (box.id === selectedId) {
+                setHoveredObject(null);
+              } else {
+                setHoveredObject(target);
+              }
+            }}
+            onPointerOut={(event: any) => {
+              if (geometryEditMode || faceSelectMode) return;
+              const target = objectRefs.current.get(box.id) || event.eventObject || event.object;
+              if (hoveredObject && target === hoveredObject) {
+                setHoveredObject(null);
+              }
+            }}
+          >
+            {box.type === "building" ? (
+              <BuildingMesh
+                color={box.color || accent}
+                height={box.height || 8}
+                footprint={box.footprint}
+                topFootprint={box.topFootprint}
+                width={box.size?.[0] || 10}
+                depth={box.size?.[2] || 10}
+                thicknessRatio={box.thicknessRatio || 0.3}
+                shape="rect"
+                enableRaycast={!geometryEditMode}
+              />
+            ) : box.type === "room" ? (
+              <RoomBox
+                width={box.width || 3.66}
+                height={box.height || 3}
+                depth={box.depth || 3.66}
+                position={[0, 0, 0]}
+                color={box.color || "#D4A574"}
+                showMeasurements={box.showMeasurements !== false}
+                showHandles={false}
+                vertices={box.vertices}
+                onVerticesChange={(newVertices: [number, number, number][]) => {
+                  updateBoxVertices(box.id, newVertices);
+                }}
+                onHandleDragChange={(isDragging: boolean) => setIsTransforming(isDragging)}
+              />
+            ) : (
+              <PlaceholderBox
+                color={box.color || accent}
+                position={[0, 0, 0]}
+                size={box.size}
+                rotationY={0}
+                onSelectEffect={(selected: boolean) => {
+                  if (selected) {
+                    console.log("Box selected at", box.position);
+                  }
+                }}
+              />
+            )}
+          </group>
+        ))}
       </group>
 
       {/* TransformControls - disabled for room type to use EditableBoxHandles instead */}
@@ -541,12 +634,12 @@ const Scene = memo(forwardRef<SceneHandle, SceneProps>(({ boxes, accent, gltfUrl
         onDragStart={() => setIsTransforming(true)}
         onDragEnd={() => setIsTransforming(false)}
       />
-      {selectedBox?.type === "room" && selectedRoomVerticesWorld && (
+      {geometryEditMode && selectedBox?.type === "room" && selectedRoomVerticesWorld && (
         <EditableBoxHandles
           vertices={selectedRoomVerticesWorld}
-          showRotateHandles={geometryEditMode && transformMode === "rotate"}
-          showBoundingBox={geometryEditMode}
-          allowTranslate={!geometryEditMode && allowMove}
+          showRotateHandles={transformMode === "rotate"}
+          showBoundingBox
+          allowTranslate={false}
           onVerticesChange={(newVertices) => {
             const originX = selectedBox.position[0];
             const originZ = selectedBox.position[2];

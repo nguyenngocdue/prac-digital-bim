@@ -146,14 +146,24 @@ const LeftPanel: FC<LeftPanelProps> = ({
             <div className="mt-3 grid gap-3 rounded-xl border viewer-border viewer-panel-strong p-3">
               <div className="grid grid-cols-2 gap-2 text-xs font-semibold">
                 {[
-                  { key: "rect", label: "Rectangle" },
-                  { key: "l", label: "L Shape" },
-                  { key: "c", label: "C Shape" },
-                  { key: "u", label: "U Shape" },
-                  { key: "h", label: "H Shape" },
-                  { key: "v", label: "V Shape" },
-                  { key: "m", label: "M Shape" },
-                  { key: "custom", label: "Custom" },
+                { key: "rect", label: "Rectangle" },
+                { key: "l", label: "L Shape" },
+                { key: "c", label: "C Shape" },
+                { key: "u", label: "U Shape" },
+                { key: "h", label: "H Shape" },
+                { key: "v", label: "V Shape" },
+                { key: "m", label: "M Shape" },
+
+
+                // High-rise friendly
+                { key: "t", label: "T Shape" },
+                { key: "plus", label: "Plus / Cross" },
+                { key: "diamond", label: "Diamond" },
+                { key: "trapezoid", label: "Trapezoid" },
+                { key: "hex", label: "Hexagon" },
+                { key: "step", label: "Step / Setback" },
+                { key: "custom", label: "Custom" },
+                { key: "sine", label: "Sine Wave" },
                 ].map((shape) => (
                   <button
                     key={shape.key}

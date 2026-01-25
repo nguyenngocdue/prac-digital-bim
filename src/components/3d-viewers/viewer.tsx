@@ -1,7 +1,7 @@
 "use client";
 import { Canvas } from "@react-three/fiber";
 import { useEffect, useRef, useState } from "react";
-import { useBoxContext } from "../../app/contexts/box-context";
+import { useBoxContext, type Box } from "../../app/contexts/box-context";
 import Scene, { type SceneHandle } from "./scene";
 import { GltfControls } from "./gltf/gltf-controls";
 import { IotControls } from "./iot/iot-controls";
@@ -22,6 +22,7 @@ import {
   PenTool,
   PanelLeft,
   PanelRight,
+  Scan,
   RotateCw,
   Upload,
   Axis3d,
@@ -65,6 +66,8 @@ const Viewer = ({
   const [showGrid, setShowGrid] = useState(true);
   const [allowMove, setAllowMove] = useState(true);
   const [geometryEditMode, setGeometryEditMode] = useState(false);
+  const [faceSelectMode, setFaceSelectMode] = useState(false);
+  const editSnapshotRef = useRef<{ id: string; box: Box } | null>(null);
   const [selectedCamera, setSelectedCamera] = useState<CameraData | null>(null);
   const [gltfUrl, setGltfUrl] = useState<string | null>(null);
   const [resourceMap, setResourceMap] = useState<Map<string, string>>();
@@ -86,6 +89,36 @@ const Viewer = ({
     setTransformMode,
   } = useBoxContext();
   const [canvasKey] = useState(() => `canvas-${projectId || "default"}`);
+  const cloneBox = (box: Box): Box => {
+    if (typeof structuredClone === "function") {
+      return structuredClone(box);
+    }
+    return JSON.parse(JSON.stringify(box)) as Box;
+  };
+
+  const startGeometryEdit = () => {
+    if (!selectedId) return;
+    const target = boxes.find((box) => box.id === selectedId);
+    if (!target) return;
+    editSnapshotRef.current = { id: selectedId, box: cloneBox(target) };
+    setCreationMode(false);
+    setGeometryEditMode(true);
+  };
+
+  const applyGeometryEdit = () => {
+    editSnapshotRef.current = null;
+    setGeometryEditMode(false);
+  };
+
+  const cancelGeometryEdit = () => {
+    const snapshot = editSnapshotRef.current;
+    if (snapshot) {
+      setBoxes((prev) => prev.map((box) => (box.id === snapshot.id ? snapshot.box : box)));
+    }
+    editSnapshotRef.current = null;
+    setGeometryEditMode(false);
+  };
+
   const overlayActions = [
     {
       key: "move",
@@ -113,10 +146,25 @@ const Viewer = ({
       label: "Edit Geometry",
       active: geometryEditMode,
       onClick: () => {
-        if (!selectedId) return;
-        setGeometryEditMode((prev) => !prev);
+        if (geometryEditMode) return;
+        startGeometryEdit();
       },
       icon: PenTool,
+    },
+    {
+      key: "face-select",
+      label: "Select Face",
+      active: faceSelectMode,
+      onClick: () => {
+        setFaceSelectMode((prev) => {
+          const next = !prev;
+          if (!next) {
+            sceneRef.current?.clearFaceSelection();
+          }
+          return next;
+        });
+      },
+      icon: Scan,
     },
     {
       key: "create-room",
@@ -167,7 +215,12 @@ const Viewer = ({
       onClick: onToggleCameraPanel,
       icon: Camera,
     },
-  ].filter((action) => typeof action.onClick === "function");
+  ]
+    .map((action) => ({
+      ...action,
+      disabled: geometryEditMode && action.key !== "edit-geometry",
+    }))
+    .filter((action) => typeof action.onClick === "function");
 
   // Debug: Track component lifecycle
   useEffect(() => {
@@ -182,6 +235,14 @@ const Viewer = ({
     // eslint-disable-next-line react-hooks/set-state-in-effect -- hydration gate for client-only canvas
     setMounted(true);
   }, []);
+
+  useEffect(() => {
+    if (!geometryEditMode) return;
+    if (faceSelectMode) {
+      setFaceSelectMode(false);
+      sceneRef.current?.clearFaceSelection();
+    }
+  }, [faceSelectMode, geometryEditMode]);
 
   // Debug: log boxes when they change
   useEffect(() => {
@@ -250,13 +311,15 @@ const Viewer = ({
         if (creationMode) {
           setCreationMode(false);
         }
+        if (geometryEditMode) {
+          cancelGeometryEdit();
+          return;
+        }
         if (selectedId) {
           setSelectedId(null);
         }
-        if (geometryEditMode) {
-          setGeometryEditMode(false);
-        }
       }
+      if (geometryEditMode) return;
       if ((e.key === "Delete" || e.key === "Backspace") && selectedId) {
         setBoxes((prev) => prev.filter((box) => box.id !== selectedId));
         setSelectedId(null);
@@ -285,10 +348,11 @@ const Viewer = ({
   }, [
     creationMode,
     geometryEditMode,
+    faceSelectMode,
     selectedId,
     setBoxes,
     setCreationMode,
-    setGeometryEditMode,
+    cancelGeometryEdit,
     setSelectedId,
     setTransformMode,
   ]);
@@ -342,16 +406,39 @@ const Viewer = ({
           showGoogleTiles={showGoogleTiles}
           showAxes={showAxes}
           showGrid={showGrid}
-          allowMove={allowMove}
+          allowMove={geometryEditMode ? false : allowMove}
           geometryEditMode={geometryEditMode}
+          faceSelectMode={faceSelectMode}
           onRequestGeometryEdit={() => {
-            if (selectedId) {
-              setGeometryEditMode(true);
-            }
+            if (geometryEditMode) return;
+            startGeometryEdit();
           }}
         />
       </Canvas>
-      {selectedId && (
+      {geometryEditMode && selectedId && (
+        <div className="pointer-events-auto absolute left-1/2 top-6 z-50 -translate-x-1/2">
+          <div className="flex items-center gap-2 rounded-lg border border-slate-200/70 bg-white/90 px-2.5 py-2 text-xs shadow-sm backdrop-blur dark:border-slate-700/60 dark:bg-slate-900/70">
+            <span className="rounded-md bg-emerald-50 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-200">
+              Edit Mode
+            </span>
+            <button
+              type="button"
+              onClick={applyGeometryEdit}
+              className="rounded-md bg-emerald-600 px-3 py-1 text-xs font-semibold text-white shadow-sm hover:bg-emerald-500"
+            >
+              Apply
+            </button>
+            <button
+              type="button"
+              onClick={cancelGeometryEdit}
+              className="rounded-md border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-700 shadow-sm hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+      {selectedId && !geometryEditMode && (
         <div className="pointer-events-auto absolute left-3 top-24 z-50 flex flex-col gap-2">
           <div className="viewer-panel viewer-panel-strong flex flex-col items-center gap-1 rounded-lg p-1 shadow-lg backdrop-blur">
             {[
@@ -437,28 +524,31 @@ const Viewer = ({
       )}
 
       {/* Transform Mode Panel */}
-      <TransformModePanel
-        mode={transformMode}
-        onModeChange={setTransformMode}
-        selectedId={selectedId}
-        onGoOnTop={() => sceneRef.current?.goOnTop()}
-      />
+      {!geometryEditMode && (
+        <TransformModePanel
+          mode={transformMode}
+          onModeChange={setTransformMode}
+          selectedId={selectedId}
+          onGoOnTop={() => sceneRef.current?.goOnTop()}
+        />
+      )}
 
       {overlayActions.length > 0 && (
         <div className="absolute bottom-2 left-1/2 z-40 -translate-x-1/2">
           <div className="viewer-panel viewer-panel-strong flex items-center gap-0.5 rounded-lg px-1 py-1 shadow-lg backdrop-blur">
-            {overlayActions.map(({ key, label, active, onClick, icon: Icon }) => (
+            {overlayActions.map(({ key, label, active, onClick, icon: Icon, disabled }) => (
               <button
                 key={key}
                 type="button"
-                onClick={onClick}
+                onClick={disabled ? undefined : onClick}
                 aria-pressed={active}
                 title={label}
+                disabled={disabled}
                 className={`flex h-8 w-8 items-center justify-center rounded-md text-sm transition ${
                   active
                     ? "viewer-chip shadow-sm"
                     : "bg-white/70 text-slate-700 hover:bg-white dark:bg-slate-900/60 dark:text-slate-100 dark:hover:bg-slate-900"
-                }`}
+                } ${disabled ? "cursor-not-allowed opacity-40" : ""}`}
               >
                 <Icon className="h-4 w-4" />
               </button>

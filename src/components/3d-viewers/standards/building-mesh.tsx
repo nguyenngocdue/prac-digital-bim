@@ -13,6 +13,7 @@ type BuildingMeshProps = {
   depth?: number;
   thicknessRatio?: number;
   shape?: BuildingShape;
+  enableRaycast?: boolean;
 };
 
 export function BuildingMesh({
@@ -24,6 +25,7 @@ export function BuildingMesh({
   depth = 10,
   thicknessRatio = 0.3,
   shape = "rect",
+  enableRaycast = true,
 }: BuildingMeshProps) {
   const geometry = useMemo(() => {
     const points = footprint?.length
@@ -92,9 +94,11 @@ export function BuildingMesh({
     return geom;
   }, [depth, footprint, height, shape, thicknessRatio, topFootprint, width]);
 
+  const raycast = enableRaycast ? undefined : () => null;
+
   return (
     <group>
-      <mesh geometry={geometry} castShadow receiveShadow>
+      <mesh geometry={geometry} castShadow receiveShadow raycast={raycast}>
         <meshPhysicalMaterial
           color={color}
           metalness={0.05}
@@ -108,10 +112,10 @@ export function BuildingMesh({
           ior={1.42}
         />
       </mesh>
-      <lineSegments geometry={new THREE.EdgesGeometry(geometry, 25)}>
+      <lineSegments geometry={new THREE.EdgesGeometry(geometry, 25)} raycast={raycast}>
         <lineBasicMaterial color="#7dd3fc" transparent opacity={0.95} />
       </lineSegments>
-      <lineSegments geometry={new THREE.EdgesGeometry(geometry, 55)}>
+      <lineSegments geometry={new THREE.EdgesGeometry(geometry, 55)} raycast={raycast}>
         <lineBasicMaterial color="#38bdf8" transparent opacity={0.55} />
       </lineSegments>
     </group>

@@ -30,6 +30,9 @@ export const BuildingHandles = ({
   onDragStart,
   onDragEnd,
 }: BuildingHandlesProps) => {
+  if (!showHandles) {
+    return null;
+  }
   if (!selectedBox || selectedBox.type !== "building" || !selectedFootprintVertices) {
     return null;
   }

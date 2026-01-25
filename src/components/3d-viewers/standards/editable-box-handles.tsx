@@ -139,6 +139,7 @@ export const EditablePolygonHandles = ({
   const pendingTranslateRef = useRef<PendingTranslate | null>(null);
   const handleScaleRef = useRef(1);
   const lastHandleScaleRef = useRef(1);
+  const shiftKeyRef = useRef(false);
 
   const setCursor = (cursor: string) => {
     gl.domElement.style.cursor = cursor;
@@ -286,9 +287,27 @@ export const EditablePolygonHandles = ({
       updateHeightHandle(heightHandleRef.current, heightHitRef.current, topVerticesRef.current);
     }
     updateHeightHandle(bottomHeightHandleRef.current, bottomHeightHitRef.current, points);
-    setHeightCenters({
+    const nextHeightCenters = {
       top: topVerticesRef.current ? getCenterPoint(topVerticesRef.current) ?? undefined : undefined,
       bottom: getCenterPoint(points) ?? undefined,
+    };
+    setHeightCenters((prev) => {
+      const sameTop =
+        prev.top &&
+        nextHeightCenters.top &&
+        prev.top.every((value, index) => Math.abs(value - nextHeightCenters.top![index]) < 1e-5);
+      const sameBottom =
+        prev.bottom &&
+        nextHeightCenters.bottom &&
+        prev.bottom.every(
+          (value, index) => Math.abs(value - nextHeightCenters.bottom![index]) < 1e-5
+        );
+      if ((prev.top === undefined && nextHeightCenters.top === undefined) || sameTop) {
+        if ((prev.bottom === undefined && nextHeightCenters.bottom === undefined) || sameBottom) {
+          return prev;
+        }
+      }
+      return nextHeightCenters;
     });
 
     // Update line
@@ -463,6 +482,7 @@ export const EditablePolygonHandles = ({
     setDraggedEdgeIndex,
     setCursor,
     handleScaleRef,
+    shiftKeyRef,
     setRotationAngle: (angle) => {
       if (angle === 0 || Math.abs(angle - rotationAngleRef.current) >= 0.1) {
         rotationAngleRef.current = angle;
@@ -471,6 +491,30 @@ export const EditablePolygonHandles = ({
     },
     setIsRotating,
   });
+  useEffect(() => {
+    if (showBoundingBox) return;
+    dragHandlers.cancelDrag();
+  }, [dragHandlers, showBoundingBox]);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Shift") shiftKeyRef.current = true;
+    };
+    const handleKeyUp = (event: KeyboardEvent) => {
+      if (event.key === "Shift") shiftKeyRef.current = false;
+    };
+    const handleBlur = () => {
+      shiftKeyRef.current = false;
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("keyup", handleKeyUp);
+    window.addEventListener("blur", handleBlur);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("keyup", handleKeyUp);
+      window.removeEventListener("blur", handleBlur);
+    };
+  }, []);
 
   const rotateAxis = useMemo(() => {
     if (!isRotating || !boundingBox) return null;
